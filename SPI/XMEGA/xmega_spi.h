@@ -50,7 +50,6 @@ extern spiIO_t *spiUsart;
 /*	Hardware SPI / USART_SPI Konfigurationen
 *	Ab hier bitte nichts mehr ändern!
 */
-#define SPI_USART_CALC_FBAUD( BSEL )		(uint16_t) ( F_CPU / ( 2 * ( BSEL + 1 ) ) )
 #define SPI_USART_CALC_BSEL( BAUD )			(uint16_t) ( F_CPU / ( 2 * BAUD ) ) - 1 
 
 
