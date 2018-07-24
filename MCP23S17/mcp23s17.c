@@ -34,7 +34,7 @@
 
 
 
-void mcp23s17Init			( void )								
+void	mcp23s17Init		( void )								
 {
 	MCP23S17_SS_PORT.DIRSET = 1<<MCP23S17_SS_bp;
 	
@@ -162,12 +162,12 @@ uint8_t mcp23s17ReadGpiox	( enum mcp23s17_port gpiox )
 	return buff[0];
 }
 
-void mcp23s17Select			( void )								
+void	mcp23s17Select		( void )								
 {
 	MCP23S17_SS_PORT.OUTCLR = 1<<MCP23S17_SS_bp;
 }
 
-void mcp23s17Deselect		( void )								
+void	mcp23s17Deselect	( void )								
 {
 	MCP23S17_SS_PORT.OUTSET = 1<<MCP23S17_SS_bp;
 }
