@@ -43,7 +43,7 @@ void mcp23s17Init			( void )
 	/*
 	*	Alle I/O´s auf Ausgänge Programmieren
 	*/
-	mcp23s17CnfgOut( 0x00 , 0x00 );
+	mcp23s17CnfgOut( 0x00 , ( 1<<0 | 1<<1 ) ); // GPIOB Bit 0 & 1 als Eingang
 	
 	/*
 	*	Alle Ausgänge auf default setzen
@@ -88,7 +88,7 @@ uint8_t mcp23s17ReadBytes	( uint8_t *buff , uint8_t leng )
 
 	if ( leng == 1 )
 	{
-		buff[0] = spiMasterRead();
+		buff[0] = spiMasterWriteRead( 0xFF );
 		return 0;
 	}
 
@@ -149,12 +149,25 @@ uint8_t mcp23s17Cnfg		( enum mcp23s17_cnfg_bits cnfgByte )
 	return mcp23s17WriteBytes( buff , sizeof( buff ) );
 }
 
-void mcp23s17Select( void )		
+uint8_t mcp23s17ReadGpiox	( enum mcp23s17_port gpiox )			
+{
+	uint8_t buff[] =
+	{
+		MCP23S17_OPCODE + SPI_READ,
+		gpiox
+	};
+		
+	mcp23s17ReadBytes( buff , 1 );
+	
+	return buff[0];
+}
+
+void mcp23s17Select			( void )								
 {
 	MCP23S17_SS_PORT.OUTCLR = 1<<MCP23S17_SS_bp;
 }
 
-void mcp23s17Deselect( void )	
+void mcp23s17Deselect		( void )								
 {
 	MCP23S17_SS_PORT.OUTSET = 1<<MCP23S17_SS_bp;
 }

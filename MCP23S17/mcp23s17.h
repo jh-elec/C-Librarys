@@ -120,21 +120,29 @@ enum mcp23s17_cnfg_bits
 	BANK,	
 };
 
+enum mcp23s17_port
+{
+	MCP23S17_GPIOA_IN	= BANK0_GPIOA,
+	MCP23S17_GPIOB_IN	= BANK0_GPIOB,	
+};
 
 void mcp23s17Init( void );
 
-uint8_t mcp23s17WriteBytes( uint8_t *buff , uint8_t leng );
+uint8_t mcp23s17WriteBytes	( uint8_t *buff , uint8_t leng );
 
-uint8_t mcp23s17ReadBytes ( uint8_t *buff , uint8_t leng );
+uint8_t mcp23s17ReadBytes	( uint8_t *buff , uint8_t leng );
 
-uint8_t mcp23s17CnfgOut( uint8_t gpioA ,  uint8_t gpioB );
+uint8_t mcp23s17CnfgOut		( uint8_t gpioA ,  uint8_t gpioB );
 
-uint8_t mcp23s17SetOut(	uint8_t gpioA , uint8_t gpioB );
+uint8_t mcp23s17SetOut		(	uint8_t gpioA , uint8_t gpioB );
 
-uint8_t mcp23s17Cnfg( enum mcp23s17_cnfg_bits cnfgByte );
+uint8_t mcp23s17Cnfg		( enum mcp23s17_cnfg_bits cnfgByte );
 
-void mcp23s17Select( void );
+uint8_t mcp23s17ReadGpiox	( enum mcp23s17_port gpiox );
 
-void mcp23s17Deselect( void );
+void mcp23s17Select			( void );
+
+void mcp23s17Deselect		( void );
+
 
 #endif
