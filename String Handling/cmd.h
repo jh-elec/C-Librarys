@@ -10,21 +10,35 @@
 *
 */
 
-#ifndef CMD_H
-#define CMD_H
+#ifndef __CMD_H__
+#define __CMD_H__
 
 #include <avr/io.h>
 
-typedef int8_t (*srchCmdPtr)(char *, char *, uint8_t);
-int8_t srchCmd(char *inBuff, char *srchCmd, uint8_t rawBytes);
 
-typedef int8_t (*cmpCmdPtr)(char *, char *);
-int8_t cmpCmd(char *strOne, char *strTwo);
+typedef struct
+{
+	char	name[20];
+	char	instruction[5];
+	void*	(*fnc) (void* , void*);
+}cmd_struct;
 
-typedef struct{
-	
-	cmpCmdPtr			Compare;
-	srchCmdPtr			Search;
+
+
+typedef int8_t ( *srchCmdPtr )( char * , char * , uint8_t );
+int8_t srchCmd( char *inBuff , char *srchCmd , uint8_t rawBytes );
+
+typedef int8_t ( *cmpCmdPtr )( char * , char * );
+int8_t cmpCmd( char *strOne , char *strTwo );
+
+typedef uint8_t ( *removeCharPtr )( char *str , uint8_t wanted );
+uint8_t removeChar( char *str , uint8_t wanted );
+
+typedef struct
+{
+	cmpCmdPtr			compare;
+	srchCmdPtr			search;
+	removeCharPtr		removeChar;
 }cmd_t;
 
 extern cmd_t cmd;
