@@ -14,108 +14,103 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "cmd.h"
+#include "C:\Users\Hm\Documents\Atmel Studio\7.0\C-Librarys\trunk\String Handling\cmd.h"
 
-int8_t srchCmd(char *inBuff, char *srchCmd, uint8_t rawData)
+char	*srchCmd		( char *inBuff , char *srchCmd )	
 {
 	/*
-	*	Zeiger auf den Beginn unserem Kommando (fals vorhanden!).
+	*	Zeiger deklarieren).
 	*/
-	char *cmdBeginnPtr    = NULL;
-	
-	/*
-	*	Bestimmt die Länge unseres zweiten Parameters (srchCmd).
-	*	Damit wir später unseren "gefundenen" Kommando String terminieren können.
-	*/
-	uint8_t srchCmdStrLen = strlen(srchCmd)+rawData;
-	
-	/*
-	*	Zählt (falls vorhanden..) die Nutzdaten die Empfangen werden sollen.
-	*	Damit wir diese später verarbeiten können.
-	*/
-	uint8_t rawDataBytes  = 0;
+	char *cmdBeginnPtr    	= NULL;
+	char *cmdEndPtr		 	= NULL;
+	char *cmdBeginnRawPtr	= NULL;
 	
 	/*
 	*	Wurde als Parameter ein "NULL" Zeiger übergeben,
-	*	so beenden wir die Funktion vorzeitig.
+	*	wird die Funktion vorzeitig beendet
 	*/
-	if (inBuff == NULL || srchCmd == NULL)
-	return -1;
- 
-         
+	if ( inBuff == NULL || srchCmd == NULL )
+	{
+		return ( char* ) -1;	
+	}
+
+	cmdBeginnPtr 	= strstr( inBuff , srchCmd );
+	cmdEndPtr		= strchr( inBuff , CMD_RAW_DATA_END );	      
+	
 	/*
-	*    Aktuelles Kommando was gesucht wird, erst einmal zwischen speichern
-	*	 damit wir später genau diesen Puffer bearbeiten können.
+	*	Wurde kein Kommando gefunden..
 	*/
-	char cmdBuff[26] = "";
-	strcpy(cmdBuff,srchCmd);
+	if ( cmdBeginnPtr == NULL )
+	{
+		return ( char* ) -2;
+	}
 
 	/*
-	*   Wenn wir Nutzdaten empfangen haben, terminieren wir den String 
-	*	nach dem letzten für uns relevanten Datenbyte.
-	*/ 
-	if (rawDataBytes > 0)cmdBuff[srchCmdStrLen-rawDataBytes] = '\0'; 
-
-	/*
-	*	Suchen wir nun nach unserem Kommando in unserem Empfangspuffer (inBuff)..
-	*	Hierzu wird der String der aktuell als Parameter "srchCmd"
-	*	übergeben wurde im Empfangspuffer (inBuff) gesucht.
-	*
-	*/      
-	cmdBeginnPtr = strstr(inBuff,cmdBuff);
-	if(cmdBeginnPtr == NULL)
-	return -1;
-	  
-	/*
-	*    Zum Schluss, terminieren wir noch das Ende von unserem Kommandopuffer.
-	*	 Damit bezwecken wir das die nachfolgenden Zeichen abgeschnittenc
-	*	 und nicht weiter mit verarbeitet werden.
+	*	...
 	*/
-	cmdBeginnPtr[srchCmdStrLen] = '\0';
- 
+	if ( cmdEndPtr == NULL )
+	{
+		return ( char* ) -3;
+	}
+	
 	/*
-	*	Haben wir unsern Kommando String gefunden, speicheren wir diesen in
-	*   unserem Eingangs(Empfangspuffer(inBuff) Puffer ab damit wir diesen
-	*	später evtl. noch weiterverarbeiten können.
-	*
-	*	Sollte kein Kommdo mit "srchCmd" übereinstimmen, wird der Eingangspuffer(inBuff)
-	*	unbearbeitet zurück gelassen.
-	*
+	*	Kommando terminieren
 	*/
-	strcpy(inBuff,cmdBeginnPtr);
-     
-	return 0;
+	*cmdEndPtr = '\0';		
+	
+	/*
+	*	Benutzer Parameter empfangen?
+	*/	
+	cmdBeginnRawPtr = strchr( inBuff , CMD_RAW_DATA_BEGINN );
+	if ( cmdBeginnRawPtr == NULL )
+	{
+		return cmdBeginnPtr;
+	}
+	
+	/*
+	*	Kommandotrenner überspringen
+	*/
+	cmdBeginnRawPtr++;
+	
+	return cmdBeginnRawPtr;
 }
 
-int8_t cmpCmd(char *strOne, char *strTwo)
+int8_t	cmpCmd		( char *strOne , char *strTwo )						
 {
-	uint8_t strLenOne = strlen(strOne);
-	uint8_t strLenTwo = strlen(strTwo);
+	uint8_t strLenOne = strlen( strOne );
+	uint8_t strLenTwo = strlen( strTwo );
 	
-	if (strLenOne != strLenTwo)
-	return -1;
+	if ( strLenOne != strLenTwo )
+	{
+		return -1;
+	}
 	
-	if(strcmp(strOne,strTwo) == 0)
-	return 0;
+	
+	if( strcmp( strOne , strTwo ) == 0 )
+	{
+		return 0;
+	}
 	else
-	return -2;
-
+	{
+		return -2;
+	}
+	
 	return -3;
 }
 
-uint8_t removeChar(char *str, uint8_t wanted)
+uint8_t removeChar	( char *str , uint8_t wanted )						
 {
     char * p = NULL;
 	static uint8_t removed = 0;
 	
-    while (*str)
+    while ( *str )
     {
-        while (*str == wanted)
+        while ( *str == wanted )
         {
 			removed++;
-            for (p = str; *p; p++)
+            for ( p = str ; *p ; p++ )
             {
-                *p = *(p + 1);
+                *p = *( p + 1 );
             }
         }
         str++;
@@ -124,9 +119,9 @@ uint8_t removeChar(char *str, uint8_t wanted)
 }
 
 
-cmd_t cmd =
+cmd_t cmd =																
 {
-	.Search		= srchCmd,
-	.Compare	= cmpCmd,
-	.RemoveChar = removeChar,
+	.search		= srchCmd,
+	.compare	= cmpCmd,
+	.removeChar = removeChar,
 };
