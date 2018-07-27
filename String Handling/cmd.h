@@ -16,23 +16,39 @@
 #include <avr/io.h>
 
 
+#define CMD_RAW_DATA_BEGINN			'#'
+#define CMD_RAW_DATA_END			'!'
+
+
 typedef struct
 {
+	/*
+	*	Name des Kommandos
+	*/
 	char	name[20];
+	
+	/*
+	*	Befehl der empfangen werden muss
+	*/
 	char	instruction[5];
+			
+	/*
+	*	Funktion die beim entsprechenden
+	*/	
 	void*	(*fnc) (void* , void*);
+	
 }cmd_struct;
 
 
 
-typedef int8_t ( *srchCmdPtr )( char * , char * , uint8_t );
-int8_t srchCmd( char *inBuff , char *srchCmd , uint8_t rawBytes );
+typedef char*		( *srchCmdPtr )		( char * , char * );
+		char*		srchCmd				( char *inBuff , char *srchCmd );
 
-typedef int8_t ( *cmpCmdPtr )( char * , char * );
-int8_t cmpCmd( char *strOne , char *strTwo );
+typedef	int8_t		( *cmpCmdPtr )		( char * , char * );
+		int8_t		cmpCmd				( char *strOne , char *strTwo );
 
-typedef uint8_t ( *removeCharPtr )( char *str , uint8_t wanted );
-uint8_t removeChar( char *str , uint8_t wanted );
+typedef uint8_t		( *removeCharPtr )	( char *str , uint8_t wanted );
+		uint8_t		removeChar			( char *str , uint8_t wanted );
 
 typedef struct
 {
