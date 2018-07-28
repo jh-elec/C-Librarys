@@ -13,9 +13,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "cmd.h"
-
 
 
 char	*srchCmd		( char *inBuff , char *srchCmd )	
@@ -31,26 +31,16 @@ char	*srchCmd		( char *inBuff , char *srchCmd )
 	*	Wurde als Parameter ein "NULL" Zeiger übergeben,
 	*	wird die Funktion vorzeitig beendet
 	*/
-	if ( inBuff == NULL || srchCmd == NULL )
-	{
-		return NULL;	
-	}
 
-	cmdBeginnPtr 	= strstr( inBuff , srchCmd );
-	cmdEndPtr		= strchr( inBuff , CMD_RAW_DATA_END );	      
-	
-	/*
-	*	Wurde kein Kommando gefunden..
-	*/
-	if ( cmdBeginnPtr == NULL )
+	if ( inBuff == NULL || srchCmd == NULL)
 	{
 		return NULL;
 	}
 
-	/*
-	*	...
-	*/
-	if ( cmdEndPtr == NULL )
+	cmdBeginnPtr 	= strstr( inBuff , srchCmd );
+	cmdEndPtr		= strchr( inBuff , CMD_RAW_DATA_END );	      
+
+	if ( cmdEndPtr == NULL || cmdBeginnPtr == NULL)
 	{
 		return NULL;
 	}
@@ -66,6 +56,7 @@ char	*srchCmd		( char *inBuff , char *srchCmd )
 	cmdBeginnRawPtr = strchr( inBuff , CMD_RAW_DATA_BEGINN );
 	if ( cmdBeginnRawPtr == NULL )
 	{
+		cmdBeginnPtr[ strlen( srchCmd ) ] = '\0';
 		return cmdBeginnPtr;
 	}
 	
@@ -77,17 +68,20 @@ char	*srchCmd		( char *inBuff , char *srchCmd )
 	return cmdBeginnRawPtr;
 }
 
-cmd_struct *getCmd		( cmd_struct *tab , char *buff )
+cmd_struct *getCmd		( cmd_struct *tab , char *input , char *rawRX )
 {
 	uint8_t i;
+	char *ptr;
+
 	for( i = 0 ; i < CMD_SIZE_OF_TAB ; i++ )
 	{
-		if ( srchCmd( buff , tab[i].instruction ) != NULL )
+		ptr = srchCmd( input , tab[i].instruction );
+		if ( ptr != NULL )
 		{
-			return tab+i;
+			strcpy( rawRX , ptr );
+			return tab + i;
 		}
 	}
-	
 	return NULL;
 }
 

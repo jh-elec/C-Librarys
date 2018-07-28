@@ -16,9 +16,10 @@
 
 #include <stdint.h>
 
-#define CMD_SIZE_OF_TAB				5
+#define CMD_SIZE_OF_TAB				7
 #define CMD_RAW_DATA_BEGINN			'#'
 #define CMD_RAW_DATA_END			'!'
+
 
 
 typedef struct
@@ -45,7 +46,7 @@ typedef struct
 typedef char*		( *srchCmdPtr )		( char * , char * );
 		char*		srchCmd				( char *inBuff , char *srchCmd );
 
-cmd_struct *getCmd		( cmd_struct *tab , char *buff );
+cmd_struct *getCmd	( cmd_struct *tab , char *input , char *rawRX );
 
 typedef	int8_t		( *cmpCmdPtr )		( char * , char * );
 		int8_t		cmpCmd				( char *strOne , char *strTwo );
