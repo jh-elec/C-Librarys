@@ -16,9 +16,9 @@
 
 #include <stdint.h>
 
-#define CMD_SIZE_OF_TAB				7
-#define CMD_RAW_DATA_BEGINN			'#'
-#define CMD_RAW_DATA_END			'!'
+#define CMD_SIZE_OF_TAB			7
+#define CMD_RAW_DATA_BEGINN		'#'
+#define CMD_DATA_END			'!'
 
 
 
