@@ -38,7 +38,7 @@ char	*srchCmd		( char *inBuff , char *srchCmd )
 	}
 
 	cmdBeginnPtr 	= strstr( inBuff , srchCmd );
-	cmdEndPtr		= strchr( inBuff , CMD_RAW_DATA_END );	      
+	cmdEndPtr		= strchr( inBuff , CMD_DATA_END );	      
 
 	if ( cmdEndPtr == NULL || cmdBeginnPtr == NULL)
 	{
@@ -68,7 +68,7 @@ char	*srchCmd		( char *inBuff , char *srchCmd )
 	return cmdBeginnRawPtr;
 }
 
-cmd_struct *getCmd		( cmd_struct *tab , char *input , char *rawRX )
+cmd_struct *getCmd		( cmd_struct __flash *tab , char *input , char *rawRX )
 {
 	uint8_t i;
 	char *ptr;
