@@ -43,24 +43,12 @@ typedef struct
 
 
 
-typedef char*		( *srchCmdPtr )		( char * , char * );
-		char*		srchCmd				( char *inBuff , char *srchCmd );
+char*		srchCmd				( char *inBuff , char *srchCmd );
 
-cmd_struct *getCmd	( cmd_struct *tab , char *input , char *rawRX );
+cmd_struct *getCmd				( cmd_struct *tab , char *input , char *rawRX );
 
-typedef	int8_t		( *cmpCmdPtr )		( char * , char * );
-		int8_t		cmpCmd				( char *strOne , char *strTwo );
+int8_t		cmpCmd				( char *strOne , char *strTwo );
 
-typedef uint8_t		( *removeCharPtr )	( char *str , uint8_t wanted );
-		uint8_t		removeChar			( char *str , uint8_t wanted );
-
-typedef struct
-{
-	cmpCmdPtr			compare;
-	srchCmdPtr			search;
-	removeCharPtr		removeChar;
-}cmd_t;
-
-extern cmd_t cmd;
+uint8_t		removeChar			( char *str , uint8_t wanted );
 
 #endif

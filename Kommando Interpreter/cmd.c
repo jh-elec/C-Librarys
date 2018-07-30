@@ -127,11 +127,3 @@ uint8_t removeChar	( char *str , uint8_t wanted )
     }
 	return removed;
 }
-
-
-cmd_t cmd =																
-{
-	.search		= srchCmd,
-	.compare	= cmpCmd,
-	.removeChar = removeChar,
-};
