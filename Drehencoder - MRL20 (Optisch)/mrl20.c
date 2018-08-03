@@ -19,7 +19,7 @@
 
 #include <inttypes.h>
 #include <avr/io.h>
-#include "Drehencoder-MRL20.h"
+#include "mrl20.h"
 
 
 
