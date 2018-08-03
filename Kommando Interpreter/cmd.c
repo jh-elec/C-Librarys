@@ -15,115 +15,143 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "cmd.h"
+#include "Headers/cmd.h"
 
 
-char	*srchCmd		( char *inBuff , char *srchCmd )	
+const cmdTable_t cmdTab[] =	
+{
+	{"Relais_Handler!" 			, 	"-REL"		, 	NULL 	},
+	{"System_Handler!" 			, 	"-SYS"		, 	NULL 	},
+	{"Eeprom_Handler!" 			, 	"-EEP"		, 	NULL 	},
+};
+
+cmd_t cmd =					
+{
+	.table	= cmdTab,
+	.tabLen = sizeof( cmdTab ) / sizeof( *cmdTab ),
+	.raw 	= &raw
+};
+
+
+static uint8_t 		cmdCntPara			( char *cmd )									
+{
+	uint8_t x;
+	char *cmdPtr = cmd;
+	
+	for ( x = 0 ; cmdPtr != NULL ;  )
+	{
+		cmdPtr = strchr( cmdPtr + 1 , '.' );
+		x++;
+	}
+	
+	return ( x - 1 );
+}
+
+static char			*cmdSearch			( char *inBuff , char *srchCmd )				
 {
 	/*
 	*	Zeiger deklarieren).
 	*/
-	char *cmdBeginnPtr    	= NULL;
-	char *cmdEndPtr		 	= NULL;
-	char *cmdBeginnRawPtr	= NULL;
+	char *cmdBeginnPtr 	= NULL;
+	char *cmdEndPtr		= NULL;
 	
-	/*
-	*	Wurde als Parameter ein "NULL" Zeiger übergeben,
-	*	wird die Funktion vorzeitig beendet
-	*/
-
-	if ( inBuff == NULL || srchCmd == NULL)
+	if ( inBuff == NULL )
 	{
 		return NULL;
 	}
 
-	cmdBeginnPtr 	= strstr( inBuff , srchCmd );
-	cmdEndPtr		= strchr( inBuff , CMD_DATA_END );	      
-
-	if ( cmdEndPtr == NULL || cmdBeginnPtr == NULL)
+	if ( srchCmd == NULL )
 	{
 		return NULL;
 	}
-	
-	/*
-	*	Kommando terminieren
-	*/
-	*cmdEndPtr = '\0';		
-	
-	/*
-	*	Benutzer Parameter empfangen?
-	*/	
-	cmdBeginnRawPtr = strchr( inBuff , CMD_RAW_DATA_BEGINN );
-	if ( cmdBeginnRawPtr == NULL )
+
+	cmdBeginnPtr = strstr( inBuff , srchCmd );
+	cmdEndPtr	 = strchr( inBuff , CMD_DATA_END );	      
+
+	if ( cmdEndPtr == NULL )
 	{
-		cmdBeginnPtr[ strlen( srchCmd ) ] = '\0';
-		return cmdBeginnPtr;
+		return NULL;
 	}
+	*cmdEndPtr = '\0';
 	
-	/*
-	*	Kommandotrenner überspringen
-	*/
-	cmdBeginnRawPtr++;
-	
-	return cmdBeginnRawPtr;
+	if ( cmdBeginnPtr == NULL )
+	{
+		return NULL;
+	}
+				
+	return cmdBeginnPtr;
 }
 
-cmd_struct *getCmd		( cmd_struct __flash *tab , char *input , char *rawRX )
+const char			*cmdGet				( cmd_t *cmd , char *input )
 {
 	uint8_t i;
-	char *ptr;
+	
+	cmd_t 	*cmdPtr			= cmd;
+	char  	*cmdSearchPtr 	= NULL;
+	char  	*inputPtr		= input;
+	char	*rawPtr			= NULL;
 
-	for( i = 0 ; i < CMD_SIZE_OF_TAB ; i++ )
+	for ( i = 0 ; i < cmdPtr->tabLen ; i++ )
 	{
-		ptr = srchCmd( input , tab[i].instruction );
-		if ( ptr != NULL )
+		cmdSearchPtr = cmdSearch( inputPtr , ( char* ) cmdPtr->table->instruction );
+		if ( cmdSearchPtr != NULL )
 		{
-			strcpy( rawRX , ptr );
-			return tab + i;
+			cmdPtr->raw->paraNumb = cmdCntPara( cmdSearchPtr );
+			
+			rawPtr = strchr( cmdSearchPtr , ':' );
+			if ( rawPtr == NULL )
+			{
+				return cmdPtr->table->instruction;
+			}
+			else
+			{
+				return cmdSearchPtr;
+			}
 		}
+		cmdPtr->table++;
 	}
+	
 	return NULL;
 }
 
-int8_t	cmpCmd		( char *strOne , char *strTwo )						
+char 				*cmdGetPara 		( cmd_t *cmd , char *input , uint8_t num )		
 {
-	uint8_t strLenOne = strlen( strOne );
-	uint8_t strLenTwo = strlen( strTwo );
+	char 		*delimiter 	= NULL;
+	char 		*cmdEndPtr	= NULL;
+	const char 	*rawPtr		= NULL;
+	cmd_t 		*cmdPtr		= cmd;
 	
-	if ( strLenOne != strLenTwo )
+	uint8_t x;
+	
+	rawPtr = ( const char *) cmdGet( cmdPtr , input );
+	
+	if( rawPtr == NULL )
 	{
-		return -1;
+		return NULL;
 	}
 	
-	
-	if( strcmp( strOne , strTwo ) == 0 )
+	cmdEndPtr = strchr( rawPtr , ';' );	
+	if( cmdEndPtr == NULL )
 	{
-		return 0;
+		return  NULL;
 	}
-	else
-	{
-		return -2;
-	}
-	
-	return -3;
-}
 
-uint8_t removeChar	( char *str , uint8_t wanted )						
-{
-    char * p = NULL;
-	static uint8_t removed = 0;
+	delimiter = strchr( rawPtr , ':' ) + 1;
+	if( ( delimiter - 1 ) == NULL )
+	{
+		return  NULL;
+	}
+
+	delimiter = strtok( delimiter , CMD_RAW_PARA_DELIMITER );
+	if( delimiter == NULL )
+	{
+		return  NULL;
+	}
 	
-    while ( *str )
-    {
-        while ( *str == wanted )
-        {
-			removed++;
-            for ( p = str ; *p ; p++ )
-            {
-                *p = *( p + 1 );
-            }
-        }
-        str++;
-    }
-	return removed;
+	for ( x = 0 ; x < num || x < cmd->raw->paraNumb ; x++ )
+	{
+		delimiter = strtok( NULL , CMD_RAW_PARA_DELIMITER );			
+	}
+		
+	return delimiter; 
 }

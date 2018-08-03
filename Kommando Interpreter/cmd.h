@@ -15,14 +15,17 @@
 
 
 #include <stdint.h>
+#include <stdlib.h>
+
 
 #define CMD_SIZE_OF_TAB			7
-#define CMD_RAW_DATA_BEGINN		'#'
-#define CMD_DATA_END			'!'
+#define CMD_RAW_DATA_BEGINN		":"
+#define CMD_RAW_PARA_DELIMITER	","
+#define CMD_DATA_END			';'
 
 
 
-typedef struct
+typedef struct						
 {
 	/*
 	*	Name des Kommandos
@@ -35,20 +38,30 @@ typedef struct
 	char	instruction[15];
 			
 	/*
-	*	Funktion die beim entsprechenden
+	*	Funktion die beim entsprechenden Kommando 
+	*	ausgeführt werden soll
 	*/	
 	void*	(*fnc) (void* , void*);
 	
-}cmd_struct;
+}cmdTable_t;
 
+typedef struct						
+{
+	char 	*cmdPtr;
+	uint8_t  paraNumb;	
+}cmdRaw_t;
+cmdRaw_t raw;
 
+typedef struct						
+{
+	const 			cmdTable_t 	*table;
+	const			size_t		tabLen;
+					cmdRaw_t	*raw;
+}cmd_t;
 
-char*		srchCmd				( char *inBuff , char *srchCmd );
+		
+const char			*cmdGet				( cmd_t *cmd , char *input );					
 
-cmd_struct *getCmd				( cmd_struct *tab , char *input , char *rawRX );
-
-int8_t		cmpCmd				( char *strOne , char *strTwo );
-
-uint8_t		removeChar			( char *str , uint8_t wanted );
+char 				*cmdGetPara 		( cmd_t *cmd , char *input , uint8_t num );
 
 #endif
