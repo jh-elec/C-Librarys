@@ -10,7 +10,7 @@
 
 #include <avr/io.h>
 #include "i2cmaster.h"
-#include "DS3231.h"
+#include "ds3231.h"
 
 #ifdef UART_OUTPUT
 #include "uart.h"

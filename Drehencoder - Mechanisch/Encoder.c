@@ -12,7 +12,7 @@
 
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
-#include "Encoder.h"
+#include "encoder.h"
 
 
 volatile int8_t enc_delta;              // Drehgeberbewegung zwischen

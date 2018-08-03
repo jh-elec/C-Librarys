@@ -12,7 +12,7 @@
 #include <stdlib.h>
 
 #include "spi.h"
-#include "AD7758.h"
+#include "ad7758.h"
 #include "lcd.h"
 
 char Buffer[20];

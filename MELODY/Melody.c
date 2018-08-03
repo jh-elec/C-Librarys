@@ -10,7 +10,7 @@
 
 #include <avr/io.h>
 #include <util/delay.h>
-#include "Melody.h"
+#include "melody.h"
 
 // Set overall tempo
 long tempo = 20000;

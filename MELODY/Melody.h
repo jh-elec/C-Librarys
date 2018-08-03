@@ -5,8 +5,8 @@
  * Date:		14.02.2016
  */
 
-#ifndef MELODY_H
-#define MELODY_H
+#ifndef __MELODY_H__
+#define __MELODY_H__
 
 #include <avr/pgmspace.h>
 

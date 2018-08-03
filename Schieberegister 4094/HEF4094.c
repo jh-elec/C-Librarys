@@ -9,7 +9,7 @@
 
 #include <avr/io.h>
 #include <util/delay.h>
-#include "HEF4094.h"
+#include "hef4094.h"
 
 
 
