@@ -33,7 +33,7 @@ cmd_t cmd =
 };
 
 
-static uint8_t 		cmdCntPara			( char *cmd )									
+static uint8_t 		cmdCntPara			( char *cmd )
 {
 	uint8_t x;
 	char *cmdPtr = cmd;
@@ -52,52 +52,49 @@ static char			*cmdSearch			( char *inBuff , char *srchCmd )
 	/*
 	*	Zeiger deklarieren).
 	*/
+	char *inBuffPtr		= inBuff;
+	char *srchCmdPtr	= srchCmd;
 	char *cmdBeginnPtr 	= NULL;
 	char *cmdEndPtr		= NULL;
 	
-	if ( inBuff == NULL )
+	if ( inBuffPtr == NULL )
 	{
-		return NULL;
+		return "1";
 	}
 
-	if ( srchCmd == NULL )
+	if ( srchCmdPtr == NULL )
 	{
-		return NULL;
+		return "2";
 	}
 
-	cmdBeginnPtr = strstr( inBuff , srchCmd );
-	cmdEndPtr	 = strchr( inBuff , CMD_DATA_END );	      
+	cmdBeginnPtr = strstr( inBuffPtr , srchCmdPtr );
+	cmdEndPtr	 = strchr( inBuffPtr , CMD_DATA_END );	      
 
 	if ( cmdEndPtr == NULL )
 	{
-		return NULL;
+		return "3";
 	}
-	*cmdEndPtr = '\0';
-	
-	if ( cmdBeginnPtr == NULL )
-	{
-		return NULL;
-	}
-				
+
 	return cmdBeginnPtr;
 }
 
-const char			*cmdGet				( cmd_t *cmd , char *input )
+const char			*cmdGet				( cmd_t cmd , char *input )					
 {
 	uint8_t i;
 	
-	cmd_t 	*cmdPtr			= cmd;
+	cmd_t 	*cmdPtr			= &cmd;
 	char  	*cmdSearchPtr 	= NULL;
 	char  	*inputPtr		= input;
 	char	*rawPtr			= NULL;
 
 	for ( i = 0 ; i < cmdPtr->tabLen ; i++ )
 	{
-		cmdSearchPtr = cmdSearch( inputPtr , ( char* ) cmdPtr->table->instruction );
+		cmdSearchPtr = cmdSearch( inputPtr , ( char* ) cmdPtr->table->instruction );	
+		
 		if ( cmdSearchPtr != NULL )
 		{
 			cmdPtr->raw->paraNumb = cmdCntPara( cmdSearchPtr );
-			
+				
 			rawPtr = strchr( cmdSearchPtr , ':' );
 			if ( rawPtr == NULL )
 			{
@@ -105,7 +102,7 @@ const char			*cmdGet				( cmd_t *cmd , char *input )
 			}
 			else
 			{
-				return cmdSearchPtr;
+				return cmdSearchPtr;	
 			}
 		}
 		cmdPtr->table++;
@@ -114,16 +111,16 @@ const char			*cmdGet				( cmd_t *cmd , char *input )
 	return NULL;
 }
 
-char 				*cmdGetPara 		( cmd_t *cmd , char *input , uint8_t num )		
+char 				*cmdGetPara 		( cmd_t cmd , char *input , uint8_t num )
 {
 	char 		*delimiter 	= NULL;
 	char 		*cmdEndPtr	= NULL;
 	const char 	*rawPtr		= NULL;
-	cmd_t 		*cmdPtr		= cmd;
+	cmd_t 		*cmdPtr		= &cmd;
 	
 	uint8_t x;
 	
-	rawPtr = ( const char *) cmdGet( cmdPtr , input );
+	rawPtr = ( const char *) cmdGet( cmd , input );
 	
 	if( rawPtr == NULL )
 	{
@@ -148,10 +145,11 @@ char 				*cmdGetPara 		( cmd_t *cmd , char *input , uint8_t num )
 		return  NULL;
 	}
 	
-	for ( x = 0 ; x < num || x < cmd->raw->paraNumb ; x++ )
+	for ( x = 0 ; x < num || x < cmd.raw->paraNumb ; x++ )
 	{
 		delimiter = strtok( NULL , CMD_RAW_PARA_DELIMITER );			
 	}
 		
 	return delimiter; 
 }
+
