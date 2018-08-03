@@ -1,7 +1,7 @@
 #include <avr/interrupt.h>
 #include <stdbool.h>
 
-#include "RingBuffer.h"
+#include "ringbuff.h"
 
 
 void RingBuffer_InitBuffer(void)

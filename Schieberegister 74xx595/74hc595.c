@@ -1,6 +1,6 @@
 #include <avr/io.h>
 #include <stdlib.h>
-#include "com74hc595.h"
+#include "74hc595.h"
 
 // initialize the array
 unsigned char com74hc595[ com74hc595_SIZE ];

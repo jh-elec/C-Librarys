@@ -11,7 +11,7 @@
 */
 
 #include <avr/io.h>
-#include "tmp_102.h"
+#include "tmp102.h"
 #include "i2cmaster.h"
 
 int16_t tmp102_calc(uint16_t temp){

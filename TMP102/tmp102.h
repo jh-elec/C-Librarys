@@ -11,8 +11,8 @@
 */
 
 
-#ifndef		TMP_102_H
-#define		TMP_102_H
+#ifndef		__TMP_102_H__
+#define		__TMP_102_H__
 
 #define TMP102_ADDR	(0x49<<1)
 
