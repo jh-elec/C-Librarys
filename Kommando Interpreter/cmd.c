@@ -73,11 +73,11 @@ static char			*cmdSearch			( char *inBuff , char *srchCmd )
 	return cmdBeginnPtr;
 }
 
-const char			*cmdGet				( cmd_t cmd , char *input )					
+const char			*cmdGet				( cmd_t *cmd , char *input )					
 {
 	uint8_t i;
 	
-	cmd_t 	*cmdPtr			= &cmd;
+	cmd_t 	*cmdPtr			= cmd;
 	char  	*cmdSearchPtr 	= NULL;
 	char  	*inputPtr		= input;
 	char	*rawPtr			= NULL;
@@ -98,12 +98,12 @@ const char			*cmdGet				( cmd_t cmd , char *input )
 	return NULL;
 }
 
-char 				*cmdGetPara 		( cmd_t cmd , char *input , uint8_t num )
+char 				*cmdGetPara 		( cmd_t *cmd , char *input , uint8_t num )
 {
 	char 		*delimiter 	= NULL;
 	char 		*cmdEndPtr	= NULL;
 	const char 	*rawPtr		= NULL;
-	cmd_t 		*cmdPtr		= &cmd;
+	cmd_t 		*cmdPtr		= cmd;
 	
 	uint8_t x;
 	
@@ -132,7 +132,7 @@ char 				*cmdGetPara 		( cmd_t cmd , char *input , uint8_t num )
 		return  NULL;
 	}
 	
-	for ( x = 0 ; x < num || x < cmd.raw->paraNumb ; x++ )
+	for ( x = 0 ; x < num || x < cmd->raw->paraNumb ; x++ )
 	{
 		delimiter = strtok( NULL , CMD_RAW_PARA_DELIMITER );			
 	}
