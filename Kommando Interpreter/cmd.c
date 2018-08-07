@@ -15,39 +15,48 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "Headers/cmd.h"
+#include "cmd.h"
 
 
-const cmdTable_t cmdTab[] =	
+// const cmdTable_t cmdTab[] =
+// {
+// 	{"Relais_Handler!" 			, 	"-REL"		, 	NULL 	},
+// 
+// };
+// 
+// cmd_t cmd =
+// {
+// 	.table	= cmdTab,
+// 	.tabLen = sizeof( cmdTab ) / sizeof( *cmdTab ),
+// 	.raw 	= &raw
+// };
+
+
+static uint8_t 		cmdCntPara			( char *cmd )								
 {
-	{"Relais_Handler!" 			, 	"-REL"		, 	NULL 	},
-	{"System_Handler!" 			, 	"-SYS"		, 	NULL 	},
-	{"Eeprom_Handler!" 			, 	"-EEP"		, 	NULL 	},
-};
-
-cmd_t cmd =					
-{
-	.table	= cmdTab,
-	.tabLen = sizeof( cmdTab ) / sizeof( *cmdTab ),
-	.raw 	= &raw
-};
-
-
-static uint8_t 		cmdCntPara			( char *cmd )
-{
-	uint8_t x;
+	uint8_t x = 0;
 	char *cmdPtr = cmd;
+	char *beginnPtr = cmd;
 	
-	for ( x = 0 ; cmdPtr != NULL ;  )
+	beginnPtr = strchr( beginnPtr , ':' ); // Erster Parameter
+	if ( beginnPtr != NULL )
 	{
-		cmdPtr = strchr( cmdPtr + 1 , '.' );
+		if ( *(beginnPtr + 1 ) != ';' )
+		{
+			x++;	
+		}
+	}
+	
+	for ( ; cmdPtr != NULL ;  )
+	{
+		cmdPtr = strchr( cmdPtr + 1 , ',' ); // weitere Parameter
 		x++;
 	}
 	
 	return ( x - 1 );
 }
 
-static char			*cmdSearch			( char *inBuff , char *srchCmd )				
+static char			*cmdSearch			( char *inBuff , char *srchCmd )			
 {
 	/*
 	*	Zeiger deklarieren).
@@ -73,46 +82,86 @@ static char			*cmdSearch			( char *inBuff , char *srchCmd )
 	return cmdBeginnPtr;
 }
 
-const char			*cmdGet				( cmd_t *cmd , char *input )					
+static int8_t		cmdGetIndex			( cmd_t *cmd , char *inBuff )				
 {
 	uint8_t i;
 	
 	cmd_t 	*cmdPtr			= cmd;
 	char  	*cmdSearchPtr 	= NULL;
-	char  	*inputPtr		= input;
-	char	*rawPtr			= NULL;
+	char	*inputPtr		= inBuff;
 
 	for ( i = 0 ; i < cmdPtr->tabLen ; i++ )
 	{
-		cmdSearchPtr = cmdSearch( inputPtr , ( char* ) cmdPtr->table->instruction );	
+		cmdSearchPtr = cmdSearch( inputPtr , ( char* ) cmdPtr->table[i].instruction );
 		
 		if ( cmdSearchPtr != NULL )
 		{
-			cmdPtr->raw->paraNumb = cmdCntPara( cmdSearchPtr );
-			return cmdSearchPtr;		
+			return i;
 		}
-		
-		cmdPtr->table++;
+	}
+	
+	return -1;	
+}
+
+
+const char			*cmdGetInstruction	( cmd_t *cmd , char *input )				
+{
+	int8_t i = cmdGetIndex( cmd , input );
+	
+	if ( i != (int8_t) -1 )
+	{
+		return cmd->table[i].instruction;
+	}
+	
+	return NULL;
+}
+
+const char			*cmdGetName			( cmd_t *cmd , char *input )				
+{
+	int8_t ret = cmdGetIndex( cmd , input );
+	
+	if ( ret != (int8_t) -1 )
+	{
+		return cmd->table[ret].name;
 	}
 		
 	return NULL;
 }
 
-char 				*cmdGetPara 		( cmd_t *cmd , char *input , uint8_t num )
+void				cmdGetFunc			( cmd_t *cmd , char *input )				
+{
+	int8_t ret = cmdGetIndex( cmd , input );
+	if ( ret != (int8_t) -1 )
+	{
+		cmd->table[ret].fnc( NULL , NULL );
+	}
+}
+
+char 				*cmdGetPara 		( cmd_t *cmd , char *input , uint8_t num )	
 {
 	char 		*delimiter 	= NULL;
 	char 		*cmdEndPtr	= NULL;
 	const char 	*rawPtr		= NULL;
-	cmd_t 		*cmdPtr		= cmd;
+	
+	static char buff[20] = "";
 	
 	uint8_t x;
 	
-	rawPtr = ( const char *) cmdGet( cmd , input );
+	for ( x = 0 ; x < cmd->tabLen ; x++ )
+	{
+		rawPtr = ( const char *) cmdSearch( input , ( char * ) cmd->table[x].instruction );
+		if ( rawPtr != NULL )
+		{
+			break;
+		}
+	}
 	
 	if( rawPtr == NULL )
 	{
 		return NULL;
 	}
+	
+	cmd->raw->paraNumb = cmdCntPara( ( char * ) rawPtr );
 	
 	cmdEndPtr = strchr( rawPtr , ';' );	
 	if( cmdEndPtr == NULL )
@@ -136,7 +185,11 @@ char 				*cmdGetPara 		( cmd_t *cmd , char *input , uint8_t num )
 	{
 		delimiter = strtok( NULL , CMD_RAW_PARA_DELIMITER );			
 	}
-		
-	return delimiter; 
+	
+	strcpy( buff , delimiter );
+	char *ptr = strchr( buff , ';' );
+	*ptr = '\0';
+	
+	return buff; 
 }
 
