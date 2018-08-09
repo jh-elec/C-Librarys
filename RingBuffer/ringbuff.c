@@ -1,100 +1,58 @@
-#include <avr/interrupt.h>
-#include <stdbool.h>
 
+#include <stdbool.h>
 #include "ringbuff.h"
 
 
-void RingBuffer_InitBuffer(void)
+void 		ringBufferinit				( void )
 {
-	uint8_t int_reg = SREG;
-	cli();
-	
-	RingBufferInfo.In  = 0;
-	RingBufferInfo.Out = 0;
-	RingBufferInfo.Size = RBUFSIZE;
-	RingBufferInfo.Count = 0;
-	
-	SREG = int_reg;	
+	ringBuffer.in		= 0;
+	ringBuffer.out 		= 0;
+	ringBuffer.size 	= RBUFsize;
+	ringBuffer.count 	= 0;
 }
 
-uint16_t RingBuffer_GetCount(void)
+uint16_t 	ringBufferGetcount			( void )
 {
-	uint8_t Count;
-	
-	uint8_t int_reg = SREG;
-	cli();
-	Count = RingBufferInfo.Count;
-	SREG = int_reg;
-	
-	return Count;
+	return ringBuffer.count;	
 }
 
-uint16_t RingBuffer_GetFreeCount(void)
+uint16_t 	ringBufferGetFreecount		( void )
 {
-	
-	return (RingBufferInfo.Size - RingBuffer_GetCount());
-	
+	return (ringBuffer.size - ringBufferGetcount());
 }
 
-bool RingBuffer_IsEmpty(void)
+bool 		ringBufferIsEmpty			( void )
 {
-	return (RingBuffer_GetCount() == 0);
+	return ( ringBufferGetcount() == 0 );
 }
 
-bool RingBuffer_IsFull(void)
+bool 		ringBufferIsFull			( void )
 {
-	return (RingBuffer_GetCount() == RingBufferInfo.Size);	
+	return ( ringBufferGetcount() == ringBuffer.size );	
 }
 
-void RingBuffer_Insert(CANMSG_t CAN_MESSAGE)
+void 		ringBufferinsert			( char data )
 {
-	RingBuffer[RingBufferInfo.In].Message_ID = CAN_MESSAGE.Message_ID; // contains actual id from message x
-	RingBuffer[RingBufferInfo.In].DataLength = CAN_MESSAGE.DataLength; // contains actual data length from message x
+	ringBuffer.buff[ringBuffer.in++];
 	
-	/* store actual data from message x */
-	for (uint8_t x = 0 ; x < 8 ; x++)
+	if (ringBuffer.in == ringBuffer.size)
 	{
-		RingBuffer[RingBufferInfo.In].Data[x] = CAN_MESSAGE.Data[x];
+		ringBuffer.in = 0;
 	}
 	
-	RingBufferInfo.In++;
-	
-	if (RingBufferInfo.In == RingBufferInfo.Size)
-	RingBufferInfo.In = 0;
-	
-	uint8_t int_reg = SREG;
-	cli();
-	
-	RingBufferInfo.Count++;
-	
-	SREG = int_reg;
+	ringBuffer.count++;
 }
 
-void RingBuffer_Remove(CANMSG_t *CAN_STRUCT)
+void 		ringBufferRemove			( char data )
 {
-	uint8_t int_reg = SREG;
-	cli();
+	ringBuffer.out++;
+	if ( ringBuffer.out == ringBuffer.size )
+	ringBuffer.out = 0;
 	
-	// Diesen Block hier anpassen
-	(*CAN_STRUCT).Message_ID = RingBuffer[RingBufferInfo.Out].Message_ID;
-	(*CAN_STRUCT).DataLength = RingBuffer[RingBufferInfo.Out].DataLength;
-	
-	for (uint8_t i = 0 ; i < 8 ; i++)
-	{
-		(*CAN_STRUCT).Data[i] = RingBuffer[RingBufferInfo.Out].Data[i];
-	} 
-	// Block Ende
-	
-	RingBufferInfo.Out++;
-	if (RingBufferInfo.Out == RingBufferInfo.Size)
-	RingBufferInfo.Out = 0;
-	
-	RingBufferInfo.Count--;
-	SREG = int_reg;
-	
+	ringBuffer.count--;
 }
 
-uint8_t RingBuffer_Peek(void)
+uint8_t 	ringBufferPeek				( void )
 {
-	return (RingBuffer[RingBufferInfo.Out].Data[0]);
+	return ( ringBuff.buff[ringBuffer.out] );
 }
