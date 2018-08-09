@@ -17,9 +17,6 @@
 #define VERSION_MAJOR  		1
 #define VERSION_MINOR		0
 
-#define FEHLERKORREKTUR		0
-
-
 
 
 #if (VERSION_MAJOR >= '0' && VERSION_MAJOR <= '9')
