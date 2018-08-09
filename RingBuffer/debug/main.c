@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define RBUFsize		256
+#define RBUFsize		10
 
 /* RinG BUFFER */
 typedef struct
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
 {
 	ringBufferInit();
 	
-	char stream[] = "Serial Input"; // Eingangspuffer
+	char stream[] = "abcdefghijklm"; // Eingangspuffer
 	char *ptr = stream; // Zeiger auf den Eingangspuffer
 	
 	

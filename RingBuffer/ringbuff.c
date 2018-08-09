@@ -1,9 +1,11 @@
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
 #include <stdbool.h>
-#include "ringbuff.h"
 
 
-void 		ringBufferinit				( void )
+
+void 		ringBufferInit				( void )
 {
 	ringBuffer.in		= 0;
 	ringBuffer.out 		= 0;
@@ -11,29 +13,29 @@ void 		ringBufferinit				( void )
 	ringBuffer.count 	= 0;
 }
 
-uint16_t 	ringBufferGetcount			( void )
+uint16_t 	ringBufferGetCount			( void )
 {
 	return ringBuffer.count;	
 }
 
-uint16_t 	ringBufferGetFreecount		( void )
+uint16_t 	ringBufferGetFreeCount		( void )
 {
-	return (ringBuffer.size - ringBufferGetcount());
+	return ( ringBuffer.size - ringBufferGetCount() );
 }
 
 bool 		ringBufferIsEmpty			( void )
 {
-	return ( ringBufferGetcount() == 0 );
+	return ( ringBufferGetCount() == 0 );
 }
 
 bool 		ringBufferIsFull			( void )
 {
-	return ( ringBufferGetcount() == ringBuffer.size );	
+	return ( ringBufferGetCount() == ringBuffer.size );	
 }
 
-void 		ringBufferinsert			( char data )
+void 		ringBufferInsert			( char data )
 {
-	ringBuffer.buff[ringBuffer.in++];
+	ringBuffer.buff[ringBuffer.in++] = data;
 	
 	if (ringBuffer.in == ringBuffer.size)
 	{
@@ -43,16 +45,22 @@ void 		ringBufferinsert			( char data )
 	ringBuffer.count++;
 }
 
-void 		ringBufferRemove			( char data )
+char 		ringBufferGet				( void )
 {
+	uint8_t ret = ringBuffer.buff[ringBuffer.out];
+
 	ringBuffer.out++;
 	if ( ringBuffer.out == ringBuffer.size )
-	ringBuffer.out = 0;
+	{
+		ringBuffer.out = 0;
+	}
 	
 	ringBuffer.count--;
+	
+	return ret;
 }
 
 uint8_t 	ringBufferPeek				( void )
 {
-	return ( ringBuff.buff[ringBuffer.out] );
+	return ( ringBuffer.buff[ringBuffer.out] );
 }

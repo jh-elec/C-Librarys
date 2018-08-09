@@ -10,39 +10,42 @@
 *
 */
 
-#ifndef _XMEGA_USART_H
-#define _XMEGA_USART_H
+#ifndef __XMEGA_USART_H__
+#define __XMEGA_USART_H__
 
 #ifndef F_CPU
 	#define F_CPU	2000000
 #endif
 
-#define BAUD(BAUD_)		(((F_CPU/(16UL*BAUD_)))-1)
+#define BAUD( BAUD_ )	( ( ( F_CPU / ( 16UL * BAUD_ ) ) ) - 1 )
 
 #define USARTxx			USARTC0
 #define USART_PORT		PORTC
 #define USART_TX_bp		3
 #define USART_RX_bp		2
 
-/* usart_init
+#define USART_RX_INT	USARTC0_RXC_vect
+#define USART_TX_INT	USARTC0_TXC_vect
+
+/* usartInit
 * @para             -> *USART = Usart Unit, Baudrate = Baudrate for Transfere
 * @return           -> -none
 * @description      -> -none
 */
-void usart_init(USART_t *USART, uint16_t Baudrate);
+void usartInit ( USART_t *usart , uint16_t baud );
 
 /* usart_c
 * @para             -> s = Character to wish send
 * @return           -> -none
 * @description      -> -none
 */
-void usart_c(char s);
+void usartChar ( char c );
 
-/* usart_str
+/* usartStr
 * @para             -> *str = String to wish send
 * @return           -> -none
 * @description      -> -none
 */
-void usart_str(char *str);
+void usartStr ( char *str );
 
 #endif
