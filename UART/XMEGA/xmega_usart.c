@@ -16,48 +16,52 @@
 
 
 
-void usart_init(USART_t *USART, uint16_t Baudrate)
+void usartInit(USART_t *usart , uint16_t baud )
 {
-	USART->BAUDCTRLB = 0;
-	USART->BAUDCTRLA = BAUD(Baudrate);
-	
-	USART->CTRLA	 = USART_RXCINTLVL_HI_gc;
-	USART->CTRLB	 = USART_TXEN_bm | USART_RXEN_bm;
-	USART->CTRLC	 = USART_CHSIZE_8BIT_gc;
-	
-	USART_PORT.DIRSET	= (1<<USART_TX_bp);
-	USART_PORT.DIRCLR	= (1<<USART_RX_bp);
-}
-
-void usart_c(char s){
-	
-	while (!(USARTxx.STATUS & USART_DREIF_bm));
-	USARTxx.DATA = s;
-}
-
-void usart_str(char *str){
-	
-	while(*str)
+	if ( usart == NULL )
 	{
-		usart_c(*str++);
+		return;
+	}
+	
+	usart->BAUDCTRLB = 0;
+	usart->BAUDCTRLA = BAUD( baud );
+	
+	usart->CTRLA	 = USART_RXCINTLVL_HI_gc;
+	usart->CTRLB	 = USART_TXEN_bm | USART_RXEN_bm;
+	usart->CTRLC	 = USART_CHSIZE_8BIT_gc;
+	
+	USART_PORT.DIRSET	= ( 1 << USART_TX_bp );
+	USART_PORT.DIRCLR	= ( 1 << USART_RX_bp );
+
+	PMIC.CTRL = PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;	
+
+}
+
+void usartChar( char c )
+{
+	
+	while ( ! ( USARTxx.STATUS & USART_DREIF_bm ) );
+	USARTxx.DATA = c;
+}
+
+void uartStr( char *str ) 
+{	
+	while( *str )
+	{
+		usartChar( *str++ );
 	}
 }
 
 
 
-
-ISR(USARTC0_RXC_vect){} // }
-ISR(USARTC0_TXC_vect){} // } Interrupt Vectors USARTC0
-
-ISR(USARTC1_RXC_vect){} // }
-ISR(USARTC1_TXC_vect){} // } Interrupt Vectors USARTC1
-
-ISR(USARTD0_RXC_vect){} // } 
-ISR(USARTD0_TXC_vect){} // } Interrupt Vectors USARTD0
+ISR( USART_RX_INT )
+{
 	
-ISR(USARTD1_RXC_vect){} // } 
-ISR(USARTD1_TXC_vect){} // } Interrupt Vectors USARTD1
+}
+
+ISR( USART_TX_INT )
+{
 	
-ISR(USARTE0_RXC_vect){} // }
-ISR(USARTE0_TXC_vect){} // } Interrupt Vectors USARTE0
+}
+
 	
