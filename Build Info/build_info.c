@@ -18,7 +18,7 @@
 
 char *buildVer(void)
 {
-	static char build[] = "00000000000000000";
+	static char build[17];
 	
 	/*
 	*	major and minor version
@@ -51,43 +51,73 @@ char *buildVer(void)
 	*	month
 	*/
 	if(__DATE__[0] == 'J' && __DATE__[1] == 'a')
-	build[14] = '1'; // Januar
+	{
+		build[14] = '0'; // Januar
+		build[15] = '1'; // Januar		
+	}
 
 	if(__DATE__[0] == 'F')
-	build[14] = '2'; // Februar
-	
-	if(__DATE__[0] == 'M' && __DATE__[1] == 'a' && __DATE__[2] == 'r')
-	build[14] = '3'; // März
-	
-	if(__DATE__[0] == 'A' && __DATE__[1] == 'p')
-	build[14] = '4'; // April
-	
-	if(__DATE__[0] == 'M' && __DATE__[1] == 'a' && __DATE__[2] == 'y')
-	build[14] = '5'; // Mai
-	
-	if(__DATE__[0] == 'J' && __DATE__[1] == 'u' && __DATE__[2] == 'n')
-	build[14] = '6'; // Juni
-	
-	if(__DATE__[0] == 'J' && __DATE__[1] == 'u' && __DATE__[2] == 'l')
-	build[14] = '7'; // Juli
-	
-	if(__DATE__[0] == 'A' && __DATE__[1] == 'u')
-	build[14] = '8'; // August
-	
-	if(__DATE__[0] == 'S')
-	build[14] = '9'; // September
+	{
+		build[14] = '0'; // Februar
+		build[15] = '2'; // Februar		
+	}
 
-	if(__DATE__[0] == 'O'){
+	if(__DATE__[0] == 'M' && __DATE__[1] == 'a' && __DATE__[2] == 'r')
+	{
+		build[14] = '0'; // März
+		build[15] = '3'; // März		
+	}
+
+	if(__DATE__[0] == 'A' && __DATE__[1] == 'p')
+	{
+		build[14] = '0'; // April
+		build[15] = '4'; // April		
+	}
+
+	if(__DATE__[0] == 'M' && __DATE__[1] == 'a' && __DATE__[2] == 'y')
+	{
+		build[14] = '0'; // Mai	
+		build[15] = '5'; // Mai		
+	}
+
+	if(__DATE__[0] == 'J' && __DATE__[1] == 'u' && __DATE__[2] == 'n')
+	{
+		build[14] = '0'; // Juni	
+		build[15] = '6'; // Juni		
+	}
+
+	if(__DATE__[0] == 'J' && __DATE__[1] == 'u' && __DATE__[2] == 'l')
+	{
+		build[14] = '0'; // Juli	
+		build[15] = '7'; // Juli		
+	}
+
+	if(__DATE__[0] == 'A' && __DATE__[1] == 'u')
+	{
+		build[14] = '0'; // August	
+		build[15] = '8'; // August	
+	}
+
+	if(__DATE__[0] == 'S')
+	{
+		build[14] = '0'; // September	
+		build[15] = '9'; // September		
+	}
+
+	if(__DATE__[0] == 'O')
+	{
 		build[14] = '1';
 		build[15] = '0'; // Oktober
 	}
 
-	if(__DATE__[0] == 'N'){
+	if(__DATE__[0] == 'N')
+	{
 		build[14] = '1';
 		build[15] = '1'; // November
 	}
 	
-	if(__DATE__[0] == 'D'){
+	if(__DATE__[0] == 'D')
+	{
 		build[14] = '1';
 		build[15] = '2'; // Dezember
 	}
