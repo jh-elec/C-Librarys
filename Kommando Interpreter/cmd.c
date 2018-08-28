@@ -94,15 +94,14 @@ uint8_t 			cmdCntPara			( char *stream )
 			x++;
 		}
 	}
-
-
+	
 	for ( ; cmdPtr != NULL ;  )
 	{
 		cmdPtr = strchr( cmdPtr + 1 , CMD_RAW_PARA_DELIMITER[0] ); // weitere Parameter
 
 		if ( cmdPtr != NULL )
 		{
-			if ( *( cmdPtr + 1 ) != '[' && *( cmdPtr + 1 ) != CMD_DATA_END && *( cmdPtr + 1 ) != CMD_RAW_PARA_DELIMITER[0] )
+			if ( *( cmdPtr + 1 ) != CMD_DATA_END && *( cmdPtr + 1 ) != CMD_RAW_PARA_DELIMITER[0] )
 			{
 				x++;
 			}
@@ -177,7 +176,7 @@ char 				*cmdGetPara 		( char *out , char *in , uint8_t num )
 	char *streamPtr = in;
 
 	streamPtr = strchr( in , CMD_RAW_DATA_BEGINN[0] ) + 1;
-    if ( *streamPtr == CMD_DATA_END || *streamPtr == CMD_RAW_PARA_DELIMITER[0] )
+    if ( *streamPtr == CMD_DATA_END || *streamPtr == CMD_RAW_PARA_DELIMITER[0] || streamPtr == NULL )
     {
         return NULL;
     }
@@ -195,7 +194,7 @@ char 				*cmdGetPara 		( char *out , char *in , uint8_t num )
 	char *outPtr = out;
 	while( *streamPtr != '\0' && *streamPtr != CMD_RAW_PARA_DELIMITER[0] && *streamPtr != CMD_DATA_END )
 	{
-		if ( *( streamPtr )  == CMD_CRC_BEGINN[0] )
+		if ( *( streamPtr )  == CMD_CRC_BEGINN )
 		{
 			return NULL;
 		}
@@ -210,28 +209,56 @@ char 				*cmdGetCRC 			( char *out , char *stream )
 	char *crcPtr = stream;
 	char *outPtr = out;
 
-	crcPtr = strchr( crcPtr , CMD_CRC_BEGINN[0] ) + 1;
+	crcPtr = strchr( crcPtr , ( char ) CMD_DATA_END );
+	if ( crcPtr == NULL )
+	{
+		return NULL;
+	}
+	
+	crcPtr = strchr( crcPtr , ( char ) CMD_CRC_BEGINN );
+	if ( crcPtr != NULL && *( crcPtr + 1 ) != '\0' )
+	{
+		return crcPtr + 1;
+	}
 
-	if ( ( crcPtr - 1 ) == NULL || *( crcPtr - 2 ) != ',' )
+	return NULL;
+}
+
+char				*cmdGetCmdStr		( char *out , char *stream )
+{
+	uint8_t i;
+
+	cmd_t	*cmdPtr			= &cmd;
+	char	*outPtr			= out;
+	char  	*cmdSearchPtr 	= NULL;
+	char	*inputPtr		= stream;
+
+	if ( cmdGetCRC( out , stream ) == NULL )
 	{
 		return NULL;
 	}
 
-	while( *crcPtr != '\0' && *crcPtr != CMD_DATA_END && *crcPtr != CMD_CRC_END[0] )
+	for ( i = 0 ; i < cmdPtr->tabLen ; i++ )
 	{
-		*outPtr++ = *crcPtr++;
+		cmdSearchPtr = cmdSearch( inputPtr , ( char* ) cmdPtr->table[i].instruction );
+		if ( cmdSearchPtr != NULL )
+		{
+			while( *cmdSearchPtr != '#' )
+			{
+				*out++ = *cmdSearchPtr++;
+			}
+			
+			return outPtr;
+		}
 	}
-
-	return out;
+	
+	return NULL;	
 }
 
 char				*cmdHelp			( char *helpBuff )
 {
-
-	memset( helpBuff , 0 , strlen( helpBuff ) );
-
-	strcpy( ( char * ) helpBuff , "Kommando Syntax: " );
-	strcat( ( char * ) helpBuff , "[KOMMANDO WORD][PARAMETER START][PARAMETER][KOMMANDO ENDE]\r\n" );
+ 	strcpy( ( char * ) helpBuff , "Kommando Syntax: " );
+ 	strcat( ( char * ) helpBuff , "[KOMMANDO WORD][PARAMETER START][PARAMETER][KOMMANDO ENDE]\r\n" );
 
 	strcat( ( char * ) helpBuff , "'" );
 	strcat( ( char * ) helpBuff , CMD_RAW_DATA_BEGINN );

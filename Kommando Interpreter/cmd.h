@@ -23,9 +23,8 @@
 #define CMD_RAW_DATA_BEGINN		":"
 #define CMD_RAW_PARA_DELIMITER	","
 #define CMD_DATA_END			';'
-#define CMD_CRC_BEGINN			"["
-#define CMD_CRC_END             "]"
-
+#define CMD_CRC_BEGINN			'#'
+#define CMD_CRC_END				'\0'
 
 typedef struct
 {
@@ -81,6 +80,8 @@ void				*cmdGetFunc			( char *input );
 char 				*cmdGetPara 		( char *out , char *in , uint8_t num );
 
 char 				*cmdGetCRC 			( char *out , char *stream );
+
+char				*cmdGetCmdStr		( char *out , char *stream );
 
 char				*cmdHelp			( char *helpBuff );
 
