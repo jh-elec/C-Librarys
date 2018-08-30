@@ -17,6 +17,11 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+/*	DMA Adresse Makro
+*	Umwandlung vom "C Pointer" zum "DMA Pointer"
+*/
+typedef uint32_t dmaaddr_t;
+#define CPTR2DMA(CPTR)				( ( dmaaddr_t ) ( uintptr_t )( CPTR ) )
 
 
 enum SrcReload_enum 

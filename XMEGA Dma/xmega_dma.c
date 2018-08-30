@@ -76,9 +76,9 @@ void		dmaSetBuffer					( uint8_t channel )
 {
 	if ( dma.autoDestBuffer & _BV( channel ) ) 
 	{
-		CHANNEL(channel).DESTADDR0 = *dma.buffer[ channel     ];
- 		CHANNEL(channel).DESTADDR1 = *dma.buffer[ channel + 1 ];
- 		CHANNEL(channel).DESTADDR2 = *dma.buffer[ channel + 2 ];
+		CHANNEL(channel).DESTADDR0 = (uintptr_t)dma.buffer[ channel     ];
+ 		CHANNEL(channel).DESTADDR1 = (uintptr_t)dma.buffer[ channel + 1 ];
+ 		CHANNEL(channel).DESTADDR2 = (uintptr_t)dma.buffer[ channel + 2 ];
 	}
 }
 
@@ -143,9 +143,11 @@ void		dmaUseChannel									( uint8_t channel , uint8_t use )
 
 void		dmsSetSourceChannel								( uint8_t channel , void *source )			
 {	
-	CHANNEL(channel).SRCADDR0 = *(uint8_t*)( source         & 0xFF );
-	CHANNEL(channel).SRCADDR1 = *(uint8_t*)( source >> 8  ) & 0xFF ));
-	CHANNEL(channel).SRCADDR2 = ( ( *source >> 16 ) & 0xFF );
+	dmaaddr_t addr = CPTR2DMA( source );
+	
+	CHANNEL(channel).SRCADDR0 = addr;
+	CHANNEL(channel).SRCADDR1 = addr >> 8;
+	CHANNEL(channel).SRCADDR2 = addr >> 16;
 }
 
 void		dmaSetSourceChannelDirection					( uint8_t channel , void *source , enum SrcDirection_enum direction , enum SrcReload_enum mode ) 
@@ -155,17 +157,21 @@ void		dmaSetSourceChannelDirection					( uint8_t channel , void *source , enum S
 
 void		dmaSetSourceChannelDirectionDoublePuffering		( uint8_t channel , void *source1 , void *source2 , enum SrcDirection_enum direction , enum SrcReload_enum mode ) 
 {
+	dmaaddr_t addr[2];
+	addr[0] = CPTR2DMA( source1 );
+	addr[1] = CPTR2DMA( source2 );
+	
 	if ( DOUBLE_BUFFERED( channel ) ) 
 	{
 		channel &= ~1;
 
-		CHANNEL(channel).SRCADDR0		= *(uint8_t*)source1 & 0xFF;
-		CHANNEL(channel).SRCADDR1		= *(uint8_t*)( source1 >> 8  ) & 0xFF;
-		CHANNEL(channel).SRCADDR2		= ( *source1 >> 16 ) & 0xFF;
+		CHANNEL(channel).SRCADDR0		= addr[0];
+		CHANNEL(channel).SRCADDR1		= addr[0] >> 8;
+		CHANNEL(channel).SRCADDR2		= addr[0] >> 16;
 		
-		CHANNEL(channel + 1).SRCADDR0	= *source2 & 0xFF;
-		CHANNEL(channel + 1).SRCADDR1	= ( *source2 >> 8  ) & 0xFF;
-		CHANNEL(channel + 1).SRCADDR2	= ( *source2 >> 16 ) & 0xFF;
+		CHANNEL(channel + 1).SRCADDR0	= addr[1];
+		CHANNEL(channel + 1).SRCADDR1	= addr[1] >> 8;
+		CHANNEL(channel + 1).SRCADDR2	= addr[1] >> 16;
 
 		CHANNEL(channel).ADDRCTRL = (CHANNEL(channel).ADDRCTRL & ~SrcDirection_bm) | direction;
 		CHANNEL(channel + 1).ADDRCTRL = (CHANNEL(channel + 1).ADDRCTRL & ~SrcDirection_bm) | direction;
@@ -176,9 +182,9 @@ void		dmaSetSourceChannelDirectionDoublePuffering		( uint8_t channel , void *sou
 	} 
 	else 
 	{
-		CHANNEL(channel).SRCADDR0 = *source1 & 0xFF;
-		CHANNEL(channel).SRCADDR1 = (*source1 >> 8)  & 0xFF;
-		CHANNEL(channel).SRCADDR2 = (*source1 >> 16) & 0xFF;
+		CHANNEL(channel).SRCADDR0 = addr[0];
+		CHANNEL(channel).SRCADDR1 = addr[1] >> 8;
+		CHANNEL(channel).SRCADDR2 = 0;
 		
 		CHANNEL(channel).ADDRCTRL = (CHANNEL(channel).ADDRCTRL & ~SrcReload_bm) | mode;
 		CHANNEL(channel).ADDRCTRL = (CHANNEL(channel).ADDRCTRL & ~SrcDirection_bm) | direction;
@@ -216,13 +222,15 @@ void		dmaSetSourceReload								( uint8_t channel , enum SrcReload_enum mode )
 
 void		*dmaSetManualDestination						( uint8_t channel , void *destination )					
 {
+	dmaaddr_t addr = CPTR2DMA( destination );
+	
 	if ( destination )
 	{
 		dma.autoDestBuffer &= ~_BV(channel);
 		dmaUpdateAutoBuffer( channel , dma.blockSizes[channel] );
-		CHANNEL(channel).DESTADDR0 = *destination & 0xFF;
-		CHANNEL(channel).DESTADDR1 = ( *destination >> 8 )  & 0xFF;
-		CHANNEL(channel).DESTADDR2 = ( *destination >> 16 ) & 0xFF;
+		CHANNEL(channel).DESTADDR0 = addr;
+		CHANNEL(channel).DESTADDR1 = addr >> 8;
+		CHANNEL(channel).DESTADDR2 = addr >> 16;
 		return destination;
 
 	} 
@@ -254,6 +262,10 @@ void		*dmaSetDestination2								( uint8_t channel , void *destination, enum Des
 
 void		dmaSetDestination3				( uint8_t channel , void *destination1, void *destination2, enum DestDirection_enum direction, enum DestReload_enum mode) 
 {
+	dmaaddr_t addr[2];
+	addr[0] = CPTR2DMA( destination1 );
+	addr[1] = CPTR2DMA( destination2 );
+	
 	if ( DOUBLE_BUFFERED( channel ) ) 
 	{
 		channel &= ~1;
@@ -267,9 +279,9 @@ void		dmaSetDestination3				( uint8_t channel , void *destination1, void *destin
 		{
 			dma.autoDestBuffer &= ~_BV(channel);
 			dmaUpdateAutoBuffer( channel , dma.blockSizes[channel] );
-			CHANNEL(channel).DESTADDR0 = ( *destination1 & 0xFF );
-			CHANNEL(channel).DESTADDR1 = ( *destination1 >> 8  ) & 0xFF;
-			CHANNEL(channel).DESTADDR2 = ( *destination1 >> 16 ) & 0xFF;
+			CHANNEL(channel).DESTADDR0 = addr[0];
+			CHANNEL(channel).DESTADDR1 = addr[0] >> 8;
+			CHANNEL(channel).DESTADDR2 = addr[0] >> 16;
 		} 
 		else 
 		{
@@ -286,9 +298,9 @@ void		dmaSetDestination3				( uint8_t channel , void *destination1, void *destin
 			
 			dmaUpdateAutoBuffer( channel + 1 , dma.blockSizes[channel + 1] );
 			
-			CHANNEL(channel + 1).DESTADDR0 = *destination2 & 0xFF;
-			CHANNEL(channel + 1).DESTADDR1 = ( *destination2 >> 8  ) & 0xFF;
-			CHANNEL(channel + 1).DESTADDR2 = ( *destination2 >> 16 ) & 0xFF;
+			CHANNEL(channel + 1).DESTADDR0 = addr[1];
+			CHANNEL(channel + 1).DESTADDR1 = addr[1] >> 8;
+			CHANNEL(channel + 1).DESTADDR2 = addr[1] >> 16;
 		} 
 		else 
 		{
@@ -300,7 +312,7 @@ void		dmaSetDestination3				( uint8_t channel , void *destination1, void *destin
 		}
 	} 
 	else 
-	{
+	{	
 		CHANNEL(channel).ADDRCTRL = (CHANNEL(channel).ADDRCTRL & ~DestDirection_bm) | direction;
 		CHANNEL(channel).ADDRCTRL = (CHANNEL(channel).ADDRCTRL & ~DestReload_bm) | mode;
 
@@ -308,9 +320,9 @@ void		dmaSetDestination3				( uint8_t channel , void *destination1, void *destin
 		{
 			dma.autoDestBuffer &= ~_BV(channel);
 			dmaUpdateAutoBuffer( channel, dma.blockSizes[channel] );
-			CHANNEL(channel).DESTADDR0 = *destination1 & 0xFF;
-			CHANNEL(channel).DESTADDR1 = ( *destination1 >> 8  ) & 0xFF;
-			CHANNEL(channel).DESTADDR2 = ( *destination1 >> 16 ) & 0xFF;
+			CHANNEL(channel).DESTADDR0 = addr[0];
+			CHANNEL(channel).DESTADDR1 = addr[0] >> 8;
+			CHANNEL(channel).DESTADDR2 = addr[0] >> 16;
 		} 
 		else 
 		{
@@ -518,7 +530,7 @@ bool		dmaFillMemory					( void *destination , uint16_t size , uint8_t byte )
 	dmaEnableChannel		( channel );
 	dmaTrigger				( channel );
 
-	while ( ! dmaIsTransactionComplete( channel ) );
+	while ( ! dmaIsTransactionComplete( channel ) ){};
 	dmaUseChannel( channel , false );
 
 	return true;
