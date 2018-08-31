@@ -17,11 +17,17 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-/*	DMA Adresse Makro
+/*	DMA Adress - Makro 
 *	Umwandlung vom "C Pointer" zum "DMA Pointer"
 */
-typedef uint32_t dmaaddr_t;
-#define CPTR2DMA(CPTR)				( ( dmaaddr_t ) ( uintptr_t )( CPTR ) )
+typedef uint32_t	dmaaddr_t;
+typedef uint8_t		*dmabuff_t;
+
+#define CPTR2DMA(CPTR)						( ( dmaaddr_t ) ( uintptr_t )( CPTR ) )
+
+#define DOUBLE_BUFFERED(channel)			( dma.doubleBuffered & _BV ( ( channel ) >> 1 ) )
+#define CHANNEL(channel)					( ( ( DMA_CH_t * ) &DMA.CH0 )[channel])
+
 
 
 enum SrcReload_enum 
@@ -67,15 +73,16 @@ enum BurstLength_enum
 	BurstLength_bm = BurstLength1Byte | BurstLength2Byte | BurstLength4Byte | BurstLength8Byte
 };
 
-typedef struct
+typedef struct 
 {
 	uint8_t		usedChannels;
 	uint8_t		doubleBuffered;
 	uint8_t		autoDestBuffer;
 	uint16_t	blockSizes[4];
-	uint8_t	    *buffer[4];
+	dmabuff_t	buffer[4];
 }dma_t;
 extern dma_t dma;
+
 
 static inline void dmaSetChannel( uint8_t channel )
 {
@@ -83,60 +90,62 @@ static inline void dmaSetChannel( uint8_t channel )
 }
 
 
-uint8_t*	dmaUpdateAutoBuffer								( uint8_t channel , uint16_t blockSize );	
+uint8_t*	dmaUpdateAutoBuffer			( uint8_t channel , uint16_t blockSize );	
 
-void		dmaSetBuffer									( uint8_t channel );							
+void		dmaSetBuffer				( uint8_t channel );							
 
-void		dmaReset										( void );									
+void		dmaReset					( void );									
 
-void		dmaSetBlockSize									( uint8_t channel , uint16_t blockSize );	
+void		dmaSetBlockSize				( uint8_t channel , uint16_t blockSize );	
 
-void		dmaUseChannel									( uint8_t channel , uint8_t use );			
+void		dmaUseChannel				( uint8_t channel , uint8_t use );			
 
-void		dmsSetSourceChannel								( uint8_t channel , void *source );			
+void		dmaSetSrcCh					( uint8_t channel , void *source );			
 
-void		dmaSetSourceChannelDirection					( uint8_t channel , void *source , enum SrcDirection_enum direction , enum SrcReload_enum mode ); 
+void		dmaSetSrcChDir				( uint8_t channel , void *source , enum SrcDirection_enum direction , enum SrcReload_enum mode ); 
 
-void		dmaSetSourceChannelDirectionDoublePuffering		( uint8_t channel , void *source1 , void *source2 , enum SrcDirection_enum direction , enum SrcReload_enum mode ); 
+void		dmaSetSrcChDirDblBuff		( uint8_t channel , void *source1 , void *source2 , enum SrcDirection_enum direction , enum SrcReload_enum mode ); 
 
-void		dmaSetSourceDirection							( uint8_t channel , enum SrcDirection_enum direction );	
+void		dmaSetSrcDir				( uint8_t channel , enum SrcDirection_enum direction );	
 
-void		dmaSetSourceReload								( uint8_t channel , enum SrcReload_enum mode );			
+void		dmaSetSrcReload				( uint8_t channel , enum SrcReload_enum mode );			
 
-void		*dmaSetManualDestination						( uint8_t channel , void *destination );				
+void		*dmaSetManualDest			( uint8_t channel , void *destination );				
 
-void		*dmaSetDestination2								( uint8_t channel , void *destination , enum DestDirection_enum direction, enum DestReload_enum mode);						
+void		*dmaSetDestChDir			( uint8_t channel , void *destination , enum DestDirection_enum direction, enum DestReload_enum mode);						
 
-void		dmaSetDestination3								( uint8_t channel , void *destination1 , void *destination2, enum DestDirection_enum direction, enum DestReload_enum mode); 
+void		dmaSetDestChDirDblBuff		( uint8_t channel , void *destination1 , void *destination2, enum DestDirection_enum direction, enum DestReload_enum mode); 
 
-void		dmaSetDestDirection								( uint8_t channel , enum DestDirection_enum direction);		
+void		dmaSetDestDir				( uint8_t channel , enum DestDirection_enum direction);		
 
-void		dmaSetDestReload								( uint8_t channel , enum DestReload_enum mode );				
+void		dmaSetDestReload			( uint8_t channel , enum DestReload_enum mode );				
 
-void		dmaSetBurstLength								( uint8_t channel , enum BurstLength_enum burstLength );		
+void		dmaSetBurstLength			( uint8_t channel , enum BurstLength_enum burstLength );		
 
-void		dmaEnableChannel								( uint8_t channel );			
+void		dmaEnableChannel			( uint8_t channel );			
 
-void		dmaDisableChannel								( uint8_t channel );			
+void		dmaDisableChannel			( uint8_t channel );			
 
-bool		dmaIsTransactionComplete						( uint8_t channel );			
+bool		dmaIsTransactionComplete	( uint8_t channel );			
 
-bool		dmaIsBlockTransferBusy							( uint8_t channel );			
+bool		dmaIsBlockTransferBusy		( uint8_t channel );			
 
-void		dmaTrigger										( uint8_t channel );			
+void		dmaTrigger					( uint8_t channel );			
 
-bool		dmaGetFreeChannel								( uint8_t channel );		
+bool		dmaGetFreeChannel			( uint8_t channel );		
 
-bool		dmaCopySyncron									( void *source , void *destination , uint16_t size );					
+bool		dmaCopySyncron				( void *source , void *destination , uint16_t size );					
 
-bool		dmaCopyAsychron									( uint8_t channel , void *source , void *destination , uint16_t size );	
+bool		dmaCopyAsychron				( uint8_t channel , void *source , void *destination , uint16_t size );	
 
-bool		dmaFillMemory									( void *destination , uint16_t size , uint8_t byte );					
+bool		dmaFillMemory				( void *destination , uint16_t size , uint8_t byte );					
 
-void		dmaSetRepeatCount								( uint8_t channel , uint8_t repeatCount );		
+void		dmaSetRepeatCount			( uint8_t channel , uint8_t repeatCount );		
 
-void		dmaSetSingleShot								( uint8_t channel , bool use );					
+void		dmaSetSingleShot			( uint8_t channel , bool use );					
 
-void		dmaSetTriggerSource								( uint8_t channel , uint8_t triggerSource );		
+void		dmaSetTriggerSource			( uint8_t channel , uint8_t triggerSource );		
+
+
 
 #endif

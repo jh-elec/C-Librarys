@@ -12,16 +12,29 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <stdlib.h>
+
 #include "xmega_usart.h"
 
 
+static volatile unsigned char USART_TxBuf[USART_TX_BUFFER_SIZE];
+static volatile unsigned char USART_RxBuf[USART_RX_BUFFER_SIZE];
+static volatile unsigned char USART_TxHead;
+static volatile unsigned char USART_TxTail;
+static volatile unsigned char USART_RxHead;
+static volatile unsigned char USART_RxTail;
+static volatile unsigned char USART_LastRxError;
 
-void usartInit(USART_t *usart , uint16_t baud )
+
+void	usartInit( USART_t *usart , uint32_t baud )	
 {
 	if ( usart == NULL )
 	{
 		return;
 	}
+
+    USART_RxHead = 0;
+    USART_RxTail = 0;
 	
 	usart->BAUDCTRLB = 0;
 	usart->BAUDCTRLA = BAUD( baud );
@@ -34,34 +47,106 @@ void usartInit(USART_t *usart , uint16_t baud )
 	USART_PORT.DIRCLR	= ( 1 << USART_RX_bp );
 
 	PMIC.CTRL = PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;	
-
-}
-
-void usartChar( char c )
-{
 	
-	while ( ! ( USARTxx.STATUS & USART_DREIF_bm ) );
-	USARTxx.DATA = c;
+	sei();
 }
 
-void uartStr( char *str ) 
+void	usartPutChar( char c )						
+{
+   	//while ( ! ( USARTxx.STATUS & USART_DREIF_bm ) );
+   	//USARTxx.DATA = c;
+	   
+    unsigned char tmphead;
+
+    
+    tmphead  = (USART_TxHead + 1) & USART_TX_BUFFER_MASK;
+    
+    while ( tmphead == USART_TxTail ){
+	    ;/* wait for free space in buffer */
+    }
+    
+    USART_TxBuf[tmphead] = c;
+    USART_TxHead = tmphead;
+
+    /* enable UDRE interrupt */
+    USARTxx.CTRLA    |= ( USART_DREINTLVL_HI_gc );
+}
+
+void	usartPutStr( char *str )					
 {	
 	while( *str )
-	{
-		usartChar( *str++ );
+	{ 
+		usartPutChar( *str++ );
 	}
 }
 
+uint16_t usartGetChar( void )						
+{
+    unsigned char tmptail;
+    unsigned char data;
+
+    if ( USART_RxHead == USART_RxTail ) 
+	{
+	    return USART_NO_DATA;   /* no data available */
+    }
+    
+    /* calculate /store buffer index */
+    tmptail = (USART_RxTail + 1) & USART_RX_BUFFER_MASK;
+    USART_RxTail = tmptail;
+    
+    /* get data from receive buffer */
+    data = USART_RxBuf[tmptail];
+    
+    return data;
+}
 
 
 ISR( USART_RX_INT )
-{
+{	
+    unsigned char tmphead;
+    unsigned char data;
 	
+	data = USARTxx.DATA;	
+	
+    /* calculate buffer index */
+    tmphead = ( USART_RxHead + 1) & USART_RX_BUFFER_MASK;
+    
+    if ( tmphead == USART_RxTail ) 
+	{
+	    /* error: receive buffer overflow */
+	}
+	else
+	{
+	    /* store new index */
+	    USART_RxHead = tmphead;
+	    /* store received data in buffer */
+	    USART_RxBuf[tmphead] = data;
+    }	
+}
+
+ISR( USART_DRE_INT )
+{
+    unsigned char tmptail;
+	
+    if ( USART_TxHead != USART_TxTail) 
+	{
+	    /* calculate and store new buffer index */
+	    tmptail = (USART_TxTail + 1) & USART_TX_BUFFER_MASK;
+	    USART_TxTail = tmptail;
+	    /* get one byte from buffer and write it to UART */
+	    USARTxx.DATA = USART_TxBuf[tmptail];  /* start transmission */
+	}
+	else
+	{
+	    /* tx buffer empty, disable UDRE interrupt */
+	    USARTxx.CTRLA    &= ~( USART_DREINTLVL_HI_gc );
+    }
 }
 
 ISR( USART_TX_INT )
 {
-	
 }
+
+
 
 	

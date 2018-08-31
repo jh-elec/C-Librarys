@@ -14,38 +14,55 @@
 #define __XMEGA_USART_H__
 
 #ifndef F_CPU
-	#define F_CPU	2000000
+	#define F_CPU	32000000
 #endif
 
-#define BAUD( BAUD_ )	( ( ( F_CPU / ( 16UL * BAUD_ ) ) ) - 1 )
+#define BAUD( BAUD_ )			( ( ( F_CPU / ( 16UL * BAUD_ ) ) ) - 1 )
 
-#define USARTxx			USARTC0
-#define USART_PORT		PORTC
-#define USART_TX_bp		3
-#define USART_RX_bp		2
+#define USARTxx					USARTE0
+#define USART_PORT				PORTE
+#define USART_TX_bp				3
+#define USART_RX_bp				2
 
-#define USART_RX_INT	USARTC0_RXC_vect
-#define USART_TX_INT	USARTC0_TXC_vect
+#define USART_RX_INT			USARTE0_RXC_vect
+#define USART_TX_INT			USARTE0_TXC_vect
+#define USART_DRE_INT			USARTE0_DRE_vect
+
+#define USART_RX_BUFFER_SIZE	128
+#define USART_TX_BUFFER_SIZE	32
+
+/* size of RX/TX buffers */
+#define USART_RX_BUFFER_MASK	( USART_RX_BUFFER_SIZE - 1)
+#define USART_TX_BUFFER_MASK	( USART_TX_BUFFER_SIZE - 1)
+
+
+#define USART_FRAME_ERROR		0x1000              /* Framing Error by UART       */
+#define USART_OVERRUN_ERROR		0x0800              /* Overrun condition by UART   */
+#define USART_PARITY_ERROR		0x0400              /* Parity Error by UART        */
+#define USART_BUFFER_OVERFLOW	0x0200              /* receive ringbuffer overflow */
+#define USART_NO_DATA			0x0100              /* no receive data available   */
 
 /* usartInit
 * @para             -> *USART = Usart Unit, Baudrate = Baudrate for Transfere
 * @return           -> -none
 * @description      -> -none
 */
-void usartInit ( USART_t *usart , uint16_t baud );
+void usartInit ( USART_t *usart , uint32_t baud );
 
 /* usart_c
 * @para             -> s = Character to wish send
 * @return           -> -none
 * @description      -> -none
 */
-void usartChar ( char c );
+void usartPutChar ( char c );
 
-/* usartStr
+/* usartPutStr
 * @para             -> *str = String to wish send
 * @return           -> -none
 * @description      -> -none
 */
-void usartStr ( char *str );
+void usartPutStr ( char *str );
+
+uint16_t usartGetChar( void );
 
 #endif
