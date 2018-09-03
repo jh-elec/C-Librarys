@@ -14,7 +14,8 @@
 #include <avr/interrupt.h>
 #include <stdlib.h>
 
-#include "xmega_usart.h"
+#include "../Headers/xmega_usart.h"
+#include "../Headers/wsq3000_def.h"
 
 
 static volatile unsigned char USART_TxBuf[USART_TX_BUFFER_SIZE];
@@ -25,22 +26,98 @@ static volatile unsigned char USART_RxHead;
 static volatile unsigned char USART_RxTail;
 static volatile unsigned char USART_LastRxError;
 
-
-void	usartInit( USART_t *usart , uint32_t baud )	
+/*
+*	Hier nichts ändern!
+*/
+usart_baud_setting	baudCnfg32mhz[] =	
 {
-	if ( usart == NULL )
-	{
-		return;
-	}
+	/*
+	*	Die Einstellungen sind für eine Frequenz von 32MHz gedacht!
+	*/
+	
+	/* BSEL | BSCALE */
+	{ 12 , 7	}, // 2400Baud
+	{ 12 , 6	}, // 4800Baud
+	{ 12 , 5	}, // 9600Baud
+	{ 138 , 1	}, // 14.4kBaud
+	{ 12 , 4	}, // 19.2kBaud
+	{ 138 , 0	}, // 28.8kBaud
+	{ 12 , 3	}, // 38.4kBaud
+	{ 137 , -1	}, // 57.6kBaud
+	{ 12 , 2	}, // 76.8kBaud
+	{ 135 , -2	}, // 115.2kBaud
+	{ 131 , -3	}, // 230.4kBaud
+	{ 123 , -4	}, // 460.8kBaud
+	{ 107 , -5	}, // 921.6kBaud
+	{ 121 , -6	}, // 1.382Mbaud
+	{ 75 , -6	}, // 1.843Mbaud
+	{ 1 , 0		}, // 2Mbaud
+};
+
+usart_baud_setting	baudCnfg2mhz[] =	
+{
+	/*
+	*	Die Einstellungen sind für eine Frequenz von 2MHz gedacht!
+	*/
+	
+	/* BSEL | BSCALE */
+	{ 103 , 0	}, // 2400Baud
+	{ 25 , 1	}, // 4800Baud
+	{ 12 , 1	}, // 9600Baud
+	{ 131 , -3	}, // 14.4kBaud
+	{ 192 , -4	}, // 19.2kBaud
+	{ 123 , -4	}, // 28.8kBaud
+	{ 22 , -2	}, // 38.4kBaud
+	{ 107 , -5	}, // 57.6kBaud
+	{ 9 , -2	}, // 76.8kBaud
+	{ 75 , -6	}, // 115.2kBaud	
+};
+
+
+
+
+void	usartInit		( USART_t *usart , usart_baudrates_enum baud )	
+{
+	if ( !usart ) return;
 
     USART_RxHead = 0;
     USART_RxTail = 0;
 	
-	usart->BAUDCTRLB = 0;
-	usart->BAUDCTRLA = BAUD( baud );
+	#ifdef F_CPU
 	
+		#if		F_CPU == 32000000
+		
+			usart->BAUDCTRLB = baudCnfg32mhz[baud].bscale << 4;
+			usart->BAUDCTRLA = baudCnfg32mhz[baud].bsel;
+	
+		#elif	F_CPU == 2000000
+		
+			if ( baud > BAUD_115200 ) // höhere Baudraten schafft man mit 2MHz nicht
+			{
+				usart->BAUDCTRLB = baudCnfg2mhz[BAUD_115200].bscale << 4;
+				usart->BAUDCTRLA = baudCnfg2mhz[BAUD_115200].bsel;
+			}
+			else
+			{
+				usart->BAUDCTRLB = baudCnfg2mhz[baud].bscale << 4;
+				usart->BAUDCTRLA = baudCnfg2mhz[baud].bsel;
+			}
+			
+		#else
+		
+			#warning <F_CPU wird nicht unterstuetzt..!>
+			
+		#endif
+	#else
+	
+		#warning <F_CPU nicht definiert..!>
+		
+	#endif
+	
+
+
 	usart->CTRLA	 = USART_RXCINTLVL_HI_gc;
-	usart->CTRLB	 = USART_TXEN_bm | USART_RXEN_bm;
+	usart->CTRLB	 = USART_TXEN_bm | USART_RXEN_bm | USART_CLK2X_bm;
 	usart->CTRLC	 = USART_CHSIZE_8BIT_gc;
 	
 	USART_PORT.DIRSET	= ( 1 << USART_TX_bp );
@@ -51,7 +128,7 @@ void	usartInit( USART_t *usart , uint32_t baud )
 	sei();
 }
 
-void	usartPutChar( char c )						
+void	usartPutChar	( char c )		
 {
    	//while ( ! ( USARTxx.STATUS & USART_DREIF_bm ) );
    	//USARTxx.DATA = c;
@@ -72,15 +149,15 @@ void	usartPutChar( char c )
     USARTxx.CTRLA    |= ( USART_DREINTLVL_HI_gc );
 }
 
-void	usartPutStr( char *str )					
+void	usartPutStr		( char *str )	
 {	
 	while( *str )
 	{ 
 		usartPutChar( *str++ );
 	}
 }
-
-uint16_t usartGetChar( void )						
+	
+uint16_t usartGetChar	( void )		
 {
     unsigned char tmptail;
     unsigned char data;
@@ -101,7 +178,9 @@ uint16_t usartGetChar( void )
 }
 
 
-ISR( USART_RX_INT )
+
+
+ISR( USART_RX_INT )					
 {	
     unsigned char tmphead;
     unsigned char data;
@@ -124,7 +203,7 @@ ISR( USART_RX_INT )
     }	
 }
 
-ISR( USART_DRE_INT )
+ISR( USART_DRE_INT )				
 {
     unsigned char tmptail;
 	
@@ -143,7 +222,7 @@ ISR( USART_DRE_INT )
     }
 }
 
-ISR( USART_TX_INT )
+ISR( USART_TX_INT )					
 {
 }
 

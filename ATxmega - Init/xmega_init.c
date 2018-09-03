@@ -24,9 +24,6 @@ void		xmega32MhzInit( void )
 	while ( ! ( OSC.STATUS & OSC_RC32MRDY_bm ) );  // wait for ready
 	CCP			= CCP_IOREG_gc;                    // allow changing CLK.CTRL
 	CLK.CTRL	= CLK_SCLKSEL_RC32M_gc ;           // system clock is internal 32MHz RC
-
-	#undef	F_CPU
-	#define F_CPU	32e6
 }
 
 void		xmega32KhzInit( void )	
@@ -36,9 +33,6 @@ void		xmega32KhzInit( void )
 	while ( ! ( OSC.STATUS & OSC_RC32KRDY_bm ) );	// wait for ready
 	CCP			= CCP_IOREG_gc;                     // allow changing CLK.CTRL
 	CLK.CTRL	= CLK_SCLKSEL_RC32K_gc ;			// system clock is internal 32kHz RC
-
-	#undef	F_CPU
-	#define F_CPU	32e3
 }
 
 #endif 

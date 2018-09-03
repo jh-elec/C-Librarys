@@ -13,10 +13,6 @@
 #ifndef __XMEGA_USART_H__
 #define __XMEGA_USART_H__
 
-#ifndef F_CPU
-	#define F_CPU	32000000
-#endif
-
 #define BAUD( BAUD_ )			( ( ( F_CPU / ( 16UL * BAUD_ ) ) ) - 1 )
 
 #define USARTxx					USARTE0
@@ -42,27 +38,63 @@
 #define USART_BUFFER_OVERFLOW	0x0200              /* receive ringbuffer overflow */
 #define USART_NO_DATA			0x0100              /* no receive data available   */
 
+
+
+typedef enum	
+{
+	BAUD_2400,
+	BAUD_4800,
+	BAUD_9600,
+	BAUD_14400,
+	BAUD_19200,
+	BAUD_28800,
+	BAUD_38400,
+	BAUD_57600,
+	BAUD_76800,
+	BAUD_115200,
+	BAUD_230400,
+	BAUD_460800,
+	BAUD_921600,
+	BAUD_1382000,
+	BAUD_1843000,
+	BAUD_2000000,
+}usart_baudrates_enum;
+
+
+typedef struct	
+{
+	uint8_t bsel;
+	int8_t bscale;
+}usart_baud_setting;
+
+
+
 /* usartInit
-* @para             -> *USART = Usart Unit, Baudrate = Baudrate for Transfere
+* @para             -> *USART = Welches Usart Modul? Baudrate?
 * @return           -> -none
 * @description      -> -none
 */
-void usartInit ( USART_t *usart , uint32_t baud );
+void	usartInit		( USART_t *usart , usart_baudrates_enum baud );
 
 /* usart_c
-* @para             -> s = Character to wish send
+* @para             -> s = Zeichen was gesendet werden soll
 * @return           -> -none
 * @description      -> -none
 */
-void usartPutChar ( char c );
+void	usartPutChar	( char c );
 
 /* usartPutStr
-* @para             -> *str = String to wish send
+* @para             -> *str = Zeichenkette die gesendet werden soll
 * @return           -> -none
 * @description      -> -none
 */
-void usartPutStr ( char *str );
+void	usartPutStr		( char *str );
 
-uint16_t usartGetChar( void );
+/* usartGetChar
+* @para             -> -none
+* @return           -> - Empfangenes Zeichen
+* @description      -> Die unteren 8 Bit sind das Zeichen, die anderen 8 Bit sind erstmal als Reserve vorhanden
+*/
+uint16_t usartGetChar	( void );
 
 #endif

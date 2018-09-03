@@ -297,3 +297,41 @@ char				*cmdHelp			( char *helpBuff )
 
 	return helpBuff;
 }
+
+static inline uint8_t cmdCrc8CCITTUpdate ( uint8_t inCrc , uint8_t *inData )
+{
+	uint8_t   i = 0;
+	static uint8_t data = 0;
+	
+	data = ( inCrc ^ ( *inData ) );
+	
+	for ( i = 0; i < 8; i++ )
+	{
+		if ( ( data & 0x80 ) != 0 )
+		{
+			data <<= 1;
+			data ^= 0x07;
+		}
+		else
+		{
+			data <<= 1;
+		}
+	}
+
+	return data;
+}
+
+uint8_t cmdCrc8StrCCITT( char *str )
+{
+	uint8_t crc = 0;
+	
+	while ( *str )
+	{
+		crc = cmdCrc8CCITTUpdate( crc , ( uint8_t * ) str );
+		str++;
+	}
+	
+	return crc;
+}
+
+

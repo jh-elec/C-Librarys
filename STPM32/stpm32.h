@@ -6,7 +6,13 @@
 * Build Date        -> 21.06.2018 07:49:56
 * Description       -> Description
 *
+*	Startbedingungen:
 *
+*	SCS Pin :		Um in den SPI Modus zu booten muss der Pin "SCS" beim Startvorgang ( einschalten der Versorgungsspannung )
+*					auf "low" gezogen sein, sonst wird im USART Modus gebootet.
+*					Wenn der Kommunikations Modus gewählt wurde, wird der "SCS" Pin als Chip Select Signal benutzt.
+*
+*	Enable Pin :	Wenn der Pin beim Startvorgang auf "High" ist und direkt danach auf "Low" gezogen wird ist der Chip startklar
 *
 */
 
@@ -16,7 +22,6 @@
 
 #define BUILD_UINT32( BUFF )	( ((uint32_t)BUFF[3]<<24UL | (uint32_t)BUFF[2]<<16UL | (uint32_t)BUFF[1]<<8UL | (uint32_t)BUFF[0]) )
 
-#include <stdbool.h>
 #include "xmega_spi.h"
 
 
@@ -35,16 +40,19 @@
 *	erwartet und als Rückgabeparameter das empfangene Byte wieder zurück gibt.
 *
 */
-#define STPM32_TX_RX			spiMasterWriteRead
-
 #define STPM32_SYNC_PORT		PORTC
 #define STPM32_SYNC_bp			0
 
-#define STPM32_SS_PORT			PORTC
-#define STPM32_SS_bp			1
+#define STPM32_SCS_PORT			PORTC
+#define STPM32_SCS_bp			1
 
 #define STPM32_EN_PORT			PORTC
 #define STPM32_EN_bp			2
+
+
+#define __STPM32_PIN_OUTPUT__( _port , _pin )	( _port.DIRSET = 1<<_pin )
+#define __STPM32_PIN_HIGH__( _port , _pin )		( _port.OUTSET = 1<<_pin )
+#define __STPM32_PIN_LOW__( _port , _pin )		( _port.OUTCLR = 1<<_pin )
 
 enum stpm32CommunicationProtocol
 {
@@ -143,87 +151,64 @@ enum stpm32Regs
 	TOT_REG4	= 0x8A,
 };
 
+enum tx_crc
+{
+	STPM32_TX_CRC_LOW_WORD,
+	STPM32_TX_CRC_HIGH_WORD,	
+	STPM32_TX_CRC_SIZE,
+};
+
+
+/*
+*	Werte wurden bereits berechnet, damit wir später keine unnötige CPU auslastung verursachen..
+*	Können jedoch mit #define STPM32_WITHOUT_FIX_CALC "frisch" berechnet werden.	
+*
+*	VLSB (VRMS): Vref * ( 1 + R1 / R2 ) / calv * Av * 2^15 
+*	ILSB (VRMS): Vref / cali * Ai * 2^17 * ks * kint
+*/
+
+//#define STPM32_WITHOUT_FIX_CALC
+
+#ifdef STPM32_WITHOUT_FIX_CALC
+	#define STPM32_VLSB		( float ) ( ( STPM32_VREF * ( 1 + ( STPM32_R1 / STPM32_R2 ) ) ) / ( STPM32_CALV * STPM32_AV * 32768 ) )
+	#define STPM32_ILSB		( float ) ( ( STPM32_VREF ) / ( STPM32_CALI * STPM32_AI * 131072 * STPM32_KS * STPM32_KINT ) )
+	#warning STPM32 VLSB & ILSB testen
+#else
+	#define STPM32_VLSB		( float )0.036085
+	#define STPM32_ILSB		( float )0.00218
+#endif
+
+#define STPM32_CAL_VOLTAGE	230	// Angabe in Volt
+#define STPM32_CAL_CURRENT	5	// Angabe in Ampere
+
+
 typedef struct
 {
-	/*
-	*	DSP Control Register
-	*/
-	struct 
-	{
-		uint32_t reg[12];
-	}dspControl;
-	
-	
-	/* 
-	*	DFE Control Register 
-	*/
-	struct
-	{
-		uint32_t reg[2];
-	}dfeControl;
-	
-	/* 
-	*	DSP IRQ Register
-	*/
-	struct  
-	{
-		uint32_t reg[2];
-	}dspInterrupt;
-
-	/* 
-	*	DSP Status Register
-	*/
-	struct  
-	{	
-		uint32_t reg[2];
-	}dspStatus;
-	
-	/*
-	*	UART/SPI control register
-	*/
-	struct  
-	{
-		uint32_t reg[3];
-	}uartSpiControl;
-	
-	/*
-	*	DSP live event
-	*/
-	struct  
-	{
-		uint32_t reg[2];
-	}dspLiveEvent;
-	
-	uint8_t lastTxCrc;
+	uint8_t lastTxCrc[STPM32_TX_CRC_SIZE];
 	uint8_t lastRxCrc;
 	uint8_t crcErr;
-	
-	uint8_t DEBUG_[5];
-	
-	uint8_t (*spiTxRx )			( uint8_t byte );
-	
+		
 }stpm32_t;
 stpm32_t stpm32;
 
 
-void stpm32SpiInit			( stpm32_t *s );
+void		stpm32SpiInit		( void );										
 
-void stpm32CrcSetPoly		( uint8_t poly , uint8_t crcEn );
+uint16_t	stpm32SetCalV		( uint16_t voltageAD , uint8_t useCrc );			
 
-void stpm32CrcEnable		( bool crc );
+uint16_t	stpm32SetCalI		( uint16_t currentAD , uint8_t useCrc );				
 
-void stpm32CrcDisable		( bool crc );
+void		stpm32useCrcable	( uint8_t useCrc );									
+	
+void		stpm32CrcDisable	( uint8_t useCrc );									
 
-void stpm32Write			( uint8_t addr , uint16_t cmd , bool crc );
+void		stpm32CrcSetPoly	( uint8_t poly , uint8_t useCrc );					
 
-void stpm32Write_			( uint8_t addr , uint32_t cmd , bool crcEn );
+uint8_t		stpm32Online		( uint8_t useCrc );									
 
-int8_t stpm32Read			( uint8_t addr , uint8_t *buff , bool crc );
+uint16_t	stpm32GetVoltage	( uint8_t useCrc );									
 
-uint8_t stpm32Online		( void );
+float		stpm32GetCurrent	( uint8_t useCrc );									
 
-void stpm32Select			( void );
-
-void stpm32Deselect			( void );
 
 #endif

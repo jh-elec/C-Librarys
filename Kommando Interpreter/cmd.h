@@ -66,24 +66,27 @@ typedef struct
 }cmd_t;
 cmd_t cmd;
 
+static inline uint8_t 	cmdCrc8CCITTUpdate 	( uint8_t inCrc , uint8_t *inData );
 
-void				cmdInit				( const cmdTable_t *tab , cmdRaw_t *raw , size_t tableSize );
+void					cmdInit				( const cmdTable_t *tab , cmdRaw_t *raw , size_t tableSize );
 
-uint8_t 			cmdCntPara			( char *stream );
+uint8_t 				cmdCntPara			( char *stream );
 
-const char			*cmdGetInstruction	( char *input );
+const char				*cmdGetInstruction	( char *input );
 
-const char			*cmdGetName			( char *input );
+const char				*cmdGetName			( char *input );
 
-void				*cmdGetFunc			( char *input );
+void					*cmdGetFunc			( char *input );
 
-char 				*cmdGetPara 		( char *out , char *in , uint8_t num );
+char 					*cmdGetPara 		( char *out , char *in , uint8_t num );
 
-char 				*cmdGetCRC 			( char *out , char *stream );
+char 					*cmdGetCRC 			( char *out , char *stream );
 
-char				*cmdGetCmdStr		( char *out , char *stream );
+char					*cmdGetCmdStr		( char *out , char *stream );
 
-char				*cmdHelp			( char *helpBuff );
+char					*cmdHelp			( char *helpBuff );
+
+uint8_t 				cmdCrc8StrCCITT		( char *str );
 
 
 #endif
