@@ -68,6 +68,12 @@ enum rx8564_register
  }rx8564_t;
 
 
+
+uint8_t					rtcBcdToDec				( uint8_t val );
+
+uint8_t					rtcDecToBcd				( uint8_t val );
+
+
 void					rtcInit					( void );
 
 void					rtcSetTime				( uint8_t hour , uint8_t minutes , uint8_t seconds );
@@ -86,13 +92,13 @@ void					rtcSetTimerControl		( uint8_t mask );
 
 uint8_t					rtcReadTimer			( void );
 
-bool					rtcIsLeapYear			( const uint8_t year );
+bool					rtcIsLeapYear			( const uint16_t year );
 
-uint16_t				rtcGetNumOfDayAtMonth	( const uint8_t month , const uint8_t year );
+uint16_t				rtcGetNumOfDayAtMonth	( const uint8_t month , const uint16_t year );
 
-uint16_t				rtcGetDays				( const uint8_t year );
+uint16_t				rtcGetDays				( const uint16_t year );
 
-uint16_t				rtcGetWeekDay			( const uint8_t day , const uint8_t month , const uint8_t year );
+uint16_t				rtcGetWeekDay			( const uint8_t day , const uint8_t month , const uint16_t year );
 
 uint16_t				rtcGetDayofYear			( const uint8_t day , const uint8_t month , const uint16_t year );
 

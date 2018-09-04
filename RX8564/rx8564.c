@@ -14,7 +14,7 @@
 #include <avr/interrupt.h>
 #include <stdbool.h>
 #include "rx8564.h"
-#include "I2C.h"
+#include "i2cmaster.h"
 
 #ifdef _WITH_ERROR_REPORT_
 	#include "../error.h"
@@ -216,7 +216,7 @@ uint8_t					rtcReadTimer			( void )
 	return buff[0];
 }
 
-bool					rtcIsLeapYear			( const uint8_t year )							
+bool					rtcIsLeapYear			( const uint16_t year )							
 {
   // Die Regel lautet: Alles, was durch 4 teilbar ist, ist ein Schaltjahr.
   // Es sei denn, das Jahr ist durch 100 teilbar, dann ist es keins.
@@ -238,7 +238,7 @@ bool					rtcIsLeapYear			( const uint8_t year )
   return false;
 }                   
 
-uint16_t				rtcGetNumOfDayAtMonth	( const uint8_t month , const uint8_t year )	
+uint16_t				rtcGetNumOfDayAtMonth	( const uint8_t month , const uint16_t year )	
 {
   //                     ungueltig,Jan,Feb,Mrz,Apr,Mai,Jun,Jul,Aug,Sep,Okt,Nov,Dez
   uint8_t daysPerMonth[] = {  0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
@@ -267,12 +267,12 @@ uint16_t				rtcGetNumOfDayAtMonth	( const uint8_t month , const uint8_t year )
   
 }                   
 
-uint16_t				rtcGetDays				( const uint8_t year )							
+uint16_t				rtcGetDays				( const uint16_t year )							
 {
   return ( rtcIsLeapYear( year ) ) ? 366 : 365;
 }                   
 
-uint16_t				rtcGetWeekDay			( const uint8_t day , const uint8_t month , const uint8_t year )	
+uint16_t				rtcGetWeekDay			( const uint8_t day , const uint8_t month , const uint16_t year )	
 {
 	//                       ungueltig Jan Feb Mrz Apr Mai Jun Jul Aug Sep Okt Nov Dez 
 	uint8_t monthOffset[13] = {  0 ,  0 ,  3 ,  3 ,  6 ,  1 ,  4 ,  6 ,  2 ,  5 ,  0 ,  3 ,  5 };
