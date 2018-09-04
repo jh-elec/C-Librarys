@@ -145,7 +145,7 @@ void					rtcSetDate				( uint8_t day , uint8_t weekDay , uint8_t month, uint16_t
 	rtcWrite( buff , sizeof( buff ) );    
 }
   
-void					rtcSetAlrt				( uint8_t day , uint8_t weekDay , uint8_t hour, uint8_t minutes )	
+void					rtcSetAlert				( uint8_t day , uint8_t weekDay , uint8_t hour, uint8_t minutes )	
 {
 	buff[0] = RX8564_MINUTE_ALERT;
 	buff[1] = rtcDecToBcd( minutes );
