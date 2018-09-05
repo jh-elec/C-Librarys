@@ -8,6 +8,13 @@
 *
 *
 *
+*	------------------
+*	|Port	|	Timer|
+*	------------------
+*	PORTC		TCCxC
+*	PORTD		TCCxD
+*	PORTE		TCCxE
+*
 */
 
 
