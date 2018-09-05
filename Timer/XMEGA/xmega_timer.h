@@ -11,14 +11,13 @@
 */
 
 
-#ifndef __TIMER_H__
-#define __TIMER_H__
+#ifndef __XMEGA_TIMER_H__
+#define __XMEGA_TIMER_H__
 
+#define F_CPU					2e6
 
-#include "wsq3000_def.h"
-
-#define TIMER_HZ				10
-#define TIMER_PRESCALER			1024
+#define TIMER_HZ				10000
+#define TIMER_PRESCALER			1
 
 #if		TIMER_PRESCALER == 1
 #undef TIMER_PRESCALER_gc
@@ -47,16 +46,35 @@
 /*
 *	Einige XMEGA´s haben mehrere Timer Compare Matches
 */
-#define TIMER_CALC			(uint16_t)( ( F_CPU / ( 2 * TIMER_PRESCALER ) * ( TIMER_HZ + 1 ) ) )
+#define TIMER_CALC					(uint16_t)( ( F_CPU / ( 2 * TIMER_PRESCALER ) * ( TIMER_HZ + 1 ) ) )
+
+#define TIMER_CCx( _timer , _ccx)	( ( & ( _timer->CCA ) )[_ccx] )
+
+enum tc0_ccx_enum
+{
+	TC0_CCA,
+	TC0_CCB,
+	TC0_CCC,
+	TC0_CCD,
+};
+
+enum tc1_ccx_enum
+{
+	TC1_CCA,
+	TC1_CCB,
+};
 
 
-void timer0OVFInit	( TC0_t *tim );
+void		timerOVFInit	( TC0_t *tim0 , TC1_t *tim1 );
 
-void timer0CMPInit	( TC0_t *tim );
+void		timerCMPInit	( TC0_t *tim0 , enum tc0_ccx_enum channel0 , TC1_t *tim1 , enum tc1_ccx_enum channel1 );
 
-void timerStart		( TC0_t *tim0 , TC1_t *tim1 );
+void		timerPWMInit	( TC0_t *tim0 , enum tc0_ccx_enum channel0 , TC1_t *tim1 , enum tc1_ccx_enum channel1 , uint16_t period , uint16_t compare )	;
 
-void timerStop		( TC0_t *tim0 , TC1_t *tim1 );
+void		timerStart		( TC0_t *tim0 , TC1_t *tim1 );
+
+void		timerStop		( TC0_t *tim0 , TC1_t *tim1 );
 
 
-#endif
+
+#endif  // __XMEGA_TIMER_H__

@@ -15,71 +15,112 @@
 #include <avr/interrupt.h>
 #include <stdlib.h>
 
-#include "../Headers/xmega_timer.h"
 
 
-
-
-void timer0OVFInit			( TC0_t *tim )					
+void		timerOVFInit			( TC0_t *tim0 , TC1_t *tim1 )	
 {
-	tim->CTRLA		= TIMER_PRESCALER_gc;								// Takt konfigurieren ( mit ggf. Vorteiler )
-	tim->PER		= TIMER_CALC;										// Interupt Überlauf berechnen
-	tim->INTCTRLA	= TC_OVFINTLVL_HI_gc;								// Interrupt "Overflow" aktivieren / Priorität des Interrupts festlegen
+	if ( tim0 )
+	{
+		tim0->CTRLA		= TIMER_PRESCALER_gc;	// Takt konfigurieren ( mit ggf. Vorteiler )
+		tim0->PER		= TIMER_CALC;			// Interupt Überlauf berechnen
+		tim0->INTCTRLA	= TC_OVFINTLVL_HI_gc;	// Interrupt "Overflow" aktivieren / Priorität des Interrupts festlegen
+	}
+	else if ( tim1 )
+	{
+		tim1->CTRLA		= TIMER_PRESCALER_gc;	// Takt konfigurieren ( mit ggf. Vorteiler )
+		tim1->PER		= TIMER_CALC;			// Interupt Überlauf berechnen
+		tim1->INTCTRLA	= TC_OVFINTLVL_HI_gc;	// Interrupt "Overflow" aktivieren / Priorität des Interrupts festlegen		
+	}
 	
 	PR.PRPC = 0x00;														// Power einschalten
 	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;  // Interrupts freigeben ( sei() muss trodzdem sein! )	
+
+	sei();
 }
 
-void timer0CMPInit			( TC0_t *tim )					
+void		timerCMPInit			( TC0_t *tim0 , enum tc0_ccx_enum channel0 , TC1_t *tim1 , enum tc1_ccx_enum channel1 )										
 {		
 	/*
 	*	Hier wird ohne Hardware Pin Toggeln gearbeitet. Sollte von 
 	*	außen der entsprechende Hardware Pin getoggelt werden, muss
 	*	in das CTRLB Register ( ATXMEGA256A3BU ) noch TCx_CCxEN_bm gesetzt werden.
 	*/
-	tim->CTRLA		= TIMER_PRESCALER_gc;								// Takt konfigurieren ( mit ggf. Vorteiler )
-	tim->CTRLB		= TC0_WGMODE0_bm ;									// Compare Match 'A' aktivieren	
-	tim->CCA		= TIMER_CALC;										// Compare Match Wert
-    tim->INTCTRLB	= TC_CCAINTLVL_HI_gc;								// Interrupt "Compare Match" aktivieren / Priorität des Interrupts festlegen
-	
-	PR.PRPC = 0x00;														// Power einschalten
+	if ( tim0 )
+	{
+		tim0->CTRLA						= TIMER_PRESCALER_gc;	// Takt konfigurieren ( mit ggf. Vorteiler )
+		tim0->CTRLB						= TC_WGMODE_FRQ_gc;		// Compare Match 'A' aktivieren	
+		tim0->INTCTRLB					= TC_CCAINTLVL_HI_gc;	// Interrupt "Compare Match" aktivieren / Priorität des Interrupts festlegen	
+		TIMER_CCx( tim0 , channel0 )	= TIMER_CALC;			// Compare Match Wert
+	}
+	else if ( tim1 )
+	{
+		tim1->CTRLA						= TIMER_PRESCALER_gc;	// Takt konfigurieren ( mit ggf. Vorteiler )
+		tim1->CTRLB						= TC_WGMODE_FRQ_gc;		// Compare Match 'A' aktivieren
+		tim1->INTCTRLB					= TC_CCAINTLVL_HI_gc;	// Interrupt "Compare Match" aktivieren / Priorität des Interrupts festlegen		
+		TIMER_CCx( tim1 , channel1 )	= TIMER_CALC;			// Compare Match Wert
+	}
+
+	PR.PRPC	= 0x00;													    // Power einschalten
 	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;	// Interrupts freigeben ( sei() muss trodzdem sein! )
+	
+	sei();
 }
 
-uint8_t timerSetCompareValue	( TC0_t *tim0 , TC1_t *tim1 , uint8_t ccx , uint16_t val )	
+void		timerPWMInit			( TC0_t *tim0 , enum tc0_ccx_enum channel0 , TC1_t *tim1 , enum tc1_ccx_enum channel1 , uint16_t period , uint16_t compare )	
 {
-	if ( ccx > 4 )
+	if ( tim0 )
 	{
-		return 1; // Register nicht vorhanden..
+		tim0->CTRLA						= TC_CLKSEL_DIV1_gc;											// Takt konfigurieren ( mit ggf. Vorteiler )
+		tim0->CTRLB						= ( TC_WGMODE_SINGLESLOPE_gc | ( TC0_CCAEN_bm << channel0  ) );	// Compare Match 'A' aktivieren	
+		tim0->PER						= period;														// Maximaler Zählerwert von TIMERx														// Compare Match Wert		
+		TIMER_CCx( tim0 , channel0 )	= compare;
+	}
+	else if ( tim1 )
+	{
+		tim1->CTRLA						= TC_CLKSEL_DIV1_gc;											// Takt konfigurieren ( mit ggf. Vorteiler )
+		tim1->CTRLB						= ( TC_WGMODE_SINGLESLOPE_gc | ( TC1_CCAEN_bm << channel1  ) );	// Compare Match 'A' aktivieren
+		tim1->PER						= period;														// Maximaler Zählerwert von TIMERx		
+		TIMER_CCx( tim1 , channel1 )	= compare;
+	}
+
+	sei();	
+}
+
+uint8_t		timerSetCompareValue	( TC0_t *tim0 , TC1_t *tim1 , uint8_t ccx , uint16_t val )	
+{
+	if ( ccx > 3 ) return 1; // Register nicht vorhanden..
+	
+	if ( tim0 )
+	{
+		TIMER_CCx( tim0 , ccx ) = val;
+	}
+	else if ( tim1 )
+	{
+		TIMER_CCx( tim1 , ccx ) = val;
 	}
 	
-	if ( tim0 != NULL )
-	{
-		(&(tim0->CCA))[ccx] = val;
-	}else if ( tim1 != NULL )
-	{
-		(&(tim1->CCA))[ccx] = val;
-	}
 	return 0;
 }
 
-void timerStart				( TC0_t *tim0 , TC1_t *tim1 )	
+void		timerStart				( TC0_t *tim0 , TC1_t *tim1 )	
 {
-	if ( tim0 != NULL )
+	if ( tim0 )
 	{
 		tim0->CTRLA = TIMER_PRESCALER_gc;
-	}else if ( tim1 != NULL )
+	}
+	else if ( tim1 )
 	{
 		tim1->CTRLA = TIMER_PRESCALER_gc;
 	}
 }
 
-void timerStop				( TC0_t *tim0 , TC1_t *tim1 )	
+void		timerStop				( TC0_t *tim0 , TC1_t *tim1 )	
 {
-	if ( tim0 != NULL )
+	if ( tim0 )
 	{
 		tim0->CTRLA = 0;
-	}else if ( tim1 != NULL )
+	}
+	else if ( tim1 )
 	{
 		tim1->CTRLA = 0;
 	}	
