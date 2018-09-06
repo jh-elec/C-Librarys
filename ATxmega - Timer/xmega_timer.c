@@ -17,19 +17,20 @@
 
 
 
-void		timerOVFInit			( TC0_t *tim0 , TC1_t *tim1 )	
+void		timerOVFInit			( tcxOvfInit_t *i )	
 {
-	if ( tim0 )
+	if ( i->tim0 )
 	{
-		tim0->CTRLA		= TIMER_PRESCALER_gc;	// Takt konfigurieren ( mit ggf. Vorteiler )
-		tim0->PER		= TIMER_CALC;			// Interupt Überlauf berechnen
-		tim0->INTCTRLA	= TC_OVFINTLVL_HI_gc;	// Interrupt "Overflow" aktivieren / Priorität des Interrupts festlegen
+		i->tim0->CTRLA		= i->tim0Cnfg.preVal;										// Takt konfigurieren ( mit ggf. Vorteiler )
+		i->tim0->PER		= TIMER_CALC_HZ( i->tim0Cnfg.preVal	, i->tim0Cnfg.hz );	// Interupt Überlauf berechnen
+		i->tim0->INTCTRLA	= TC_OVFINTLVL_HI_gc;										// Interrupt "Overflow" aktivieren / Priorität des Interrupts festlegen
 	}
-	else if ( tim1 )
+	
+	if ( i->tim1 )
 	{
-		tim1->CTRLA		= TIMER_PRESCALER_gc;	// Takt konfigurieren ( mit ggf. Vorteiler )
-		tim1->PER		= TIMER_CALC;			// Interupt Überlauf berechnen
-		tim1->INTCTRLA	= TC_OVFINTLVL_HI_gc;	// Interrupt "Overflow" aktivieren / Priorität des Interrupts festlegen		
+		i->tim1->CTRLA		= i->tim1Cnfg.preVal;										// Takt konfigurieren ( mit ggf. Vorteiler )
+		i->tim1->PER		= TIMER_CALC_HZ( i->tim1Cnfg.preVal	 , i->tim1Cnfg.hz );	// Interupt Überlauf berechnen
+		i->tim1->INTCTRLA	= TC_OVFINTLVL_HI_gc;										// Interrupt "Overflow" aktivieren / Priorität des Interrupts festlegen		
 	}
 	
 	PR.PRPC = 0x00;														// Power einschalten
@@ -38,26 +39,27 @@ void		timerOVFInit			( TC0_t *tim0 , TC1_t *tim1 )
 	sei();
 }
 
-void		timerCMPInit			( TC0_t *tim0 , enum tc0_ccx_enum channel0 , TC1_t *tim1 , enum tc1_ccx_enum channel1 )										
+void		timerCMPInit			( tcxInit_t *i )	
 {		
 	/*
 	*	Hier wird ohne Hardware Pin Toggeln gearbeitet. Sollte von 
 	*	außen der entsprechende Hardware Pin getoggelt werden, muss
 	*	in das CTRLB Register ( ATXMEGA256A3BU ) noch TCx_CCxEN_bm gesetzt werden.
 	*/
-	if ( tim0 )
+	if ( i->tim0 )
 	{
-		tim0->CTRLA						= TIMER_PRESCALER_gc;	// Takt konfigurieren ( mit ggf. Vorteiler )
-		tim0->CTRLB						= TC_WGMODE_FRQ_gc;		// Compare Match 'A' aktivieren	
-		tim0->INTCTRLB					= TC_CCAINTLVL_HI_gc;	// Interrupt "Compare Match" aktivieren / Priorität des Interrupts festlegen	
-		TIMER_CCx( tim0 , channel0 )	= TIMER_CALC;			// Compare Match Wert
+		i->tim0->CTRLA											= i->tim0Cnfg.preVal;										// Takt konfigurieren ( mit ggf. Vorteiler )
+		i->tim0->CTRLB											= TC_WGMODE_FRQ_gc;											// Compare Match 'A' aktivieren	
+		i->tim0->INTCTRLB										= TC_CCAINTLVL_HI_gc;										// Interrupt "Compare Match" aktivieren / Priorität des Interrupts festlegen	
+		TIMER_CCx( i->tim0 , i->tim0Cnfg.compareMatchChannel )	= TIMER_CALC_HZ( i->tim0Cnfg.preVal , i->tim0Cnfg.cmpVal );	// Compare Match Wert
 	}
-	else if ( tim1 )
+	
+	if ( i->tim1 )
 	{
-		tim1->CTRLA						= TIMER_PRESCALER_gc;	// Takt konfigurieren ( mit ggf. Vorteiler )
-		tim1->CTRLB						= TC_WGMODE_FRQ_gc;		// Compare Match 'A' aktivieren
-		tim1->INTCTRLB					= TC_CCAINTLVL_HI_gc;	// Interrupt "Compare Match" aktivieren / Priorität des Interrupts festlegen		
-		TIMER_CCx( tim1 , channel1 )	= TIMER_CALC;			// Compare Match Wert
+		i->tim1->CTRLA											= i->tim1Cnfg.preVal;										// Takt konfigurieren ( mit ggf. Vorteiler )
+		i->tim1->CTRLB											= TC_WGMODE_FRQ_gc;											// Compare Match 'A' aktivieren
+		i->tim1->INTCTRLB										= TC_CCAINTLVL_HI_gc;										// Interrupt "Compare Match" aktivieren / Priorität des Interrupts festlegen		
+		TIMER_CCx( i->tim1 , i->tim1Cnfg.compareMatchChannel )	= TIMER_CALC_HZ( i->tim1Cnfg.preVal , i->tim1Cnfg.cmpVal );	// Compare Match Wert
 	}
 
 	PR.PRPC	= 0x00;													    // Power einschalten
@@ -66,25 +68,27 @@ void		timerCMPInit			( TC0_t *tim0 , enum tc0_ccx_enum channel0 , TC1_t *tim1 , 
 	sei();
 }
 
-void		timerPWMInit			( TC0_t *tim0 , enum tc0_ccx_enum channel0 , TC1_t *tim1 , enum tc1_ccx_enum channel1 , uint16_t period , uint16_t compare )	
+void		timerPWMInit			( tcxInit_t *i )	
 {
-	if ( tim0 )
+	if ( i->tim0 )
 	{
-		tim0->CTRLA						= TC_CLKSEL_DIV1_gc;											// Takt konfigurieren ( mit ggf. Vorteiler )
-		tim0->CTRLB						= ( TC_WGMODE_SINGLESLOPE_gc | ( TC0_CCAEN_bm << channel0  ) );	// Compare Match 'A' aktivieren	
-		tim0->PER						= period;														// Maximaler Zählerwert von TIMERx														// Compare Match Wert		
-		TIMER_CCx( tim0 , channel0 )	= compare;
+		i->tim0->CTRLA											= i->tim0Cnfg.preVal; // Takt konfigurieren ( mit ggf. Vorteiler )
+		i->tim0->CTRLB											= ( TC_WGMODE_SINGLESLOPE_gc | ( TC0_CCAEN_bm << i->tim0Cnfg.compareMatchChannel  ) ); // Compare Match 'A' aktivieren	
+		i->tim0->PER											= i->tim0Cnfg.perVal; // Maximaler Zählerwert von TIMERx															
+		TIMER_CCx( i->tim0 , i->tim0Cnfg.compareMatchChannel )	= i->tim0Cnfg.cmpVal; // Compare Match Wert	
 	}
-	else if ( tim1 )
+	
+	if ( i->tim1 )
 	{
-		tim1->CTRLA						= TC_CLKSEL_DIV1_gc;											// Takt konfigurieren ( mit ggf. Vorteiler )
-		tim1->CTRLB						= ( TC_WGMODE_SINGLESLOPE_gc | ( TC1_CCAEN_bm << channel1  ) );	// Compare Match 'A' aktivieren
-		tim1->PER						= period;														// Maximaler Zählerwert von TIMERx		
-		TIMER_CCx( tim1 , channel1 )	= compare;
+		i->tim1->CTRLA											= i->tim1Cnfg.preVal; // Takt konfigurieren ( mit ggf. Vorteiler )
+		i->tim1->CTRLB											= ( TC_WGMODE_SINGLESLOPE_gc | ( TC1_CCAEN_bm << i->tim1Cnfg.compareMatchChannel  ) ); // Compare Match 'A' aktivieren
+		i->tim1->PER											= i->tim1Cnfg.perVal; // Maximaler Zählerwert von TIMERx		
+		TIMER_CCx( i->tim1 , i->tim1Cnfg.compareMatchChannel )	= i->tim1Cnfg.cmpVal; // Compare Match Wert
 	}
 
 	sei();	
 }
+
 
 uint8_t		timerSetCompareValue	( TC0_t *tim0 , TC1_t *tim1 , uint8_t ccx , uint16_t val )	
 {
@@ -94,7 +98,8 @@ uint8_t		timerSetCompareValue	( TC0_t *tim0 , TC1_t *tim1 , uint8_t ccx , uint16
 	{
 		TIMER_CCx( tim0 , ccx ) = val;
 	}
-	else if ( tim1 )
+	
+	if ( tim1 )
 	{
 		TIMER_CCx( tim1 , ccx ) = val;
 	}
@@ -102,15 +107,16 @@ uint8_t		timerSetCompareValue	( TC0_t *tim0 , TC1_t *tim1 , uint8_t ccx , uint16
 	return 0;
 }
 
-void		timerStart				( TC0_t *tim0 , TC1_t *tim1 )	
+void		timerStart				( TC0_t *tim0 , tcxPrescaler_t pre0 , TC1_t *tim1 , tcxPrescaler_t pre1 )	
 {
 	if ( tim0 )
 	{
-		tim0->CTRLA = TIMER_PRESCALER_gc;
+		tim0->CTRLA = pre0;
 	}
-	else if ( tim1 )
+	
+	if ( tim1 )
 	{
-		tim1->CTRLA = TIMER_PRESCALER_gc;
+		tim1->CTRLA = pre1;
 	}
 }
 
@@ -118,11 +124,12 @@ void		timerStop				( TC0_t *tim0 , TC1_t *tim1 )
 {
 	if ( tim0 )
 	{
-		tim0->CTRLA = 0;
+		tim0->CTRLA = TIMER_PRESCALER_OFF;
 	}
-	else if ( tim1 )
+	
+	if ( tim1 )
 	{
-		tim1->CTRLA = 0;
+		tim1->CTRLA = TIMER_PRESCALER_OFF;
 	}	
 }
 
