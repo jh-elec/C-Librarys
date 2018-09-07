@@ -7,10 +7,17 @@
 * Description       -> Timer
 *
 *
-*	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-*	!Wichtig! Sollte irgendein Interrupt aktiviert sein,				!
-*	!muss unbedingt der dazugehörige Vektor im Quellkode vorhanden sein.!
-*	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+*	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+*	!																				!
+*	!	Wichtig! Sollte irgendein Interrupt aktiviert sein,							!
+*	!	muss unbedingt der dazugehörige Vektor im Quellkode vorhanden sein.			!
+*	!																				!
+*	!	Die Initalisierungen müssen vor irgendwelchen "PowerReduce"					!
+*	!	Prozeduren erfolgen (PR.PORTx = 0x00)!										!
+*	!																				!
+*	!	Achtung vorher müssen die jeweiligen Pins als Ausgänge konfiguriert werden	!
+*	!																				!
+*	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 *
 *	------------------
 *	|Port	|	Timer|
@@ -31,14 +38,49 @@
 *	OC1B	= Compare Channel B ( CCB )
 *	####################################
 *
-*	Achtung vorher müssen die jeweiligen Pins als Ausgänge konfiguriert werden!
 *
-*	Möchten wir eine invertierte PWM haben, müssen wir im entsprechenden PINxCTRL das "INVEN" Bit setzen.
-*	( PORTD.PIN3CTRL = 1<<INVEN )
+*	Möchten wir eine invertierte PWM haben, können wir im entsprechenden PINxCTRL das "INVEN" Bit setzen.
+*	( z.B PORTD.PIN3CTRL = 1<<INVEN )
 *
-*	Hier wird der Compare Channel D ( Pin: 0C0D ) & Compare Channel A ( Pin: 0C1A ) als PWM konfiguriert..
 *
-*	timerPWMInit( &TCD0 , TC0_CCD , &TCE1 , TC1_CCA , 100 , 10 );
+*	Beispiel für Timer Compare Match Interrupts:
+*	------------------------------------------------------------------------
+*	tcxInit_t cmpMI;
+*	cmpMI.tim0							= &TCD0;
+*	cmpMI.tim0Cnfg.preVal				= TIMER_PRESCALER_1024;
+*	cmpMI.tim0Cnfg.perVal				= 400;
+*
+*	cmpMI.tim0Cnfg.compareMatchChannel	= TC0_CCA;
+*	cmpMI.tim0Cnfg.cmpVal				= 100;
+*	timerCMPInit( &cmpMI );
+*
+*	cmpMI.tim0Cnfg.compareMatchChannel	= TC0_CCB;
+*	cmpMI.tim0Cnfg.cmpVal				= 200;
+*	timerCMPInit( &cmpMI );
+*
+*
+*	ISR( TCD0_CCA_vect )
+*	{
+*		// kode..
+*	}
+*
+*	ISR( TCD0_CCB_vect )
+*	{
+*		// kode..
+*	}
+*
+*
+*	Beispiel für Timer Compare Match PWM:
+*	-----------------------------------------------
+*	tcxInit_t pwmOc1a;
+*	pwmOc1a.tim1 = &TCE1;
+*	pwmOc1a.tim1Cnfg.compareMatchChannel = TC1_CCA;
+*	pwmOc1a.tim1Cnfg.preVal = TIMER_PRESCALER_256;
+*	pwmOc1a.tim1Cnfg.perVal = 100;
+*	pwmOc1a.tim1Cnfg.cmpVal = 10;
+*	timerPWMInit( &pwmOc1a );
+*
+*
 *
 */
 
@@ -62,7 +104,6 @@ enum			timer_prescaler_enum
 	TIMER_PRESCALER_256		= TC_CLKSEL_DIV256_gc,  /* System Clock / 256 */
 	TIMER_PRESCALER_1024	= TC_CLKSEL_DIV1024_gc, /* System Clock / 1024 */
 };
-
 typedef enum	timer_prescaler_enum	tcxPrescaler_t;
 
 
@@ -73,8 +114,8 @@ typedef enum	timer_prescaler_enum	tcxPrescaler_t;
 
 /*	Offset von den anderen CCx berechnen
 */
-#define TIMER_CCx( _timer , _ccx)			( ( & ( _timer->CCA ) )[_ccx] )
-
+#define TIMER_CCx( _timer , _ccx)			( ( & ( _timer->CCA ) )[_ccx]  )
+#define TIMER_PRx( _port )					( ( & ( PR.PRPA     ) )[_port] )
 
 typedef enum tc0_ccx_enum
 {
