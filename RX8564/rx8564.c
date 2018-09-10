@@ -11,14 +11,11 @@
 */
 
 
-#include <avr/interrupt.h>
+
 #include <stdbool.h>
 #include "rx8564.h"
-#include "i2cmaster.h"
 
-#ifdef _WITH_ERROR_REPORT_
-	#include "../error.h"
-#endif
+
 
  
  static uint8_t buff[11] = "";
@@ -34,15 +31,16 @@ inline uint8_t			rtcDecToBcd				( uint8_t val )
 	return ( ( ( val / 10 ) << 4 ) | ( val % 10 ) );
 }
 
-
+#ifdef __AVR__
 static inline uint8_t	rtcRead					( uint8_t *buff , uint8_t leng )	
 {
+	
 	if( i2c_start( RX8564_ADDR + I2C_WRITE ) )
 	{
+		
 		#ifdef _WITH_ERROR_REPORT_
 			errorWriteCircular( &err , _ERROR_RTC_I2C_ , ERROR_I2C_NO_ACK );
 		#endif
-		
 	}
 	
 	if ( i2c_write( buff[0] ) )// Register Adresse
@@ -216,6 +214,8 @@ uint8_t					rtcReadTimer			( void )
 	return buff[0];
 }
 
+#endif
+
 bool					rtcIsLeapYear			( const uint16_t year )							
 {
   // Die Regel lautet: Alles, was durch 4 teilbar ist, ist ein Schaltjahr.
@@ -238,7 +238,7 @@ bool					rtcIsLeapYear			( const uint16_t year )
   return false;
 }                   
 
-uint16_t				rtcGetNumOfDayAtMonth	( const uint8_t month , const uint16_t year )	
+uint16_t				rtcGetNumOfDaysAtMonth	( const uint8_t month , const uint16_t year )	
 {
   //                     ungueltig,Jan,Feb,Mrz,Apr,Mai,Jun,Jul,Aug,Sep,Okt,Nov,Dez
   uint8_t daysPerMonth[] = {  0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
@@ -323,7 +323,7 @@ uint16_t				rtcGetDayofYear			( const uint8_t day , const uint8_t month , const 
   while ( localMonth > 1 )
   {
     localMonth--;
-    localDay += rtcGetNumOfDayAtMonth( localMonth , year );
+    localDay += rtcGetNumOfDaysAtMonth( localMonth , year );
   }
 
   return localDay;

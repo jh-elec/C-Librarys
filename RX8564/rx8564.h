@@ -12,9 +12,21 @@
 #ifndef __RX8564_H__
 #define __RX8564_H__
 
-#include <avr/io.h>
+#include <stdint.h>
+
+#ifdef __AVR__
+	#include <avr/io.h>
+	#include <avr/interrupt.h>	
+	#include "i2cmaster.h"
+#endif
 
 //#define _WITH_ERROR_REPORT_
+
+#ifdef _WITH_ERROR_REPORT_
+	#include "../error.h"
+#endif
+
+
 
 /* Slave Address */
 #define RX8564_ADDR 0xA2 
@@ -94,7 +106,7 @@ uint8_t					rtcReadTimer			( void );
 
 bool					rtcIsLeapYear			( const uint16_t year );
 
-uint16_t				rtcGetNumOfDayAtMonth	( const uint8_t month , const uint16_t year );
+uint16_t				rtcGetNumOfDaysAtMonth	( const uint8_t month , const uint16_t year );
 
 uint16_t				rtcGetDays				( const uint16_t year );
 

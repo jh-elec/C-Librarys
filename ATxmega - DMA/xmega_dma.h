@@ -17,9 +17,16 @@
 #ifndef __XMEGA_DMA_H__
 #define __XMEGA_DMA_H__
 
-#include <avr/io.h>
 #include <stdbool.h>
 #include <stdlib.h>
+
+
+#ifdef __AVR__
+
+	#include <avr/io.h>
+	
+#endif
+
 
 /*	DMA Adress - Makro 
 *	Umwandlung vom "C Pointer" zum "DMA Pointer"

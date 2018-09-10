@@ -11,12 +11,6 @@
 */
 
 #include "../Headers/wsq3000_def.h"
-
-#include <avr/io.h>
-#include <stdlib.h>
-#include <string.h>
-#include <util/delay.h>
-#include <avr/interrupt.h>
 #include "../Headers/stpm32.h"
 
 
