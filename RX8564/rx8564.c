@@ -222,15 +222,15 @@ bool					rtcIsLeapYear			( const uint16_t year )
   // Es sei denn, das Jahr ist durch 100 teilbar, dann ist es keins.
   // Aber wenn es durch 400 teilbar ist, ist es doch wieder eins.
 
-	if ( ! (year % 400 ) )
+	if (  (year % 400 ) == 0 )
 	{
 		return true;
 	}
-	else if ( ! ( year % 100 ) )
+	else if (  ( year % 100 ) == 0 )
 	{
 		return false;
 	}
-	else if ( ! ( year % 4 ) )
+	else if (  ( year % 4 )  == 0)
 	{
 		return true;	
 	}
@@ -317,8 +317,8 @@ uint16_t				rtcGetDayofYear			( const uint8_t day , const uint8_t month , const 
     return -1;
   }
 
-  uint8_t localDay = day;
-  uint8_t localMonth = month;
+  uint16_t localDay 		= day;
+  uint8_t localMonth 	= month;
 
   while ( localMonth > 1 )
   {
