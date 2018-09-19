@@ -58,15 +58,21 @@ typedef struct
 }cmdRaw_t;
 cmdRaw_t raw;
 
+enum crc_state
+{
+	CMD_CRC_OK,
+	CMD_CRC_ERROR,	
+};
+
 typedef struct
 {
 	const 			cmdTable_t 	*table;
 					size_t		tabLen;
 					cmdRaw_t	*raw;
+	uint8_t			crcState;
 }cmd_t;
 cmd_t cmd;
 
-static inline uint8_t 	cmdCrc8CCITTUpdate 	( uint8_t inCrc , uint8_t *inData );
 
 void					cmdInit				( const cmdTable_t *tab , cmdRaw_t *raw , size_t tableSize );
 

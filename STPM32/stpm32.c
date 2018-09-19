@@ -11,6 +11,12 @@
 */
 
 #include "../Headers/wsq3000_def.h"
+
+#include <avr/io.h>
+#include <stdlib.h>
+#include <string.h>
+#include <util/delay.h>
+#include <avr/interrupt.h>
 #include "../Headers/stpm32.h"
 
 
@@ -77,9 +83,9 @@ static inline void		stpm32SpiRead	( uint8_t *buff , uint8_t useCrc )
 	uint8_t frame[5] = { buff[0] , 0xFF , 0xFF , 0xFF , 0x00 }; // buff[0] = Register Adresse
 		
 	__STPM32_PIN_LOW__( STPM32_SYNC_PORT , STPM32_SYNC_bp );
-  	_delay_ms(5);
+  	_delay_ms(10);
   	__STPM32_PIN_HIGH__( STPM32_SYNC_PORT , STPM32_SYNC_bp );
-  	_delay_ms(15);		
+  	_delay_ms(10);		
 	
 	stpm32Select();
 	for ( uint8_t i = 0 ; i < ( STPM32_FRAME_LENG - 1 ) + useCrc ; i++ )
@@ -215,19 +221,9 @@ static uint32_t			stpm32CalcXi	( uint16_t data	)
 	return ( data / STPM32_ILSB );
 }
 
-static inline uint32_t	stpm32CalcCHV	( uint16_t vCal , uint32_t vADRead )				
-{
-	return ( ( 14336 *  stpm32CalcXv( vCal ) / ( vADRead & 0x7FFF ) - 12288 ) );
-}
-
-static inline uint32_t	stpm32CalcCHC	( uint8_t iCal , uint32_t iADRead )					
-{
-	return ( ( 14336 *  stpm32CalcXi( iCal ) /  ( iADRead ) - 12288 ) ) ;
-}
 
 
-
-void		stpm32SpiInit		( void )								
+void		stpm32Init			( void )									
 {
 	__STPM32_PIN_OUTPUT__( STPM32_SYNC_PORT , STPM32_SYNC_bp );
 	__STPM32_PIN_OUTPUT__( STPM32_SCS_PORT , STPM32_SCS_bp );
@@ -239,25 +235,7 @@ void		stpm32SpiInit		( void )
 	
 }
 
-uint16_t	stpm32SetCalV		( uint16_t voltageAD , uint8_t useCrc )		
-{
-	uint16_t chv = stpm32CalcCHV( STPM32_CAL_VOLTAGE , voltageAD );
-	
-	stpm32Write_( DSP_CR5 , chv , useCrc );
-	
-	return chv;
-}
-
-uint16_t	stpm32SetCalI		( uint16_t currentAD , uint8_t useCrc )		
-{
-	uint16_t chc = stpm32CalcCHC( STPM32_CAL_CURRENT , currentAD );
-	
-	stpm32Write_( DSP_CR6 , chc , useCrc );
-	
-	return chc;	
-}
-
-void		stpm32useCrcable	( uint8_t useCrc )							
+void		stpm32CrcEnable		( uint8_t useCrc )							
 {
 	/*
 	*	Siehe Datenblatt Seite.: 69
@@ -309,10 +287,48 @@ uint8_t		stpm32Online		( uint8_t useCrc )
 	
 	if ( BUILD_UINT32( buff ) == 0b11111111000000001111111100000000 )
 	{
-		return 0;
+		return 0; // Online
 	}
 	
-	return 1;
+	return 1; // Offline
+}
+
+uint32_t	stpm32GetVoltageAD	( void )									
+{
+	uint8_t buff[5] = "";
+	
+	stpm32Read( 0x48 , buff , 1 );
+	
+	return ( BUILD_UINT32( buff ) & 0x7FFF );
+}
+
+uint32_t	stpm32GetCurrentAD	( void )									
+{
+	uint8_t buff[5] = "";
+	
+	stpm32Read( 0x48 , buff , 1 );
+	
+	return ( ( BUILD_UINT32( buff ) & 0xFFFF8000 ) >> 15 );	
+}
+
+uint32_t	stpm32CalcCHV		( uint16_t vCal , uint32_t vADRead )		
+{
+	return ( ( 14336 *  stpm32CalcXv( vCal ) / ( vADRead & 0x7FFF ) - 12288 ) );
+}
+
+void		stpm32SetCHV		( uint16_t val , uint8_t useCrc )			
+{
+	stpm32Write_( DSP_CR5 , val , useCrc );
+}
+
+uint32_t	stpm32CalcCHC		( uint8_t iCal , uint32_t iADRead )			
+{
+	return ( ( 14336 *  stpm32CalcXi( iCal ) /  ( iADRead ) - 12288 ) ) ;
+}
+
+void		stpm32SetCHC		( uint16_t val , uint8_t useCrc )			
+{
+	stpm32Write_( DSP_CR6 , val , useCrc );
 }
 
 uint16_t	stpm32GetVoltage	( uint8_t useCrc )							
@@ -328,5 +344,8 @@ float		stpm32GetCurrent	( uint8_t useCrc )
 	uint8_t buff[5] = "";
 	stpm32Read( 0x48 , buff , useCrc );
 	
-	return ( stpm32CalcIrms( ( BUILD_UINT32( buff ) & 0xFFFF8000 ) >> 15 ) );
+	return ( stpm32CalcIrms( BUILD_UINT32( buff ) ) );
 }
+
+
+

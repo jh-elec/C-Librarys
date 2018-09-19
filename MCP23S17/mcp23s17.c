@@ -29,8 +29,10 @@
 */
 
 #include <avr/io.h>
-#include "mcp23s17.h"
-#include "xmega_spi.h"
+#include "../Headers/mcp23s17.h"
+#include "../Headers/xmega_spi.h"
+#include "../Headers/wsq3000_def.h"
+#include <util/delay.h>
 
 
 
@@ -38,12 +40,22 @@ void	mcp23s17Init		( void )
 {
 	MCP23S17_SS_PORT.DIRSET = 1<<MCP23S17_SS_bp;
 	
-	mcp23s17Cnfg( 1<<INTPOL | 1<<ODR | 1<<HAEN);
+	/*
+	*	When using SPI Mode 1,1 the CS pin needs to be toggled once before the first communication after
+	*	power-up.
+	*/
+	mcp23s17Deselect();
+	_delay_ms(50);
+	mcp23s17Select();
+	_delay_ms(50);
+	mcp23s17Deselect();
+		
+	mcp23s17Cnfg( 1<<INTPOL | 1<<ODR | 1<<HAEN );
 	
 	/*
 	*	Alle I/O´s auf Ausgänge Programmieren
 	*/
-	mcp23s17CnfgOut( 0x00 , ( 1<<0 | 1<<1 ) ); // GPIOB Bit 0 & 1 als Eingang
+	mcp23s17CnfgOut( 0x00 , 0x00 );
 	
 	/*
 	*	Alle Ausgänge auf default setzen
@@ -54,19 +66,16 @@ void	mcp23s17Init		( void )
 uint8_t mcp23s17WriteBytes	( uint8_t *buff , uint8_t leng )		
 {
 	uint8_t i = 0;
-
+	
 	/*
 	*	When using SPI Mode 1,1 the CS pin needs to be toggled once before the first communication after
 	*	power-up.
 	*/
-	mcp23s17Deselect();
 	mcp23s17Select();
-	
 	for ( i = 0 ; i < leng ; i++ )
 	{
 		spiMasterWrite( buff[i] );
 	}
-	
 	mcp23s17Deselect();
 
 	return i;
@@ -75,14 +84,13 @@ uint8_t mcp23s17WriteBytes	( uint8_t *buff , uint8_t leng )
 uint8_t mcp23s17ReadBytes	( uint8_t *buff , uint8_t leng )		
 {
 	uint8_t i;
-
+	
 	/*
 	*	When using SPI Mode 1,1 the CS pin needs to be toggled once before the first communication after
 	*	power-up.
 	*/
-	mcp23s17Deselect();
 	mcp23s17Select();
-	
+
 	spiMasterWrite( *( &buff[0] ) ); // Slave Adresse + lesen / schreiben
 	spiMasterWrite( *( &buff[1] ) ); // Register Adresse	
 
@@ -125,7 +133,7 @@ uint8_t mcp23s17SetOut		( uint8_t gpioA , uint8_t gpioB )
 		MCP23S17_OPCODE + SPI_WRITE,
 		BANK0_GPIOA,
 		gpioA,
- 		gpioB
+ 		gpioB,
 	};
 	
 	/*

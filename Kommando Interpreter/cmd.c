@@ -325,7 +325,7 @@ uint8_t cmdCrc8StrCCITT( char *str )
 {
 	uint8_t crc = 0;
 	
-	while ( *str )
+	while ( *str != CMD_CRC_BEGINN )
 	{
 		crc = cmdCrc8CCITTUpdate( crc , ( uint8_t * ) str );
 		str++;

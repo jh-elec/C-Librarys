@@ -22,17 +22,7 @@
 
 #define BUILD_UINT32( BUFF )	( ((uint32_t)BUFF[3]<<24UL | (uint32_t)BUFF[2]<<16UL | (uint32_t)BUFF[1]<<8UL | (uint32_t)BUFF[0]) )
 
-#ifdef __AVR__
-
-	#include <avr/io.h>
-	#include <stdlib.h>
-	#include <string.h>
-	#include <util/delay.h>
-	#include <avr/interrupt.h>
-	#include "xmega_spi.h"
-	
-#endif
-
+#include "xmega_spi.h"
 
 
 /*	Hier bitte die "SPI Routinen" eintragen!
@@ -50,24 +40,20 @@
 *	erwartet und als Rückgabeparameter das empfangene Byte wieder zurück gibt.
 *
 */
-#ifdef __AVR__
+#define STPM32_SYNC_PORT		PORTC
+#define STPM32_SYNC_bp			0
 
-	#define STPM32_SYNC_PORT		PORTC
-	#define STPM32_SYNC_bp			0
+#define STPM32_SCS_PORT			PORTC
+#define STPM32_SCS_bp			1
 
-	#define STPM32_SCS_PORT			PORTC
-	#define STPM32_SCS_bp			1
-
-	#define STPM32_EN_PORT			PORTC
-	#define STPM32_EN_bp			2
+#define STPM32_EN_PORT			PORTC
+#define STPM32_EN_bp			2
 
 
-	#define __STPM32_PIN_OUTPUT__( _port , _pin )	( _port.DIRSET = 1<<_pin )
-	#define __STPM32_PIN_HIGH__( _port , _pin )		( _port.OUTSET = 1<<_pin )
-	#define __STPM32_PIN_LOW__( _port , _pin )		( _port.OUTCLR = 1<<_pin )
+#define __STPM32_PIN_OUTPUT__( _port , _pin )	( _port.DIRSET = 1<<_pin )
+#define __STPM32_PIN_HIGH__( _port , _pin )		( _port.OUTSET = 1<<_pin )
+#define __STPM32_PIN_LOW__( _port , _pin )		( _port.OUTCLR = 1<<_pin )
 
-#endif
-	
 enum stpm32CommunicationProtocol
 {
 	#define STPM32_FRAME_LENG			5
@@ -206,23 +192,31 @@ typedef struct
 stpm32_t stpm32;
 
 
-void		stpm32SpiInit		( void );										
+void		stpm32Init			( void );									
 
-uint16_t	stpm32SetCalV		( uint16_t voltageAD , uint8_t useCrc );			
-
-uint16_t	stpm32SetCalI		( uint16_t currentAD , uint8_t useCrc );				
-
-void		stpm32useCrcable	( uint8_t useCrc );									
+void		stpm32CrcEnable		( uint8_t useCrc );							
 	
-void		stpm32CrcDisable	( uint8_t useCrc );									
+void		stpm32CrcDisable	( uint8_t useCrc );							
 
-void		stpm32CrcSetPoly	( uint8_t poly , uint8_t useCrc );					
+void		stpm32CrcSetPoly	( uint8_t poly , uint8_t useCrc );			
 
-uint8_t		stpm32Online		( uint8_t useCrc );									
+uint8_t		stpm32Online		( uint8_t useCrc );							
 
-uint16_t	stpm32GetVoltage	( uint8_t useCrc );									
+uint32_t	stpm32GetVoltageAD	( void );									
 
-float		stpm32GetCurrent	( uint8_t useCrc );									
+uint32_t	stpm32GetCurrentAD	( void );									
+
+uint32_t	stpm32CalcCHV		( uint16_t vCal , uint32_t vADRead );		
+
+void		stpm32SetCHV		( uint16_t val , uint8_t useCrc );			
+
+uint32_t	stpm32CalcCHC		( uint8_t iCal , uint32_t iADRead );			
+
+void		stpm32SetCHC		( uint16_t val , uint8_t useCrc );			
+
+uint16_t	stpm32GetVoltage	( uint8_t useCrc );							
+
+float		stpm32GetCurrent	( uint8_t useCrc );							
 
 
 #endif
