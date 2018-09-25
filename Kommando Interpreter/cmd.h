@@ -20,6 +20,7 @@
 
 #define CMD_TAB_SIZE( TABLE )			sizeof( TABLE ) / sizeof( *TABLE )
 
+#define CMD_START				'-'
 #define CMD_RAW_DATA_BEGINN		":"
 #define CMD_RAW_PARA_DELIMITER	","
 #define CMD_DATA_END			';'

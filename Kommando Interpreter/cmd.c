@@ -31,19 +31,26 @@ static char			*cmdSearch			( char *inBuff , char *srchCmd )
 	char *cmdBeginnPtr 	= NULL;
 	char *cmdEndPtr		= NULL;
 
-	if ( inBuffPtr == NULL || srchCmdPtr == NULL )
+	if ( !(inBuffPtr) || !(srchCmdPtr) )
 	{
 		return NULL;
 	}
 
-	cmdBeginnPtr = strstr( inBuffPtr , srchCmdPtr );
+	cmdBeginnPtr = strchr( inBuffPtr , CMD_START );
 	cmdEndPtr	 = strchr( inBuffPtr , CMD_DATA_END );
 
-	if ( cmdEndPtr == NULL || cmdBeginnPtr == NULL )
+	if ( !(cmdEndPtr) || !(cmdBeginnPtr) )
 	{
 		return NULL;
 	}
 
+	cmdBeginnPtr = strstr( inBuffPtr , srchCmd );
+	
+	if ( !(cmdBeginnPtr) )
+	{
+		return NULL;
+	}
+	
 	cmd_ = cmdBeginnPtr;
 
 	return cmdBeginnPtr;
