@@ -13,10 +13,7 @@
 #ifndef __CMD_TAB_H__
 #define __CMD_TAB_H__
 
-#ifdef __AVR__
-	#include <avr/io.h>
-#endif
-
+#include <avr/io.h>
 #include <stdlib.h>
 #include "cmd.h"
 
@@ -34,13 +31,13 @@
 
 const		cmdTable_t		cmdTab[] =					
 {
-	{"Relais:" 			, 	"-k"	, 	NULL	,	":Relais , 0=off || 1=on"	},
-	{"Init:"			,	"-init"	,	NULL			,	"0"						},
-	{"EEP:"				,	"-eep"	,	NULL		,	"0"						},
-	{"Kalibration:"		,	"-cal"	,	NULL			,	"0"						},
-	{"Spannung:"		,	"-getv"	,	NULL		,	"0"						},
+	{"Relais:" 			, 	"-k"	, 	relaisHandler	,	":Relais , 0=off || 1=on"	},
+	{"Init:"			,	"-init"	,	reInit			,	"0"						},
+	{"EEP:"				,	"-eep"	,	loadEEP_		,	"0"						},
+	{"Kalibration:"		,	"-cal"	,	cal				,	"0"						},
+	{"Spannung:"		,	"-getv"	,	getVoltage		,	"0"						},
 	{"Strom:"			,	"-geti"	,	NULL			,	"0"						},
-	{"Help  :"			,	"-help"	,	NULL			,	"0"						},
+	{"Help  :"			,	"-help"	,	helper			,	"0"						},
 };
 
 #endif

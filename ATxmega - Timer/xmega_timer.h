@@ -7,188 +7,56 @@
 * Description       -> Timer
 *
 *
-*	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-*	!																				!
-*	!	Wichtig! Sollte irgendein Interrupt aktiviert sein,							!
-*	!	muss unbedingt der dazugehörige Vektor im Quellkode vorhanden sein.			!
-*	!																				!
-*	!	Die Initalisierungen müssen vor irgendwelchen "PowerReduce"					!
-*	!	Prozeduren erfolgen (PR.PORTx = 0x00)!										!
-*	!																				!
-*	!	Achtung vorher müssen die jeweiligen Pins als Ausgänge konfiguriert werden	!
-*	!																				!
-*	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-*
-*	------------------
-*	|Port	|	Timer|
-*	------------------
-*	PORTC		TCCxC 
-*	PORTD		TCCxD 
-*	PORTE		TCCxE 
-*		  usw..
-*	------------------
-*
-*	####################################
-*	OC0A	= Compare Channel A ( CCA )
-*	OC0B	= Compare Channel B ( CCB )
-*	OC0C	= Compare Channel C ( CCC )
-*	OC0D	= Compare Channel D ( CCD )
-*
-*	OC1A	= Compare Channel A ( CCA )
-*	OC1B	= Compare Channel B ( CCB )
-*	####################################
-*
-*
-*	Möchten wir eine invertierte PWM haben, können wir im entsprechenden PINxCTRL das "INVEN" Bit setzen.
-*	( z.B PORTD.PIN3CTRL = 1<<INVEN )
-*
-*
-*	Beispiel für Timer Compare Match Interrupts:
-*	------------------------------------------------------------------------
-*	tcxInit_t cmpMI;
-*	cmpMI.tim0							= &TCD0;
-*	cmpMI.tim0Cnfg.preVal				= TIMER_PRESCALER_1024;
-*	cmpMI.tim0Cnfg.perVal				= 400;
-*
-*	cmpMI.tim0Cnfg.compareMatchChannel	= TC0_CCA;
-*	cmpMI.tim0Cnfg.cmpVal				= 100;
-*	timerCMPInit( &cmpMI );
-*
-*	cmpMI.tim0Cnfg.compareMatchChannel	= TC0_CCB;
-*	cmpMI.tim0Cnfg.cmpVal				= 200;
-*	timerCMPInit( &cmpMI );
-*
-*
-*	ISR( TCD0_CCA_vect )
-*	{
-*		// kode..
-*	}
-*
-*	ISR( TCD0_CCB_vect )
-*	{
-*		// kode..
-*	}
-*
-*
-*	Beispiel für Timer Compare Match PWM:
-*	-----------------------------------------------
-*	tcxInit_t pwmOc1a;
-*	pwmOc1a.tim1 = &TCE1;
-*	pwmOc1a.tim1Cnfg.compareMatchChannel = TC1_CCA;
-*	pwmOc1a.tim1Cnfg.preVal = TIMER_PRESCALER_256;
-*	pwmOc1a.tim1Cnfg.perVal = 100;
-*	pwmOc1a.tim1Cnfg.cmpVal = 10;
-*	timerPWMInit( &pwmOc1a );
-*
-*
 *
 */
 
 
-#ifndef __XMEGA_TIMER_H__
-#define __XMEGA_TIMER_H__
-
-#define F_CPU								2e6
+#ifndef __TIMER_H__
+#define __TIMER_H__
 
 
-/*	Systemfrequenz Teiler
+#include "wsq3000_def.h"
+
+#define TIMER_HZ				100
+#define TIMER_PRESCALER			1024
+
+#if		TIMER_PRESCALER == 1
+#undef TIMER_PRESCALER_gc
+#define TIMER_PRESCALER_gc	TC_CLKSEL_DIV1_gc
+#elif	TIMER_PRESCALER == 2
+#undef TIMER_PRESCALER_gc
+#define TIMER_PRESCALER_gc	TC_CLKSEL_DIV2_gc
+#elif	TIMER_PRESCALER == 4
+#undef TIMER_PRESCALER_gc
+#define TIMER_PRESCALER_gc	TC_CLKSEL_DIV4_gc
+#elif	TIMER_PRESCALER == 8
+#undef TIMER_PRESCALER_gc
+#define TIMER_PRESCALER_gc	TC_CLKSEL_DIV8_gc
+#elif	TIMER_PRESCALER == 64
+#undef TIMER_PRESCALER_gc
+#define TIMER_PRESCALER_gc	TC_CLKSEL_DIV64_gc
+#elif	TIMER_PRESCALER == 256
+#undef TIMER_PRESCALER_gc
+#define TIMER_PRESCALER_gc	TC_CLKSEL_DIV256_gc
+#elif	TIMER_PRESCALER == 1024
+#undef TIMER_PRESCALER_gc
+#define TIMER_PRESCALER_gc	TC_CLKSEL_DIV1024_gc
+#endif
+
+
+/*
+*	Einige XMEGA´s haben mehrere Timer Compare Matches
 */
-enum			timer_prescaler_enum	
-{
-	TIMER_PRESCALER_OFF		= TC_CLKSEL_OFF_gc,		/* Timer Off */
-	TIMER_PRESCALER_1		= TC_CLKSEL_DIV1_gc,	/* System Clock */
-	TIMER_PRESCALER_2		= TC_CLKSEL_DIV2_gc,	/* System Clock / 2 */
-	TIMER_PRESCALER_4		= TC_CLKSEL_DIV4_gc,	/* System Clock / 4 */
-	TIMER_PRESCALER_8		= TC_CLKSEL_DIV8_gc,	/* System Clock / 8 */
-	TIMER_PRESCALER_64		= TC_CLKSEL_DIV64_gc,	/* System Clock / 64 */
-	TIMER_PRESCALER_256		= TC_CLKSEL_DIV256_gc,  /* System Clock / 256 */
-	TIMER_PRESCALER_1024	= TC_CLKSEL_DIV1024_gc, /* System Clock / 1024 */
-};
-typedef enum	timer_prescaler_enum	tcxPrescaler_t;
+#define TIMER_CALC			(uint16_t)( ( F_CPU / ( 2 * TIMER_PRESCALER ) * ( TIMER_HZ + 1 ) ) )
 
 
-/*	Timer Frequenz in Hz[Hertz]
-*/
-#define TIMER_CALC_HZ( _pre , _hz )			(uint16_t)( ( F_CPU / ( 2 * _pre ) * ( _hz + 1 ) ) )
+void timer0OVFInit	( TC0_t *tim );
+
+void timer0CMPInit	( TC0_t *tim );
+
+void timerStart		( TC0_t *tim0 , TC1_t *tim1 );
+
+void timerStop		( TC0_t *tim0 , TC1_t *tim1 );
 
 
-/*	Offset von den anderen CCx berechnen
-*/
-#define TIMER_CCx( _timer , _ccx)			( ( & ( _timer->CCA ) )[_ccx]  )
-#define TIMER_PRx( _port )					( ( & ( PR.PRPA     ) )[_port] )
-
-typedef enum tc0_ccx_enum
-{
-	TC0_CCA,
-	TC0_CCB,
-	TC0_CCC,
-	TC0_CCD,
-} tc0Ccx_t;
-
-typedef enum tc1_ccx_enum
-{
-	TC1_CCA,
-	TC1_CCB,
-}tc1Ccx_t;
-
-
-typedef struct	
-{
-	TC0_t		*tim0; // Timer0
-	TC1_t		*tim1; // Timer1
-	
-	struct  
-	{
-		tc0Ccx_t			compareMatchChannel; // Compare Match Channel
-		uint16_t			perVal;	// maximaler Zählwert
-		uint16_t			cmpVal; // Compare Match Wert
-		tcxPrescaler_t		preVal;	// Prescaler Wert
-	}tim0Cnfg;
-
-	struct
-	{
-		tc1Ccx_t			compareMatchChannel; // Compare Match Channel
-		uint16_t			perVal;	// maximaler Zählrwert
-		uint16_t			cmpVal; // Compare Match Wert
-		tcxPrescaler_t		preVal;	// Prescaler Wert
-	}tim1Cnfg;	
-	
-}tcxInit_t;
-
-typedef struct	
-{
-	TC0_t		*tim0; // Timer0
-	TC1_t		*tim1; // Timer1
-	
-	/*	tcxOvfInit_t
-	*	hz		= Frequenz vom Timerx ( Muss vorher nachgerechnet werden ob die Werte überhaupt erreicht werden können.. )
-	*	preVal	= Muss ebenfals nachgerchnet werden..
-	*/
-	struct  
-	{
-		uint16_t			hz; // Frequenz in Hertz für Timer0
-		tcxPrescaler_t		preVal; // Prescaler für Timer0
-	}tim0Cnfg;
-	
-	struct
-	{
-		uint16_t			hz; // Frequenz in Hertz für Timer1
-		tcxPrescaler_t		preVal; // Prescaler für Timer1
-	}tim1Cnfg;	
-	
-}tcxOvfInit_t;
-
-
-void		timerOVFInit	( tcxOvfInit_t *i );
-
-void		timerCMPInit	( tcxInit_t *i );
-
-void		timerPWMInit	( tcxInit_t *i );
-
-void		timerStart		( TC0_t *tim0 , tcxPrescaler_t pre0 , TC1_t *tim1 , tcxPrescaler_t pre1 );
-
-void		timerStop		( TC0_t *tim0 , TC1_t *tim1 );
-
-
-
-#endif  // __XMEGA_TIMER_H__
+#endif

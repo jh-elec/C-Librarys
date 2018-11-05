@@ -13,87 +13,62 @@
 #ifndef __CMD_H__
 #define __CMD_H__
 
-
 #include <stdint.h>
 #include <stdlib.h>
 
 
-#define CMD_TAB_SIZE( TABLE )			sizeof( TABLE ) / sizeof( *TABLE )
 
-#define CMD_START				'-'
-#define CMD_RAW_DATA_BEGINN		":"
-#define CMD_RAW_PARA_DELIMITER	","
-#define CMD_DATA_END			';'
-#define CMD_CRC_BEGINN			'#'
-#define CMD_CRC_END				'\0'
-
-typedef struct
+enum Communication_Header_Enum
 {
-	/*
-	*	Name des Kommandos
-	*/
-	char		name[20];
+	CMD_HEADER_START_BYTE1, // Kommando Start Byte 1
+	CMD_HEADER_START_BYTE2, // .. Byte 2
+	CMD_HEADER_LENGHT, 		// Länge des ganzen Streams
+	CMD_HEADER_DATA_LENGHT, // Länge der Roh Daten
+	CMD_HEADER_DATA_TYP, 	// (u)char , (u)int8 , (u)int16 , (u)int32
+	CMD_HEADER_ID, 			// Stream ID
+	CMD_HEADER_EXITCODE,	// Exitkode aus Funktionen
+	CMD_HEADER_CRC, 		// Checksumme von der Message
 
-	/*
-	*	Befehl der empfangen werden muss
-	*/
-	char		instruction[15];
-
-	/*
-	*	Funktion die beim entsprechenden Kommando
-	*	ausgeführt werden soll
-	*/
-	void*		(*fnc) (void* , void*);
-
-	/*
-	*	Befehlssyntax
-	*/
-	const char	*syntax;
-
-}cmdTable_t;
-
-typedef struct
-{
-	char 	*cmdPtr;
-	uint8_t  paraNumb;
-}cmdRaw_t;
-cmdRaw_t raw;
-
-enum crc_state
-{
-	CMD_CRC_OK,
-	CMD_CRC_ERROR,	
+	__CMD_HEADER_ENTRYS__
 };
 
+
+
 typedef struct
 {
-	const 			cmdTable_t 	*table;
-					size_t		tabLen;
-					cmdRaw_t	*raw;
-	uint8_t			crcState;
+	uint8_t msgLen;
+	uint8_t dataLen;
+	uint8_t dataTyp;
+	uint8_t id;
+	uint8_t exitcode;	
+	uint8_t inCrc;
+	uint8_t outCrc;
+	
+	uint8_t *dataPtr;
+
 }cmd_t;
-cmd_t cmd;
+
+typedef struct 
+{
+	uint8_t (*fnc)( cmd_t *);	
+}cmdFuncTab_t;
 
 
-void					cmdInit				( const cmdTable_t *tab , cmdRaw_t *raw , size_t tableSize );
 
-uint8_t 				cmdCntPara			( char *stream );
+void	cmdInit				( cmd_t *c );					
 
-const char				*cmdGetInstruction	( char *input );
+int8_t	cmdGetStartIndex	( uint8_t *rx );					
 
-const char				*cmdGetName			( char *input );
+uint8_t	cmdGetEndIndex		( uint8_t *rx );					
 
-void					*cmdGetFunc			( char *input );
+uint8_t	cmdParse			( uint8_t *rx , cmd_t *c );		
 
-char 					*cmdGetPara 		( char *out , char *in , uint8_t num );
+uint8_t	cmdCrc8StrCCITT		( uint8_t *str , uint8_t leng );
 
-char 					*cmdGetCRC 			( char *out , char *stream );
+uint8_t	*cmdBuildHeader		( cmd_t *a );					
 
-char					*cmdGetCmdStr		( char *out , char *stream );
+void	cmdSendAnswer		( cmd_t *a );					
 
-char					*cmdHelp			( char *helpBuff );
-
-uint8_t 				cmdCrc8StrCCITT		( char *str );
 
 
 #endif

@@ -10,300 +10,22 @@
 *
 */
 
+#include <avr/io.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "cmd.h"
+#include "Headers\cmd.h"
+#include "Headers\xmega_usart.h"
 
 
-char	*cmd_ = NULL;
+/*	Speicher für den Antwort Header
+*	Die Nutzdaten werden werden dem Zeiger
+*	der cmd_t Struktur übergeben!
+*/
+static uint8_t cmdMsg[__CMD_HEADER_ENTRYS__];
 
-
-static char			*cmdSearch			( char *inBuff , char *srchCmd )
-{
-	/*
-	*	Zeiger deklarieren).
-	*/
-	char *inBuffPtr		= inBuff;
-	char *srchCmdPtr	= srchCmd;
-	char *cmdBeginnPtr 	= NULL;
-	char *cmdEndPtr		= NULL;
-
-	if ( !(inBuffPtr) || !(srchCmdPtr) )
-	{
-		return NULL;
-	}
-
-	cmdBeginnPtr = strchr( inBuffPtr , CMD_START );
-	cmdEndPtr	 = strchr( inBuffPtr , CMD_DATA_END );
-
-	if ( !(cmdEndPtr) || !(cmdBeginnPtr) )
-	{
-		return NULL;
-	}
-
-	cmdBeginnPtr = strstr( inBuffPtr , srchCmd );
-	
-	if ( !(cmdBeginnPtr) )
-	{
-		return NULL;
-	}
-	
-	cmd_ = cmdBeginnPtr;
-
-	return cmdBeginnPtr;
-}
-
-static int8_t		cmdGetIndex			( char *inBuff )
-{
-	uint8_t i;
-
-	cmd_t 	*cmdPtr			= &cmd;
-	char  	*cmdSearchPtr 	= NULL;
-	char	*inputPtr		= inBuff;
-
-	for ( i = 0 ; i < cmdPtr->tabLen ; i++ )
-	{
-		cmdSearchPtr = cmdSearch( inputPtr , ( char* ) cmdPtr->table[i].instruction );
-		if ( cmdSearchPtr != NULL )
-		{
-			return i;
-		}
-	}
-
-	return -1;
-}
-
-
-void				cmdInit				( const cmdTable_t *tab , cmdRaw_t *raw , size_t tableSize )
-{
-	cmd.table	= tab;
-	cmd.tabLen	= tableSize;
-	cmd.raw		= raw;
-	
-	cmd.raw->cmdPtr		= NULL;
-	cmd.raw->paraNumb	= 0;
-}
-
-uint8_t 			cmdCntPara			( char *stream )
-{
-	uint8_t		x					= 0;
-	char		*cmdPtr				= stream;
-	char		*beginnPtr			= stream;
-
-	beginnPtr = strchr( beginnPtr , CMD_RAW_DATA_BEGINN[0] ); // Erster Parameter
-	if ( beginnPtr != NULL )
-	{
-		if ( *( beginnPtr + 1 ) != CMD_DATA_END && *( beginnPtr + 1 ) != CMD_RAW_PARA_DELIMITER[0] )
-		{
-			x++;
-		}
-	}
-	
-	for ( ; cmdPtr != NULL ;  )
-	{
-		cmdPtr = strchr( cmdPtr + 1 , CMD_RAW_PARA_DELIMITER[0] ); // weitere Parameter
-
-		if ( cmdPtr != NULL )
-		{
-			if ( *( cmdPtr + 1 ) != CMD_DATA_END && *( cmdPtr + 1 ) != CMD_RAW_PARA_DELIMITER[0] )
-			{
-				x++;
-			}
-		}
-	}
-
-	cmd.raw->paraNumb = x;
-
-	return x;
-}
-
-const char			*cmdGetInstruction	( char *input )
-{
-	int8_t i = cmdGetIndex( input );
-
-	if ( i != (int8_t) -1 )
-	{
-		return cmd.table[i].instruction;
-	}
-
-	return NULL;
-}
-
-const char			*cmdGetName			( char *input )
-{
-	int8_t ret = cmdGetIndex( input );
-
-	if ( ret != (int8_t) -1 )
-	{
-		return cmd.table[ret].name;
-	}
-
-	return NULL;
-}
-
-void				*cmdGetFunc			( char *input )
-{
-	int8_t ret = cmdGetIndex( input );
-	if ( ret != (int8_t) -1 )
-	{
-		return cmd.table[ret].fnc;
-	}
-	return NULL;
-}
-
-char 				*cmdGetPara 		( char *out , char *in , uint8_t num )
-{
-	const char 	*rawPtr		= NULL;
-	uint8_t x;
-
-	memset( (char*)out , 0 , strlen(out) );
-
-    if ( cmdCntPara( in ) < num )
-    {
-        return NULL;
-    }
-
-	for ( x = 0 ; x < cmd.tabLen ; x++ )
-	{
-		rawPtr = cmdSearch( in , ( char * ) cmd.table[x].instruction );
-		if ( rawPtr != NULL )
-		{
-			break;
-		}
-	}
-
-	if ( rawPtr == NULL )
-	{
-		return NULL;
-	}
-
-	char *streamPtr = in;
-
-	streamPtr = strchr( in , CMD_RAW_DATA_BEGINN[0] ) + 1;
-    if ( *streamPtr == CMD_DATA_END || *streamPtr == CMD_RAW_PARA_DELIMITER[0] || streamPtr == NULL )
-    {
-        return NULL;
-    }
-
-	uint8_t i;
-	for ( i = 0 ; i < num ; i++ )
-	{
-		streamPtr = strchr( streamPtr , CMD_RAW_PARA_DELIMITER[0] ) + 1;
-		if ( *streamPtr == CMD_DATA_END || *streamPtr == CMD_RAW_PARA_DELIMITER[0] )
-        {
-            return NULL;
-        }
-	}
-
-	char *outPtr = out;
-	while( *streamPtr != '\0' && *streamPtr != CMD_RAW_PARA_DELIMITER[0] && *streamPtr != CMD_DATA_END )
-	{
-		if ( *( streamPtr )  == CMD_CRC_BEGINN )
-		{
-			return NULL;
-		}
-        *outPtr++ = *streamPtr++;
-	}
-
-	return out;
-}
-
-char 				*cmdGetCRC 			( char *out , char *stream )
-{
-	char *crcPtr = stream;
-	char *outPtr = out;
-
-	crcPtr = strchr( crcPtr , ( char ) CMD_DATA_END );
-	if ( crcPtr == NULL )
-	{
-		return NULL;
-	}
-	
-	crcPtr = strchr( crcPtr , ( char ) CMD_CRC_BEGINN );
-	if ( crcPtr != NULL && *( crcPtr + 1 ) != '\0' )
-	{
-		return crcPtr + 1;
-	}
-
-	return NULL;
-}
-
-char				*cmdGetCmdStr		( char *out , char *stream )
-{
-	uint8_t i;
-
-	cmd_t	*cmdPtr			= &cmd;
-	char	*outPtr			= out;
-	char  	*cmdSearchPtr 	= NULL;
-	char	*inputPtr		= stream;
-
-	if ( cmdGetCRC( out , stream ) == NULL )
-	{
-		return NULL;
-	}
-
-	for ( i = 0 ; i < cmdPtr->tabLen ; i++ )
-	{
-		cmdSearchPtr = cmdSearch( inputPtr , ( char* ) cmdPtr->table[i].instruction );
-		if ( cmdSearchPtr != NULL )
-		{
-			while( *cmdSearchPtr != '#' )
-			{
-				*out++ = *cmdSearchPtr++;
-			}
-			
-			return outPtr;
-		}
-	}
-	
-	return NULL;	
-}
-
-char				*cmdHelp			( char *helpBuff )
-{
- 	strcpy( ( char * ) helpBuff , "Kommando Syntax: " );
- 	strcat( ( char * ) helpBuff , "[KOMMANDO WORD][PARAMETER START][PARAMETER][KOMMANDO ENDE]\r\n" );
-
-	strcat( ( char * ) helpBuff , "'" );
-	strcat( ( char * ) helpBuff , CMD_RAW_DATA_BEGINN );
-	strcat( ( char * ) helpBuff , "' ->[PARA. START]\r\n" );
-
-	strcat( ( char * ) helpBuff , "'" );
-	strcat( ( char * ) helpBuff , CMD_RAW_PARA_DELIMITER );
-	strcat( ( char * ) helpBuff , "' ->[PARA. TRENNER]\r\n" );
-
-	strcat( ( char * ) helpBuff , "'" );
-
-	uint8_t pos = strlen( helpBuff );
-
-	if ( CMD_DATA_END == '\0' )
-	{
-		strcat( ( char * ) helpBuff , "\\0" );
-	}
-	else
-	{
-		helpBuff[ pos ] = CMD_DATA_END;
-	}
-	strcat( ( char * ) helpBuff , "' ->[KOMMANDO ENDE]\r\n\n" );
-
-
- 	strcat( ( char * ) helpBuff , "Kommandos:\r\n\n" );
-
-	uint8_t x = 0;
-	for ( ; x < cmd.tabLen ; x++ )
-	{
-		strcat( ( char * ) helpBuff , cmd.table[x].name );
-		strcat( ( char * ) helpBuff , " " );
-		strcat( ( char * ) helpBuff , cmd.table[x].instruction );
-		strcat( ( char * ) helpBuff , cmd.table[x].syntax );
-		strcat( ( char * ) helpBuff , "\r\n" );
-	}
-
-	return helpBuff;
-}
 
 static inline uint8_t cmdCrc8CCITTUpdate ( uint8_t inCrc , uint8_t *inData )
 {
@@ -328,11 +50,82 @@ static inline uint8_t cmdCrc8CCITTUpdate ( uint8_t inCrc , uint8_t *inData )
 	return data;
 }
 
-uint8_t cmdCrc8StrCCITT( char *str )
+
+void	cmdInit				( cmd_t *c )					
+{
+	c->msgLen	= 0; // Länge der gesamten Message
+	c->dataLen	= 0; // Länge der Nutzdaten Bytes
+	c->dataTyp	= 0; // Datentyp der Nutzdaten
+	c->id		= 0; // Message Erkennung
+	c->exitcode = 0; // Exitkode aus Funktionen
+	c->inCrc	= 0; // Checksumme der gesamten Message
+	c->outCrc	= 0;
+	c->dataPtr	= NULL; // Zeiger auf Nutzdaten
+}
+
+int8_t	cmdGetStartIndex	( uint8_t *rx )					
+{
+	uint8_t index;
+	for( index = 0 ; index < 255 ; index++ )
+	{
+		if ( rx[index] == '-' && rx[index+1] == '+' )
+		{
+			return index;
+		}
+	}
+
+	return -1; // Kein Kommando gefunden
+}
+
+uint8_t	cmdGetEndIndex		( uint8_t *rx )					
+{
+	return ( strlen( ( char* )rx ) );
+}
+
+uint8_t	cmdParse			( uint8_t *rx , cmd_t *c )		
+{
+	int8_t indexStart 	= cmdGetStartIndex( rx );
+	
+	if ( indexStart == (int8_t)-1 )
+	{
+		return 1;
+	}
+
+	c->msgLen	= rx[ indexStart + CMD_HEADER_LENGHT		];
+	c->dataLen 	= rx[ indexStart + CMD_HEADER_DATA_LENGHT	];
+	c->dataTyp	= rx[ indexStart + CMD_HEADER_DATA_TYP		];
+	c->id 		= rx[ indexStart + CMD_HEADER_ID			];
+	c->exitcode	= rx[ indexStart + CMD_HEADER_EXITCODE		];	
+	c->inCrc 	= rx[ indexStart + CMD_HEADER_CRC			];
+
+	c->dataPtr = NULL;
+	if ( c->dataLen )
+	{
+		c->dataPtr = rx +  (indexStart + __CMD_HEADER_ENTRYS__);
+	}
+	
+	uint8_t crc = 0;
+	c->outCrc = 0;
+	rx[ indexStart + CMD_HEADER_CRC ] = 0;
+	for ( uint8_t x = 0 ; x < __CMD_HEADER_ENTRYS__ ; x++ )
+	{
+		crc = cmdCrc8CCITTUpdate( crc , &rx[ (indexStart + CMD_HEADER_START_BYTE1) + x ] );
+	}
+	
+	for ( uint8_t x = 0 ; x < c->dataLen ; x++ )
+	{
+		crc = cmdCrc8CCITTUpdate( crc , &rx[  (indexStart + __CMD_HEADER_ENTRYS__ ) + x ] );
+	}
+	c->outCrc = crc;
+	
+	return 0;
+}
+
+uint8_t	cmdCrc8StrCCITT		( uint8_t *str , uint8_t leng )	
 {
 	uint8_t crc = 0;
-	
-	while ( *str != CMD_CRC_BEGINN )
+		
+	for( uint8_t x = 0 ; x < leng ; x++ )
 	{
 		crc = cmdCrc8CCITTUpdate( crc , ( uint8_t * ) str );
 		str++;
@@ -341,4 +134,57 @@ uint8_t cmdCrc8StrCCITT( char *str )
 	return crc;
 }
 
+uint8_t	*cmdBuildHeader		( cmd_t *a )					
+{			
+	cmdMsg[CMD_HEADER_CRC]	= 0;
+	
+	uint8_t *tmpPtr	= a->dataPtr;
+	uint8_t	msgLen	= __CMD_HEADER_ENTRYS__ + a->dataLen;
+	
+	cmdMsg[CMD_HEADER_START_BYTE1]	= '-';			// Start Byte 1
+	cmdMsg[CMD_HEADER_START_BYTE2]	= '+';			// Start Byte 2 
+	cmdMsg[CMD_HEADER_ID]			= a->id;		// 0..255
+	cmdMsg[CMD_HEADER_LENGHT]		= msgLen;		// Länge der ganzen Antwort
+	cmdMsg[CMD_HEADER_DATA_LENGHT]	= a->dataLen;	// Länge der Rohdaten
+	cmdMsg[CMD_HEADER_DATA_TYP]		= a->dataTyp;	// (u)char , (u)int8 , (u)int16 , (u)int32 usw.
+	cmdMsg[CMD_HEADER_EXITCODE]		= a->exitcode;	// 0..255
+	
+	/*	Checksumme vom Header bilden
+	*/
+	uint8_t crc = 0;
+	for ( uint8_t x = 0 ; x < __CMD_HEADER_ENTRYS__ ; x++)
+	{
+		crc = cmdCrc8CCITTUpdate( crc , &cmdMsg[x] );
+	}
+	
+	/*	Checksumme von Nutzdaten bilden
+	*/	
+	if ( a->dataLen )
+	{
+		for ( uint8_t x = 0 ; x < a->dataLen ; x++ )
+		{
+			crc = cmdCrc8CCITTUpdate( crc , tmpPtr++ );	
+		}			
+	}
+	else
+	{
+		a->dataPtr = NULL;
+	}
+		
+	cmdMsg[CMD_HEADER_CRC] = crc;
+		
+	a->id			= 0;
+	a->dataTyp		= 0;
+	a->exitcode		= 0;
+			
+	a->msgLen = msgLen;
+				
+	return cmdMsg;
+}
 
+void	cmdSendAnswer		( cmd_t *a )					
+{
+	uint8_t *cmdBuff  = cmdBuildHeader( (cmd_t*)a );
+	usartPutByteStr( cmdBuff , __CMD_HEADER_ENTRYS__ );
+	usartPutByteStr( a->dataPtr , a->dataLen );
+}

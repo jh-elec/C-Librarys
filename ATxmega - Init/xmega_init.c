@@ -14,13 +14,8 @@
 #ifndef __ATXMEGA_INIT_H__
 #define __ATXMEGA_INIT_H__
 
-#ifdef __AVR__
-
-	#include "../Headers/wsq3000_def.h"
-	#include <avr/io.h>
-
-#endif
-
+#include "../Headers/wsq3000_def.h"
+#include <avr/io.h>
 
 void		xmega32MhzInit( void )	
 {

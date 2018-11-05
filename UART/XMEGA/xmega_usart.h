@@ -24,7 +24,7 @@
 #define USART_TX_INT			USARTE0_TXC_vect
 #define USART_DRE_INT			USARTE0_DRE_vect
 
-#define USART_RX_BUFFER_SIZE	128
+#define USART_RX_BUFFER_SIZE	256
 #define USART_TX_BUFFER_SIZE	32
 
 /* size of RX/TX buffers */
@@ -89,6 +89,12 @@ void	usartPutChar	( char c );
 * @description      -> -none
 */
 void	usartPutStr		( char *str );
+
+
+void	usartPutByte	( uint8_t byte );
+
+void	usartPutByteStr	( uint8_t *str , uint8_t len );
+
 
 /* usartGetChar
 * @para             -> -none

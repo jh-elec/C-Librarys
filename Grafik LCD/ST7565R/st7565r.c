@@ -16,8 +16,8 @@
 #include <avr/interrupt.h>
 #include <string.h>
 #include <util/delay.h>
-#include "st7565r.h"
-#include "xmega_spi.h"
+#include "../Headers/st7565r.h"
+#include "../Headers/xmega_spi.h"
 
 
 font_t font;

@@ -10,12 +10,8 @@
 *	ATXMEGA Initalisieren
 */
 
-#ifdef __AVR__
 
-	#include "../Headers/wsq3000_def.h"
-	#include <avr/io.h>
 
-#endif
 
 /* xmega32MhzInit
 * @para             -> -none

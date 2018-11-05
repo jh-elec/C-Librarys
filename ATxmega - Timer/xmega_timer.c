@@ -15,141 +15,76 @@
 #include <avr/interrupt.h>
 #include <stdlib.h>
 
+#include "../Headers/xmega_timer.h"
 
 
-void		timerOVFInit			( tcxOvfInit_t *i )	
+
+
+void timer0OVFInit			( TC0_t *tim )					
 {
-	if ( i->tim0 )
-	{
-		i->tim0->CTRLA		= i->tim0Cnfg.preVal; // Vorteiler
-		i->tim0->PER		= TIMER_CALC_HZ( i->tim0Cnfg.preVal	, i->tim0Cnfg.hz );	// Interupt Überlauf berechnen
-		i->tim0->INTCTRLA	= TC_OVFINTLVL_HI_gc; // Interrupt "Overflow" aktivieren / Priorität des Interrupts festlegen
-	}
-	
-	if ( i->tim1 )
-	{
-		i->tim1->CTRLA		= i->tim1Cnfg.preVal; // Takt konfigurieren ( mit ggf. Vorteiler )
-		i->tim1->PER		= TIMER_CALC_HZ( i->tim1Cnfg.preVal	 , i->tim1Cnfg.hz ); // Interupt Überlauf berechnen
-		i->tim1->INTCTRLA	= TC_OVFINTLVL_HI_gc; // Interrupt "Overflow" aktivieren / Priorität des Interrupts festlegen		
-	}
+	tim->CTRLA		= TIMER_PRESCALER_gc;								// Takt konfigurieren ( mit ggf. Vorteiler )
+	tim->PER		= TIMER_CALC;										// Interupt Überlauf berechnen
+	tim->INTCTRLA	= TC_OVFINTLVL_HI_gc;								// Interrupt "Overflow" aktivieren / Priorität des Interrupts festlegen
 	
 	PR.PRPC = 0x00;														// Power einschalten
 	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;  // Interrupts freigeben ( sei() muss trodzdem sein! )	
-
-	sei();
 }
 
-void		timerCMPInit			( tcxInit_t *i )	
+void timer0CMPInit			( TC0_t *tim )					
 {		
 	/*
 	*	Hier wird ohne Hardware Pin Toggeln gearbeitet. Sollte von 
 	*	außen der entsprechende Hardware Pin getoggelt werden, muss
 	*	in das CTRLB Register ( ATXMEGA256A3BU ) noch TCx_CCxEN_bm gesetzt werden.
 	*/
-	if ( i->tim0 )
-	{
-		i->tim0->CTRLA		= i->tim0Cnfg.preVal; // Vorteiler
-		i->tim0->CTRLB		= TC_WGMODE_NORMAL_gc; // WaveFormGenerator auf "Normal" stellen
-		i->tim0->INTCTRLB  |= TC_CCAINTLVL_HI_gc << ( 2 * i->tim0Cnfg.compareMatchChannel ); // Interrupt "Compare Match" aktivieren / Priorität des Interrupts festlegen	
-		i->tim0->PER		= i->tim0Cnfg.perVal; // max. Zählwert
-		TIMER_CCx( i->tim0 , i->tim0Cnfg.compareMatchChannel )	= i->tim0Cnfg.cmpVal; // Compare Match Wert
-	}
+	tim->CTRLA		= TIMER_PRESCALER_gc;								// Takt konfigurieren ( mit ggf. Vorteiler )
+	tim->CTRLB		= TC0_WGMODE0_bm ;									// Compare Match 'A' aktivieren	
+	tim->CCA		= TIMER_CALC;										// Compare Match Wert
+    tim->INTCTRLB	= TC_CCAINTLVL_HI_gc;								// Interrupt "Compare Match" aktivieren / Priorität des Interrupts festlegen
 	
-	if ( i->tim1 )
-	{
-		i->tim1->CTRLA		= i->tim1Cnfg.preVal; // Vorteiler
-		i->tim1->CTRLB		= TC_WGMODE_NORMAL_gc; // WaveFormGenerator auf "Normal" stellen
-		i->tim1->INTCTRLB  |= TC_CCAINTLVL_HI_gc << ( 2 * i->tim1Cnfg.compareMatchChannel ); // Interrupt "Compare Match" aktivieren / Priorität des Interrupts festlegen
-		i->tim1->PER		= i->tim1Cnfg.perVal; // max. Zählwert
-		TIMER_CCx( i->tim1 , i->tim1Cnfg.compareMatchChannel )	= i->tim1Cnfg.cmpVal; // Compare Match Wert
-	}
-
-	TIMER_PRx(3) = 0x00;
-
+	PR.PRPC = 0x00;														// Power einschalten
 	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;	// Interrupts freigeben ( sei() muss trodzdem sein! )
-	
-	sei();
 }
 
-void		timerPWMInit			( tcxInit_t *i )	
+uint8_t timerSetCompareValue	( TC0_t *tim0 , TC1_t *tim1 , uint8_t ccx , uint16_t val )	
 {
-	if ( i->tim0 )
+	if ( ccx > 4 )
 	{
-		i->tim0->CTRLA		= i->tim0Cnfg.preVal; // Vorteiler
-		i->tim0->CTRLB	   |= ( TC_WGMODE_SINGLESLOPE_gc | ( TC0_CCAEN_bm << i->tim0Cnfg.compareMatchChannel  ) ); // Compare Match 'A' aktivieren	
-		i->tim0->PER		= i->tim0Cnfg.perVal; // max. Zählerwert														
-		TIMER_CCx( i->tim0 , i->tim0Cnfg.compareMatchChannel )	= i->tim0Cnfg.cmpVal; // Compare Match Wert	
+		return 1; // Register nicht vorhanden..
 	}
 	
-	if ( i->tim1 )
+	if ( tim0 != NULL )
 	{
-		i->tim1->CTRLA		= i->tim1Cnfg.preVal; // Vorteiler
-		i->tim1->CTRLB	   |= ( TC_WGMODE_SINGLESLOPE_gc | ( TC1_CCAEN_bm << i->tim1Cnfg.compareMatchChannel  ) ); // Compare Match 'A' aktivieren
-		i->tim1->PER		= i->tim1Cnfg.perVal; // max. Zählerwert	
-		TIMER_CCx( i->tim1 , i->tim1Cnfg.compareMatchChannel )	= i->tim1Cnfg.cmpVal; // Compare Match Wert
-	}
-
-	sei();	
-}
-
-uint8_t		timerSetCompareValue	( TC0_t *tim0 , TC1_t *tim1 , uint8_t ccx , uint16_t val )	
-{
-	if ( ccx > 3 ) return 1; // Register nicht vorhanden..
-	
-	if ( tim0 )
+		(&(tim0->CCA))[ccx] = val;
+	}else if ( tim1 != NULL )
 	{
-		TIMER_CCx( tim0 , ccx ) = val;
+		(&(tim1->CCA))[ccx] = val;
 	}
-	
-	if ( tim1 )
-	{
-		TIMER_CCx( tim1 , ccx ) = val;
-	}
-	
 	return 0;
 }
 
-void		timerStart				( TC0_t *tim0 , tcxPrescaler_t pre0 , TC1_t *tim1 , tcxPrescaler_t pre1 )	
+void timerStart				( TC0_t *tim0 , TC1_t *tim1 )	
 {
-	if ( tim0 )
+	if ( tim0 != NULL )
 	{
-		tim0->CTRLA = pre0;
-	}
-	
-	if ( tim1 )
+		tim0->CTRLA = TIMER_PRESCALER_gc;
+	}else if ( tim1 != NULL )
 	{
-		tim1->CTRLA = pre1;
+		tim1->CTRLA = TIMER_PRESCALER_gc;
 	}
 }
 
-void		timerStop				( TC0_t *tim0 , TC1_t *tim1 )	
+void timerStop				( TC0_t *tim0 , TC1_t *tim1 )	
 {
-	if ( tim0 )
+	if ( tim0 != NULL )
 	{
-		tim0->CTRLA = TIMER_PRESCALER_OFF;
-	}
-	
-	if ( tim1 )
+		tim0->CTRLA = 0;
+	}else if ( tim1 != NULL )
 	{
-		tim1->CTRLA = TIMER_PRESCALER_OFF;
+		tim1->CTRLA = 0;
 	}	
 }
 
 
-/*	Interrupt Vektoren..
-*/
 
-/*	Timer0 Vektoren
-*/
-//ISR( TCC0_CCA_vect ){} // Compare Match Channel A
-//ISR( TCC0_CCB_vect ){} // Compare Match Channel B
-//ISR( TCC0_CCC_vect ){} // Compare Match Channel C
-//ISR( TCC0_CCD_vect ){} // Compare Match Channel D
-//ISR( TCC0_OVF_vect ){} // Overflow Interrupt
-
-/*	Timer1 Vektoren
-*/
-//ISR( TCC1_CCA_vect ){} // Compare Match Channel A
-//ISR( TCC1_CCB_vect ){} // Compare Match Channel B
-//ISR( TCC1_OVF_vect ){} // Overflow Interrupt
 

@@ -29,4 +29,7 @@
 */
 char *buildVer(void);
 
+
+uint8_t *buildVerBytes(void);
+
 #endif // _BUILD_INFO_H_

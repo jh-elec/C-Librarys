@@ -94,15 +94,10 @@ uint8_t mcp23s17ReadBytes	( uint8_t *buff , uint8_t leng )
 	spiMasterWrite( *( &buff[0] ) ); // Slave Adresse + lesen / schreiben
 	spiMasterWrite( *( &buff[1] ) ); // Register Adresse	
 
-	if ( leng == 1 )
-	{
-		buff[0] = spiMasterWriteRead( 0xFF );
-		return 0;
-	}
 
 	for ( i = 0 ; i < leng ; i++ )
 	{
-		buff[i] = spiMasterRead();
+		buff[i] = spiMasterWriteRead( 0xFF );
 	}
 	
 	mcp23s17Deselect();

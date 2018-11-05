@@ -13,6 +13,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "../Headers/xmega_usart.h"
 #include "../Headers/wsq3000_def.h"
@@ -150,12 +151,44 @@ void	usartPutChar	( char c )
 }
 
 void	usartPutStr		( char *str )	
-{	
-	while( *str )
+{		
+	while( *str != '\0' )
 	{ 
 		usartPutChar( *str++ );
 	}
 }
+
+
+/*	Byte Funktionen
+*/
+void	usartPutByte	( uint8_t byte )
+{
+    uint8_t tmphead;
+
+    tmphead  = (USART_TxHead + 1) & USART_TX_BUFFER_MASK;
+    
+    while ( tmphead == USART_TxTail ){
+	    ;/* wait for free space in buffer */
+    }
+    
+    USART_TxBuf[tmphead] = (uint8_t)byte;
+    USART_TxHead = (uint8_t)tmphead;
+
+    /* enable UDRE interrupt */
+    USARTxx.CTRLA    |= ( USART_DREINTLVL_HI_gc );	
+}
+
+void	usartPutByteStr	( uint8_t *str , uint8_t len )
+{
+	if ( str )
+	{
+		for ( uint8_t x = 0 ; x < len ; x++ )
+		{
+			usartPutChar( *str++ );
+		}		
+	}
+}
+
 	
 uint16_t usartGetChar	( void )		
 {
