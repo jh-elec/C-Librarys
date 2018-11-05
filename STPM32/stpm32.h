@@ -158,6 +158,16 @@ enum tx_crc
 	STPM32_TX_CRC_SIZE,
 };
 
+/*	CRC Modus
+*	Soll CRC für die Übertragung genutzt werden?
+*	Wenn es nicht genutzt werden sollte, muss es noch dem "STPM32" mitgeteilt werden.
+*	Default erwartet der "STPM32" eine Checksumme!
+*/
+#define STPM32_CRC_MODE		1
+
+#if !STPM32_CRC_MODE
+	#warning STPM32_CRC_DISABLE!
+#endif
 
 /*
 *	Werte wurden bereits berechnet, damit wir später keine unnötige CPU auslastung verursachen..
@@ -174,33 +184,61 @@ enum tx_crc
 	#define STPM32_ILSB		( float ) ( ( STPM32_VREF ) / ( STPM32_CALI * STPM32_AI * 131072 * STPM32_KS * STPM32_KINT ) )
 	#warning STPM32 VLSB & ILSB testen
 #else
-	#define STPM32_VLSB		( float )0.036085
-	#define STPM32_ILSB		( float )0.00218
+	/*	Werte stammen aus der Excel Tabelle vom Hersteller
+	*/
+	#define STPM32_VLSB			( float )		0.036085
+	#define STPM32_ILSB			( float )		0.00218
+	#define STPM32_PERIOD_LSB	( float )		0.000008 // 8µs
+	#define STPM32_ZCR_FCLK		( uint32_t )	125000 // 125kHz
+	#define STPM32_POWER_LSB	( float )		0.001259 //W
+	#define STPM32_ENERGY_LSB	( float )		0.000330 //Ws
+	#define STPM32_PHASE_LSB	( float ) 
+
 #endif
 
 #define STPM32_CAL_VOLTAGE	230	// Angabe in Volt
 #define STPM32_CAL_CURRENT	5	// Angabe in Ampere
 
+#define STPM32_CALC_FREQUENCY( period )	 (float)( period * STPM32_PERIOD_LSB )
+
 
 typedef struct
 {
-	uint8_t lastTxCrc[STPM32_TX_CRC_SIZE];
-	uint8_t lastRxCrc;
-	uint8_t crcErr;
-		
+	struct  
+	{
+		uint8_t lastRx;
+		uint16_t cnt;
+	}crc;
+	
+	struct  
+	{
+		float period;
+		float phaseAngel;
+		float apparentRmsPower;
+		float apparentEnergy;
+	}ch1;
+	
+	struct  
+	{
+		float period;
+		float phaseAngel;
+		float apparentRmsPower;
+		float apparentEnergy;
+	}ch2;
+	
 }stpm32_t;
 stpm32_t stpm32;
 
 
 void		stpm32Init			( void );									
 
-void		stpm32CrcEnable		( uint8_t useCrc );							
+void		stpm32CrcEnable		( void );							
 	
-void		stpm32CrcDisable	( uint8_t useCrc );							
+void		stpm32CrcDisable	( void );							
 
-void		stpm32CrcSetPoly	( uint8_t poly , uint8_t useCrc );			
+void		stpm32CrcSetPoly	( uint8_t poly );			
 
-uint8_t		stpm32Online		( uint8_t useCrc );							
+uint8_t		stpm32Online		( void );							
 
 uint32_t	stpm32GetVoltageAD	( void );									
 
@@ -208,15 +246,31 @@ uint32_t	stpm32GetCurrentAD	( void );
 
 uint32_t	stpm32CalcCHV		( uint16_t vCal , uint32_t vADRead );		
 
-void		stpm32SetCHV		( uint16_t val , uint8_t useCrc );			
+void		stpm32SetCHV		( uint16_t val );			
 
 uint32_t	stpm32CalcCHC		( uint8_t iCal , uint32_t iADRead );			
 
-void		stpm32SetCHC		( uint16_t val , uint8_t useCrc );			
+void		stpm32SetCHC		( uint16_t val );			
 
-uint16_t	stpm32GetVoltage	( uint8_t useCrc );							
+uint16_t	stpm32GetVoltage	( void );							
 
-float		stpm32GetCurrent	( uint8_t useCrc );							
+float		stpm32GetCurrent	( void );							
 
+void		stpm32GetPeriod		( stpm32_t *s );
+
+void		stpm32GetPhaseAngel ( stpm32_t *s );
+
+void		stpm32GetApparentRMSPower ( stpm32_t *s );
+
+void		stpm32GetApparentEnergy( stpm32_t *s );
+
+typedef enum stpm32_error_enum
+{
+	STPM32_ERROR_ALL_OK,
+	STPM32_ERROR_CHV_FAIL,
+	STPM32_ERROR_CHC_FAIL,
+}stpm32_error_enum_t;
+
+stpm32_error_enum_t		stpm32StartCalibration	( uint16_t *chv , uint16_t *chc );
 
 #endif

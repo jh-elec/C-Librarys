@@ -29,17 +29,19 @@ stpm32_t stpm32;
 
 
 
-static void				stpm32Select	( void )											
+static void				stpm32Select	( void )
 {
 	__STPM32_PIN_LOW__( STPM32_SCS_PORT , STPM32_SCS_bp );
 }
 
-static void				stpm32Deselect	( void )											
+static void				stpm32Deselect	( void )
 {
 	__STPM32_PIN_HIGH__( STPM32_SCS_PORT , STPM32_SCS_bp );
 }
 
-static  inline uint8_t	stpm32CalcCRC	( uint8_t inCrc , uint8_t inData )					
+
+
+static  inline uint8_t	stpm32CalcCRC	( uint8_t inCrc , uint8_t inData )
 {
 	uint8_t   i;
 	uint8_t   data;
@@ -61,7 +63,7 @@ static  inline uint8_t	stpm32CalcCRC	( uint8_t inCrc , uint8_t inData )
 	return data;
 }
 
-static inline void		stpm32SpiWrite	( uint8_t *buff , size_t leng )						
+static inline void		stpm32SpiWrite	( uint8_t *buff , size_t leng )
 {
 	uint8_t x;
 	
@@ -78,7 +80,7 @@ static inline void		stpm32SpiWrite	( uint8_t *buff , size_t leng )
 	stpm32Deselect();
 }
 
-static inline void		stpm32SpiRead	( uint8_t *buff , uint8_t useCrc )					
+static inline void		stpm32SpiRead	( uint8_t *buff )
 {	
 	uint8_t frame[5] = { buff[0] , 0xFF , 0xFF , 0xFF , 0x00 }; // buff[0] = Register Adresse
 		
@@ -88,19 +90,19 @@ static inline void		stpm32SpiRead	( uint8_t *buff , uint8_t useCrc )
   	_delay_ms(10);		
 	
 	stpm32Select();
-	for ( uint8_t i = 0 ; i < ( STPM32_FRAME_LENG - 1 ) + useCrc ; i++ )
+	for ( uint8_t i = 0 ; i < ( STPM32_FRAME_WITHOUT_CRC + STPM32_CRC_MODE ) ; i++ )
 	{
 		spiMasterWriteRead( frame[i] );
 	}		
 
-	for ( uint8_t i = 0 ; i < ( STPM32_FRAME_LENG - 1 ) + useCrc ; i++ )
+	for ( uint8_t i = 0 ; i < ( STPM32_FRAME_WITHOUT_CRC + STPM32_CRC_MODE ) ; i++ )
 	{
 		*buff++ = spiMasterWriteRead( 0xFF );
 	}
 	stpm32Deselect();
 }
 
-static inline void		stpm32Reset		( void )											
+static inline void		stpm32Reset		( void )
 {
 	for ( uint8_t x = 0 ; x < 3 ; x++ )
 	{
@@ -120,7 +122,7 @@ static inline void		stpm32Reset		( void )
 	
 }
 
-static inline void		stpm32StartUp	( void )											
+static inline void		stpm32StartUp	( void )
 {	
 	__STPM32_PIN_LOW__( STPM32_EN_PORT , STPM32_EN_bp );
   	_delay_ms(50);
@@ -131,7 +133,7 @@ static inline void		stpm32StartUp	( void )
 	__STPM32_PIN_HIGH__( STPM32_EN_PORT , STPM32_EN_bp );
 }
 
-static void				stpm32Write		( uint8_t addr , uint16_t cmd , uint8_t useCrc )	
+static void				stpm32Write		( uint8_t addr , uint16_t cmd )
 {		
 	/*
 	*	Kommando Byte bauen und mit Daten versehen
@@ -150,11 +152,11 @@ static void				stpm32Write		( uint8_t addr , uint16_t cmd , uint8_t useCrc )
 		buff[STPM32_CRC] = stpm32CalcCRC( buff[STPM32_CRC] , *(buff + x) );
 	}
 	
-	stpm32SpiWrite( buff , ( STPM32_FRAME_WITHOUT_CRC + useCrc ) ); 
+	stpm32SpiWrite( buff , STPM32_FRAME_WITHOUT_CRC + STPM32_CRC_MODE ); 
 
 }
 
-static void				stpm32Write_	( uint8_t addr , uint32_t cmd , uint8_t useCrc )	
+static void				stpm32Write_	( uint8_t addr , uint32_t cmd )
 {
 	uint8_t frameLow	[]	= { 0xFF , addr		, ( cmd & 0x000000FF ) , ( ( cmd & 0x0000FF00) >> 8 ) , 0x00 };
 	uint8_t frameHigh	[]	= { 0xFF , addr + 1 , ( ( cmd & 0x00FF0000 ) >> 16 ) , ( ( cmd & 0xFF000000) >> 24 ) , 0x00 };
@@ -163,37 +165,35 @@ static void				stpm32Write_	( uint8_t addr , uint32_t cmd , uint8_t useCrc )
 	{
 		frameLow[STPM32_CRC] = stpm32CalcCRC( frameLow[STPM32_CRC] , frameLow[x] );
 	}
-	stpm32SpiWrite( frameLow , ( STPM32_FRAME_WITHOUT_CRC + useCrc ) );
-	stpm32.lastTxCrc[STPM32_TX_CRC_LOW_WORD] = frameLow[STPM32_CRC];
+	stpm32SpiWrite( frameLow , ( STPM32_FRAME_WITHOUT_CRC + STPM32_CRC_MODE ) );
 	
 	for ( uint8_t x = 0 ; x < STPM32_FRAME_WITHOUT_CRC ; x++ )
 	{
 		frameHigh[STPM32_CRC] = stpm32CalcCRC( frameHigh[STPM32_CRC] , frameHigh[x] );
 	}
-	stpm32SpiWrite( frameHigh , ( STPM32_FRAME_WITHOUT_CRC + useCrc ) );
-	stpm32.lastTxCrc[STPM32_TX_CRC_HIGH_WORD] = frameHigh[STPM32_CRC];
+	stpm32SpiWrite( frameHigh , ( STPM32_FRAME_WITHOUT_CRC + STPM32_CRC_MODE ) );
 }
 
-static int8_t			stpm32Read		( uint8_t addr , uint8_t *buff , uint8_t useCrc )	
+static int8_t			stpm32Read		( uint8_t addr , uint8_t *buff )
 {
 	uint8_t crcRX = 0;
 	int8_t	ret = 0;
 	
 	*buff = addr;
-	stpm32SpiRead( buff , useCrc );
+	stpm32SpiRead( buff );
 	
 	for ( uint8_t x = 0 ; x < ( STPM32_FRAME_LENG - 1 ) ; x++ )
 	{
 		crcRX = stpm32CalcCRC( crcRX , buff[x] );
 	}	
 	
-	stpm32.lastRxCrc = buff[STPM32_FRAME_LENG - 1]; // Empfangene CRC sichern
+	stpm32.crc.lastRx = buff[STPM32_FRAME_LENG - 1]; // Empfangene CRC sichern
 
-	if ( useCrc == 1 )
+	if ( STPM32_CRC_MODE == 1 )
 	{
-		if ( stpm32.lastRxCrc != crcRX )
+		if ( stpm32.crc.lastRx != crcRX )
 		{
-			stpm32.crcErr++;
+			stpm32.crc.cnt++; // Wie oft ein CRC Fehler aufgetreten ist
 			return -1;
 		}
 	}
@@ -201,29 +201,29 @@ static int8_t			stpm32Read		( uint8_t addr , uint8_t *buff , uint8_t useCrc )
 	return ret;
 }
 
-static uint16_t			stpm32CalcVrms	( uint32_t ad )										
+static uint16_t			stpm32CalcVrms	( uint32_t ad )
 {
 	return ( ad & 0x7FFF ) * STPM32_VLSB;
 }
 
-static float			stpm32CalcIrms	( uint32_t ad )										
+static float			stpm32CalcIrms	( uint32_t ad )
 {
 	return ( ( ad & 0xFFFF8000 ) >> 15 ) * STPM32_ILSB;
 }
 
-static uint32_t			stpm32CalcXv	( uint16_t volt )									
+static uint32_t			stpm32CalcXv	( uint16_t volt )
 {
 	return ( ( volt / STPM32_VLSB * 1000 ) );
 }
 
-static uint32_t			stpm32CalcXi	( uint16_t data	)									
+static uint32_t			stpm32CalcXi	( uint16_t data	)
 {
 	return ( data / STPM32_ILSB );
 }
 
 
 
-void		stpm32Init			( void )									
+void		stpm32Init			( void )
 {
 	__STPM32_PIN_OUTPUT__( STPM32_SYNC_PORT , STPM32_SYNC_bp );
 	__STPM32_PIN_OUTPUT__( STPM32_SCS_PORT , STPM32_SCS_bp );
@@ -233,9 +233,20 @@ void		stpm32Init			( void )
 	
 	stpm32Reset();
 	
+	uint8_t buff[5] = "";
+	stpm32Read( DSP_REG3 , buff );
+	uint32_t tmp = BUILD_UINT32( buff );
+	tmp &= ~(1UL<<27);
+	stpm32Write_( DSP_REG3 , tmp);
+	
+	#if STPM32_CRC_MODE == 1
+		stpm32CrcEnable();
+	#else 
+		stpm32CrcDisable();
+	#endif
 }
 
-void		stpm32CrcEnable		( uint8_t useCrc )							
+void		stpm32CrcEnable		( void )
 {
 	/*
 	*	Siehe Datenblatt Seite.: 69
@@ -249,10 +260,10 @@ void		stpm32CrcEnable		( uint8_t useCrc )
 		0xD2, // CRC
 	};
 	
-	stpm32SpiWrite( buff , ( STPM32_FRAME_WITHOUT_CRC + useCrc ) ); // Kommando wird mit CRC gesendet
+	stpm32SpiWrite( buff , STPM32_COM_PROTOCOL ); // Kommando wird mit CRC gesendet
 }
 	
-void		stpm32CrcDisable	( uint8_t useCrc )							
+void		stpm32CrcDisable	( void )
 {
 	/*
 	*	Siehe Datenblatt Seite.: 69
@@ -266,24 +277,24 @@ void		stpm32CrcDisable	( uint8_t useCrc )
 		0x15, // CRC
 	};
 	
-	stpm32SpiWrite( buff , ( STPM32_FRAME_WITHOUT_CRC + useCrc ) ); 
+	stpm32SpiWrite( buff , STPM32_COM_PROTOCOL ); 
 }
 
-void		stpm32CrcSetPoly	( uint8_t poly , uint8_t useCrc )			
+void		stpm32CrcSetPoly	( uint8_t poly )
 {
 	/*
 	*	Siehe Datenblatt Seite.: 69
 	*/	
-	stpm32Write( 0x24 , poly , 1 ); 	
+	stpm32Write( 0x24 , poly ); 	
 }
 
-uint8_t		stpm32Online		( uint8_t useCrc )							
+uint8_t		stpm32Online		( void )
 {
 	uint8_t buff[5];
-	stpm32Write_( 0x1E , 0b11111111000000001111111100000000  , useCrc );
-	stpm32Read	( 0x1E , buff , useCrc );
+	stpm32Write_( 0x1E , 0b11111111000000001111111100000000 );
+	stpm32Read	( 0x1E , buff );
 	
-	stpm32Write_( 0x1E , 0  , useCrc );
+	stpm32Write_( 0x1E , 0 );
 	
 	if ( BUILD_UINT32( buff ) == 0b11111111000000001111111100000000 )
 	{
@@ -293,59 +304,208 @@ uint8_t		stpm32Online		( uint8_t useCrc )
 	return 1; // Offline
 }
 
-uint32_t	stpm32GetVoltageAD	( void )									
+uint32_t	stpm32GetVoltageAD	( void )
 {
 	uint8_t buff[5] = "";
 	
-	stpm32Read( 0x48 , buff , 1 );
+	stpm32Read( 0x48 , buff );
 	
 	return ( BUILD_UINT32( buff ) & 0x7FFF );
 }
 
-uint32_t	stpm32GetCurrentAD	( void )									
+uint32_t	stpm32GetCurrentAD	( void )
 {
 	uint8_t buff[5] = "";
 	
-	stpm32Read( 0x48 , buff , 1 );
+	stpm32Read( 0x48 , buff );
 	
 	return ( ( BUILD_UINT32( buff ) & 0xFFFF8000 ) >> 15 );	
 }
 
-uint32_t	stpm32CalcCHV		( uint16_t vCal , uint32_t vADRead )		
+uint32_t	stpm32CalcCHV		( uint16_t vCal , uint32_t vADRead )
 {
 	return ( ( 14336 *  stpm32CalcXv( vCal ) / ( vADRead & 0x7FFF ) - 12288 ) );
 }
 
-void		stpm32SetCHV		( uint16_t val , uint8_t useCrc )			
+void		stpm32SetCHV		( uint16_t val )
 {
-	stpm32Write_( DSP_CR5 , val , useCrc );
+	stpm32Write_( DSP_CR5 , val );
 }
 
-uint32_t	stpm32CalcCHC		( uint8_t iCal , uint32_t iADRead )			
+uint32_t	stpm32CalcCHC		( uint8_t iCal , uint32_t iADRead )
 {
 	return ( ( 14336 *  stpm32CalcXi( iCal ) /  ( iADRead ) - 12288 ) ) ;
 }
 
-void		stpm32SetCHC		( uint16_t val , uint8_t useCrc )			
+void		stpm32SetCHC		( uint16_t val )
 {
-	stpm32Write_( DSP_CR6 , val , useCrc );
+	stpm32Write_( DSP_CR6 , val );
 }
 
-uint16_t	stpm32GetVoltage	( uint8_t useCrc )							
+uint16_t	stpm32GetVoltage	( void )
 {
 	uint8_t buff[5] = "";
-	stpm32Read( 0x48 , buff , useCrc );
+	stpm32Read( 0x48 , buff );
 	
 	return ( stpm32CalcVrms( BUILD_UINT32( buff ) ) );
 }
 
-float		stpm32GetCurrent	( uint8_t useCrc )							
+float		stpm32GetCurrent	( void )
 {
 	uint8_t buff[5] = "";
-	stpm32Read( 0x48 , buff , useCrc );
+	stpm32Read( 0x48 , buff );
 	
 	return ( stpm32CalcIrms( BUILD_UINT32( buff ) ) );
 }
 
+void		stpm32GetPeriod		( stpm32_t *s )
+{
+	uint8_t buff[5] = "";
+	
+	stpm32Read( DSP_REG3 , buff );
+	uint32_t tmp = BUILD_UINT32( buff );
+	tmp &= ~(1UL<<27);
+	stpm32Write_( DSP_REG3 , tmp);
+	
+	stpm32Read( DSP_REG1 , buff );
+	
+	s->ch1.period = (float)( ( buff[1] << 8 | buff[0] ) & 0xFFF );
+	s->ch2.period = (float)( ( buff[3] << 8 | buff[2] ) & 0xFFF );
+}
 
+void		stpm32GetPhaseAngel ( stpm32_t *s )
+{
+	stpm32GetPeriod( s );
+	
+	uint8_t buff[5] = "";
+	
+	stpm32Read( DSP_REG17 , buff );
+	
+	uint16_t angel = ( ( ( uint16_t ) buff[3] << 8) | buff[2] ) & 0x00000FFF;
+	
+	s->ch1.phaseAngel = ( ( angel * STPM32_CALC_FREQUENCY( s->ch1.period ) ) * 360 ) / 125000;
+}
 
+void		stpm32GetApparentRMSPower	( stpm32_t *s )
+{
+	uint8_t buff[5] = "";
+	stpm32Read( PH1_REG8 , buff );
+
+	uint32_t tmp = BUILD_UINT32( buff );
+	
+	if ( tmp & 0x10000000 ) // Vorzeichen prüfen ( Zweierkomplement ) 
+	{
+		s->ch1.apparentRmsPower = ((float)(((tmp ^ 0xFFFFFFF) & 0xFFFFFFF) + 1) * STPM32_POWER_LSB)*-1; // Berechnung in Milliwatt[mW]
+	}
+	else
+	{
+		s->ch1.apparentRmsPower = ((float)(tmp & 0xFFFFFFF)) * STPM32_POWER_LSB; // Berechnung in Milliwatt[mW]
+	}
+}
+
+void		stpm32GetApparentEnergy		( stpm32_t *s )
+{
+	uint8_t buff[5] = "";
+	stpm32Read( PH1_REG4 , buff );
+	
+	s->ch1.apparentEnergy = (float)BUILD_UINT32( buff ) * STPM32_ENERGY_LSB; // mWs
+	
+	/* Wattstunde(n)
+	* s->ch1.apparentEnergy *= 0,000277778; // Wh ( Watt Stunde(n) )
+	*/
+}
+
+uint8_t stpm32ErrorState = 0;
+
+/* UNGETESTET! */
+stpm32_error_enum_t		stpm32StartCalibration	( uint16_t *chv , uint16_t *chc )			
+{	
+	uint32_t	adRmsVoltage		= 0x00000000,
+				adVoltage			= 0x00000000,
+				adRmsCurrent		= 0x00000000,
+				adCurrent			= 0x00000000,	
+				rmsVoltageMin		= 0xFFFFFFFF,
+				rmsVoltageMinOld	= 0xFFFFFFFF,
+				rmsVoltageMax		= 0x00000000,
+				rmsVoltageMaxOld	= 0x00000000,
+				rmsCurrentMin		= 0xFFFFFFFF,
+				rmsCurrentMinOld	= 0xFFFFFFFF,
+				rmsCurrentMax		= 0x00000000,
+				rmsCurrentMaxOld	= 0x00000000;
+	
+	uint8_t		x;
+	
+	stpm32SetCHV( 2048 ); // Register auf default setzen..
+	stpm32SetCHC( 2048 ); // ..
+	
+
+	for( x = 0 ; x < 100 ; x++ )
+	{		
+		adVoltage = stpm32GetVoltageAD();
+		adCurrent = stpm32GetCurrentAD();
+
+		adRmsVoltage += adVoltage;
+		adRmsCurrent += adCurrent;
+		
+		/*
+		*	Spannungs Schwellen
+		*/
+		rmsVoltageMin = adVoltage;
+		if ( rmsVoltageMin < rmsVoltageMinOld )
+		{
+			rmsVoltageMinOld = rmsVoltageMin;
+		}
+			
+		rmsVoltageMax = adVoltage;
+		if ( rmsVoltageMax > rmsVoltageMaxOld )
+		{
+			rmsVoltageMaxOld = rmsVoltageMax;
+		}
+		
+		/*
+		*	Strom Schwellen
+		*/
+		rmsCurrentMin = adCurrent;
+		if ( rmsCurrentMin < rmsCurrentMinOld )
+		{
+			rmsCurrentMinOld = rmsCurrentMin;
+		}
+		
+		rmsCurrentMax = adCurrent;
+		if ( rmsCurrentMax > rmsCurrentMaxOld )
+		{
+			rmsCurrentMaxOld = rmsCurrentMax;
+		}
+		
+	}
+		
+	adRmsVoltage /= x;
+	adRmsCurrent /= x;
+
+	uint16_t rmsVoltageSpan = rmsVoltageMaxOld - rmsVoltageMinOld; // Differenz zwischen dem höchst bzw. niedrigst gemessenen Wert
+	uint16_t rmsCurrentSpan = rmsCurrentMaxOld - rmsCurrentMinOld; // Differenz zwischen dem höchst bzw. niedrigst gemessenen Wert
+	
+	*chv = stpm32CalcCHV( STPM32_CAL_VOLTAGE , adRmsVoltage  ) / 100;
+	*chc = stpm32CalcCHC( STPM32_CAL_VOLTAGE , adRmsCurrent  ) / 100;
+	
+	if ( ( *chv > 1600 ) && ( *chv < 1900 ) && ( rmsVoltageSpan < 300 ) )
+	{
+		stpm32SetCHV( *chv );
+	}
+	else
+	{
+		stpm32ErrorState |= 1<<STPM32_ERROR_CHV_FAIL;		
+	}
+
+	if ( ( *chc > 1000 ) && ( *chc  < 1050 ) && ( rmsCurrentSpan < 20 ) )
+	{	
+		stpm32SetCHC( *chc );
+	}
+	else
+	{
+		stpm32ErrorState |= 1<<STPM32_ERROR_CHC_FAIL;
+	}
+		
+	
+	return stpm32ErrorState;
+}
