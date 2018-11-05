@@ -50,7 +50,7 @@ extern spiIO_t *spiUsart;
 /*	Hardware SPI / USART_SPI Konfigurationen
 *	Ab hier bitte nichts mehr ändern!
 */
-#define SPI_USART_CALC_BSEL( BAUD )			(uint16_t) ( F_CPU / ( 2 * BAUD ) ) - 1 
+#define SPI_USART_CALC_BSEL( BAUD )					(uint16_t) ( ( F_CPU / ( 2 * BAUD ) ) - 1 ) 
 
 
 #define SPI_USARTX_WAIT_DATA_REGISTER_IS_EMPTY()	while( ! ( spiUsart->usartUnit->STATUS & USART_DREIF_bm ) ){}
@@ -130,7 +130,7 @@ typedef enum
 }spiInterruptLvl_enum;
 
 
-void	spiUsartxInit		( spiIO_t *usartx , uint16_t baud , usartxSpiMode_enum mode , usartxSpiDataOrder_enum dataOrder );
+void	spiUsartxInit		( spiIO_t *usartx , uint32_t baud , usartxSpiMode_enum mode , usartxSpiDataOrder_enum dataOrder );
 void	spiUsartxWrite		( uint8_t byte );
 uint8_t spiUsartxRead		( void );
 uint8_t spiUsartxWriteRead	( uint8_t byte );

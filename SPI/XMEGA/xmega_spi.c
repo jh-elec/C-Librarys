@@ -12,7 +12,7 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include "xmega_spi.h"
+#include "../Headers/xmega_spi.h"
 
 
 static spiIO_t spi;
@@ -181,7 +181,7 @@ uint8_t spiMasterWriteRead( uint8_t byte )
 }
 
 
-void spiUsartxInit( spiIO_t *usartx , uint16_t baud , usartxSpiMode_enum mode , usartxSpiDataOrder_enum dataOrder )	
+void spiUsartxInit( spiIO_t *usartx , uint32_t baud , usartxSpiMode_enum mode , usartxSpiDataOrder_enum dataOrder )	
 {
 	usartx->ports.spi->DIRSET			= (1<<usartx->bitPos.mosi);
 	usartx->ports.spi->DIRSET			= (1<<usartx->bitPos.sck);
