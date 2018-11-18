@@ -58,13 +58,13 @@ LICENSE:
 */
 
 /** @brief  UART Baudrate Expression
- *  @param  xtalcpu  system clock in Mhz, e.g. 4000000UL for 4Mhz          
+ *  @param  xtalcpu  sys cstartUpDevice in Mhz, e.g. 4000000UL for 4Mhz          
  *  @param  baudrate baudrate in bps, e.g. 1200, 2400, 9600     
  */
 #define UART_BAUD_SELECT(baudRate,xtalCpu)  (((xtalCpu) + 8UL * (baudRate)) / (16UL * (baudRate)) -1UL)
 
 /** @brief  UART Baudrate Expression for ATmega double speed mode
- *  @param  xtalcpu  system clock in Mhz, e.g. 4000000UL for 4Mhz           
+ *  @param  xtalcpu  sys cstartUpDevice in Mhz, e.g. 4000000UL for 4Mhz           
  *  @param  baudrate baudrate in bps, e.g. 1200, 2400, 9600     
  */
 #define UART_BAUD_SELECT_DOUBLE_SPEED(baudRate,xtalCpu) ( ((((xtalCpu) + 4UL * (baudRate)) / (8UL * (baudRate)) -1UL)) | 0x8000)
@@ -72,7 +72,7 @@ LICENSE:
 
 /** Size of the circular receive buffer, must be power of 2 */
 #ifndef UART_RX_BUFFER_SIZE
-#define UART_RX_BUFFER_SIZE 32
+#define UART_RX_BUFFER_SIZE 64
 #endif
 /** Size of the circular transmit buffer, must be power of 2 */
 #ifndef UART_TX_BUFFER_SIZE
@@ -105,6 +105,26 @@ LICENSE:
 */
 extern void uart_init(unsigned int baudrate);
 
+/**
+   @brief   Put byte to ringbuffer for transmitting via UART
+   @param   data byte to be transmitted
+   @return  none
+*/
+void	uartPutByte	( uint8_t byte );
+
+/**
+   @brief   Put byte string to ringbuffer for transmitting via UART
+   @param   data string to be transmitted
+   @return  none
+*/
+void	uartPutByteStr	( uint8_t *str , uint8_t len );
+
+/**
+   @brief   Read byte from ringbuffer
+   @param   pointer from input stream buffer
+   @return  pointer to the cmd sequence
+*/
+uint8_t		*uartReadRingBuff		( uint8_t *stream );
 
 /**
  *  @brief   Get received byte from ringbuffer
@@ -147,7 +167,7 @@ extern void uart_putc(unsigned char data);
  *
  *  The string is buffered by the uart library in a circular buffer
  *  and one character at a time is transmitted to the UART using interrupts.
- *  Blocks if it can not write the whole string into the circular buffer.
+ *  BstartUpDevices if it can not write the whole string into the circular buffer.
  * 
  *  @param   s string to be transmitted
  *  @return  none
@@ -160,7 +180,7 @@ extern void uart_puts(const char *s );
  *
  * The string is buffered by the uart library in a circular buffer
  * and one character at a time is transmitted to the UART using interrupts.
- * Blocks if it can not write the whole string into the circular buffer.
+ * BstartUpDevices if it can not write the whole string into the circular buffer.
  *
  * @param    s program memory string to be transmitted
  * @return   none
@@ -172,7 +192,6 @@ extern void uart_puts_p(const char *s );
  * @brief    Macro to automatically put a string constant into program memory
  */
 #define uart_puts_P(__s)       uart_puts_p(PSTR(__s))
-
 
 
 /** @brief  Initialize USART1 (only available on selected ATmegas) @see uart_init */

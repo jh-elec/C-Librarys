@@ -446,6 +446,35 @@ unsigned int uart_getc(void)
 
 }/* uart_getc */
 
+/*	Byte Funktionen
+*/
+void	uartPutByte	( uint8_t byte )
+{
+	uint8_t tmphead;
+
+	tmphead  = (UART_TxHead + 1) & UART_TX_BUFFER_MASK;
+	
+	while ( tmphead == UART_TxTail ){
+		;/* wait for free space in buffer */
+	}
+	
+	UART_TxBuf[tmphead] = (uint8_t)byte;
+	UART_TxHead = (uint8_t)tmphead;
+
+    /* enable UDRE interrupt */
+    UART0_CONTROL    |= _BV(UART0_UDRIE);
+}
+
+void	uartPutByteStr	( uint8_t *str , uint8_t len )
+{
+	if ( str )
+	{
+		for ( uint8_t x = 0 ; x < len ; x++ )
+		{
+			uartPutByte( *str++ );
+		}
+	}
+}
 
 /*************************************************************************
 Function: uart_putc()
@@ -684,6 +713,5 @@ void uart1_puts_p(const char *progmem_s )
       uart1_putc(c);
 
 }/* uart1_puts_p */
-
 
 #endif
