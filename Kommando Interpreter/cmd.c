@@ -16,8 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "Headers\cmd.h"
-#include "Headers\xmega_usart.h"
+#include "cmd.h"
 #include "Hardware Libs/uart.h"
 
 /*	Speicher für den Antwort Header
@@ -26,26 +25,8 @@
 */
 static uint8_t cmdMsg[__CMD_HEADER_ENTRYS__];
 
-<<<<<<< .mine
-||||||| .r170
-char	*cmd_ = NULL;
-=======
-/*	Speicher für den Antwort Header
-*	Die Nutzdaten werden werden dem Zeiger
-*	der cmd_t Struktur übergeben!
-*/
-static uint8_t cmdMsg[__CMD_HEADER_ENTRYS__];
->>>>>>> .r175
-
-<<<<<<< .mine
-static inline uint8_t cmdCrc8CCITTUpdate ( uint8_t inCrc , uint8_t *inData )
-||||||| .r170
-
-static char			*cmdSearch			( char *inBuff , char *srchCmd )
-=======
 
 static inline uint8_t cmdCrc8CCITTUpdate ( uint8_t inCrc , uint8_t *inData )
->>>>>>> .r175
 {
 	uint8_t   i = 0;
 	static uint8_t data = 0;
@@ -71,7 +52,6 @@ static inline uint8_t cmdCrc8CCITTUpdate ( uint8_t inCrc , uint8_t *inData )
 
 void	cmdInit				( cmd_t *c )					
 {
-<<<<<<< .mine
 	c->msgLen	= 0; // Länge der gesamten Message
 	c->dataLen	= 0; // Länge der Nutzdaten Bytes
 	c->dataType	= 0; // Datentyp der Nutzdaten
@@ -80,23 +60,6 @@ void	cmdInit				( cmd_t *c )
 	c->inCrc	= 0; // Checksumme der gesamten Message
 	c->outCrc	= 0;
 	c->dataPtr	= NULL; // Zeiger auf Nutzdaten
-||||||| .r170
-	cmd.table	= tab;
-	cmd.tabLen	= tableSize;
-	cmd.raw		= raw;
-	
-	cmd.raw->cmdPtr		= NULL;
-	cmd.raw->paraNumb	= 0;
-=======
-	c->msgLen	= 0; // Länge der gesamten Message
-	c->dataLen	= 0; // Länge der Nutzdaten Bytes
-	c->dataTyp	= 0; // Datentyp der Nutzdaten
-	c->id		= 0; // Message Erkennung
-	c->exitcode = 0; // Exitkode aus Funktionen
-	c->inCrc	= 0; // Checksumme der gesamten Message
-	c->outCrc	= 0;
-	c->dataPtr	= NULL; // Zeiger auf Nutzdaten
->>>>>>> .r175
 }
 
 int8_t	cmdGetStartIndex	( uint8_t *rx )					
@@ -127,24 +90,12 @@ uint8_t	cmdParse			( uint8_t *rx , cmd_t *c )
 		return 1;
 	}
 
-<<<<<<< .mine
 	c->msgLen	= rx[ indexStart + CMD_HEADER_LENGHT		];
 	c->dataLen 	= rx[ indexStart + CMD_HEADER_DATA_LENGHT	];
 	c->dataType	= rx[ indexStart + CMD_HEADER_DATA_TYP		];
 	c->id 		= rx[ indexStart + CMD_HEADER_ID			];
 	c->exitcode	= rx[ indexStart + CMD_HEADER_EXITCODE		];	
 	c->inCrc 	= rx[ indexStart + CMD_HEADER_CRC			];
-||||||| .r170
-	return NULL;
-}
-=======
-	c->msgLen	= rx[ indexStart + CMD_HEADER_LENGHT		];
-	c->dataLen 	= rx[ indexStart + CMD_HEADER_DATA_LENGHT	];
-	c->dataTyp	= rx[ indexStart + CMD_HEADER_DATA_TYP		];
-	c->id 		= rx[ indexStart + CMD_HEADER_ID			];
-	c->exitcode	= rx[ indexStart + CMD_HEADER_EXITCODE		];	
-	c->inCrc 	= rx[ indexStart + CMD_HEADER_CRC			];
->>>>>>> .r175
 
 	c->dataPtr = NULL;
 	if ( c->dataLen )
@@ -182,7 +133,6 @@ uint8_t	cmdCrc8StrCCITT		( uint8_t *str , uint8_t leng )
 	return crc;
 }
 
-<<<<<<< .mine
 uint8_t	*cmdBuildHeader		( cmd_t *a )					
 {			
 	cmdMsg[CMD_HEADER_CRC]	= 0;
@@ -202,38 +152,6 @@ uint8_t	*cmdBuildHeader		( cmd_t *a )
 	*/
 	uint8_t crc = 0;
 	for ( uint8_t x = 0 ; x < __CMD_HEADER_ENTRYS__ ; x++)
-||||||| .r170
-char				*cmdGetCmdStr		( char *out , char *stream )
-{
-	uint8_t i;
-
-	cmd_t	*cmdPtr			= &cmd;
-	char	*outPtr			= out;
-	char  	*cmdSearchPtr 	= NULL;
-	char	*inputPtr		= stream;
-
-	if ( cmdGetCRC( out , stream ) == NULL )
-=======
-uint8_t	*cmdBuildHeader		( cmd_t *a )					
-{			
-	cmdMsg[CMD_HEADER_CRC]	= 0;
-	
-	uint8_t *tmpPtr	= a->dataPtr;
-	uint8_t	msgLen	= __CMD_HEADER_ENTRYS__ + a->dataLen;
-	
-	cmdMsg[CMD_HEADER_START_BYTE1]	= '-';			// Start Byte 1
-	cmdMsg[CMD_HEADER_START_BYTE2]	= '+';			// Start Byte 2 
-	cmdMsg[CMD_HEADER_ID]			= a->id;		// 0..255
-	cmdMsg[CMD_HEADER_LENGHT]		= msgLen;		// Länge der ganzen Antwort
-	cmdMsg[CMD_HEADER_DATA_LENGHT]	= a->dataLen;	// Länge der Rohdaten
-	cmdMsg[CMD_HEADER_DATA_TYP]		= a->dataTyp;	// (u)char , (u)int8 , (u)int16 , (u)int32 usw.
-	cmdMsg[CMD_HEADER_EXITCODE]		= a->exitcode;	// 0..255
-	
-	/*	Checksumme vom Header bilden
-	*/
-	uint8_t crc = 0;
-	for ( uint8_t x = 0 ; x < __CMD_HEADER_ENTRYS__ ; x++)
->>>>>>> .r175
 	{
 		crc = cmdCrc8CCITTUpdate( crc , &cmdMsg[x] );
 	}
@@ -251,7 +169,6 @@ uint8_t	*cmdBuildHeader		( cmd_t *a )
 	{
 		a->dataPtr = NULL;
 	}
-<<<<<<< .mine
 		
 	cmdMsg[CMD_HEADER_CRC] = crc;
 		
@@ -262,46 +179,10 @@ uint8_t	*cmdBuildHeader		( cmd_t *a )
 	a->msgLen = msgLen;
 				
 	return cmdMsg;
-||||||| .r170
-	strcat( ( char * ) helpBuff , "' ->[KOMMANDO ENDE]\r\n\n" );
-
-
- 	strcat( ( char * ) helpBuff , "Kommandos:\r\n\n" );
-
-	uint8_t x = 0;
-	for ( ; x < cmd.tabLen ; x++ )
-	{
-		strcat( ( char * ) helpBuff , cmd.table[x].name );
-		strcat( ( char * ) helpBuff , " " );
-		strcat( ( char * ) helpBuff , cmd.table[x].instruction );
-		strcat( ( char * ) helpBuff , cmd.table[x].syntax );
-		strcat( ( char * ) helpBuff , "\r\n" );
-	}
-
-	return helpBuff;
-=======
-		
-	cmdMsg[CMD_HEADER_CRC] = crc;
-		
-	a->id			= 0;
-	a->dataTyp		= 0;
-	a->exitcode		= 0;
-			
-	a->msgLen = msgLen;
-				
-	return cmdMsg;
->>>>>>> .r175
 }
 
-<<<<<<< .mine
 void	cmdBuildAnswer( cmd_t *a , uint8_t id , enum data_typ_enum dataType , uint8_t exitcode , uint8_t dataLen , uint8_t *dataPtr )
-||||||| .r170
-static inline uint8_t cmdCrc8CCITTUpdate ( uint8_t inCrc , uint8_t *inData )
-=======
-void	cmdSendAnswer		( cmd_t *a )					
->>>>>>> .r175
 {
-<<<<<<< .mine
 	a->id		= id; // Beschreibt den Nachrichten Type. Damit die gegenstelle die Nachrichten unterscheiden kann
 	a->dataType = dataType; // Gibt an um welchen Daten Typ es sich handelt
 	a->exitcode = exitcode; // Rückgabewert einer Funktion 
@@ -314,44 +195,4 @@ void	cmdSendAnswer		( cmd_t *a )
 	uint8_t *cmdBuff  = cmdBuildHeader( (cmd_t*)a );
 	uartPutByteStr( cmdBuff , __CMD_HEADER_ENTRYS__ );
 	uartPutByteStr( a->dataPtr , a->dataLen );
-}||||||| .r170
-	uint8_t   i = 0;
-	static uint8_t data = 0;
-	
-	data = ( inCrc ^ ( *inData ) );
-	
-	for ( i = 0; i < 8; i++ )
-	{
-		if ( ( data & 0x80 ) != 0 )
-		{
-			data <<= 1;
-			data ^= 0x07;
-		}
-		else
-		{
-			data <<= 1;
-		}
-	}
-
-	return data;
 }
-
-uint8_t cmdCrc8StrCCITT( char *str )
-{
-	uint8_t crc = 0;
-	
-	while ( *str != CMD_CRC_BEGINN )
-	{
-		crc = cmdCrc8CCITTUpdate( crc , ( uint8_t * ) str );
-		str++;
-	}
-	
-	return crc;
-}
-
-
-=======
-	uint8_t *cmdBuff  = cmdBuildHeader( (cmd_t*)a );
-	usartPutByteStr( cmdBuff , __CMD_HEADER_ENTRYS__ );
-	usartPutByteStr( a->dataPtr , a->dataLen );
-}>>>>>>> .r175

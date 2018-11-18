@@ -32,30 +32,8 @@ enum Communication_Header_Enum
 	__CMD_HEADER_ENTRYS__
 };
 
-<<<<<<< .mine
 enum data_typ_enum
-||||||| .r170
-	/*
-	*	Funktion die beim entsprechenden Kommando
-	*	ausgeführt werden soll
-	*/
-	void*		(*fnc) (void* , void*);
-
-	/*
-	*	Befehlssyntax
-	*/
-	const char	*syntax;
-
-}cmdTable_t;
-
-typedef struct
-=======
-
-
-typedef struct
->>>>>>> .r175
 {
-<<<<<<< .mine
 	DATA_TYP_UINT8,
 	DATA_TYP_UINT16,
 	DATA_TYP_UINT32,
@@ -64,34 +42,9 @@ typedef struct
 	
 	__DATA_TYP_MAX_INDEX__
 };
-||||||| .r170
-	char 	*cmdPtr;
-	uint8_t  paraNumb;
-}cmdRaw_t;
-cmdRaw_t raw;
 
-enum crc_state
+typedef struct
 {
-	CMD_CRC_OK,
-	CMD_CRC_ERROR,	
-};
-=======
-	uint8_t msgLen;
-	uint8_t dataLen;
-	uint8_t dataTyp;
-	uint8_t id;
-	uint8_t exitcode;	
-	uint8_t inCrc;
-	uint8_t outCrc;
-	
-	uint8_t *dataPtr;
-
-}cmd_t;
->>>>>>> .r175
-
-typedef struct 
-{
-<<<<<<< .mine
 	uint8_t msgLen;
 	uint8_t dataLen;
 	uint8_t dataType;
@@ -103,17 +56,6 @@ typedef struct
 	uint8_t *dataPtr;
 
 }cmd_t;
-||||||| .r170
-	const 			cmdTable_t 	*table;
-					size_t		tabLen;
-					cmdRaw_t	*raw;
-	uint8_t			crcState;
-}cmd_t;
-cmd_t cmd;
-=======
-	uint8_t (*fnc)( cmd_t *);	
-}cmdFuncTab_t;
->>>>>>> .r175
 
 typedef struct 
 {
@@ -121,74 +63,23 @@ typedef struct
 }cmdFuncTab_t;
 
 
-<<<<<<< .mine
-||||||| .r170
-uint8_t 				cmdCntPara			( char *stream );
-=======
+
 void	cmdInit				( cmd_t *c );					
->>>>>>> .r175
 
-<<<<<<< .mine
-void	cmdInit				( cmd_t *c );					
-||||||| .r170
-const char				*cmdGetInstruction	( char *input );
-=======
 int8_t	cmdGetStartIndex	( uint8_t *rx );					
->>>>>>> .r175
 
-<<<<<<< .mine
-int8_t	cmdGetStartIndex	( uint8_t *rx );					
-||||||| .r170
-const char				*cmdGetName			( char *input );
-=======
 uint8_t	cmdGetEndIndex		( uint8_t *rx );					
->>>>>>> .r175
 
-<<<<<<< .mine
-uint8_t	cmdGetEndIndex		( uint8_t *rx );					
-||||||| .r170
-void					*cmdGetFunc			( char *input );
-=======
 uint8_t	cmdParse			( uint8_t *rx , cmd_t *c );		
->>>>>>> .r175
 
-<<<<<<< .mine
-uint8_t	cmdParse			( uint8_t *rx , cmd_t *c );		
-||||||| .r170
-char 					*cmdGetPara 		( char *out , char *in , uint8_t num );
-=======
 uint8_t	cmdCrc8StrCCITT		( uint8_t *str , uint8_t leng );
->>>>>>> .r175
 
-<<<<<<< .mine
-uint8_t	cmdCrc8StrCCITT		( uint8_t *str , uint8_t leng );
-||||||| .r170
-char 					*cmdGetCRC 			( char *out , char *stream );
-=======
 uint8_t	*cmdBuildHeader		( cmd_t *a );					
->>>>>>> .r175
 
-<<<<<<< .mine
-uint8_t	*cmdBuildHeader		( cmd_t *a );					
-||||||| .r170
-char					*cmdGetCmdStr		( char *out , char *stream );
-=======
-void	cmdSendAnswer		( cmd_t *a );					
->>>>>>> .r175
-
-<<<<<<< .mine
 void	cmdBuildAnswer		( cmd_t *a , uint8_t id , enum data_typ_enum dataType , uint8_t exitcode , uint8_t dataLen , uint8_t *dataPtr );
-||||||| .r170
-char					*cmdHelp			( char *helpBuff );
-=======
->>>>>>> .r175
 
-<<<<<<< .mine
 void	cmdSendAnswer		( cmd_t *a );					
-||||||| .r170
-uint8_t 				cmdCrc8StrCCITT		( char *str );
-=======
->>>>>>> .r175
+
 
 
 #endif
