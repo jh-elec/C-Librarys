@@ -181,7 +181,7 @@ uint8_t	*cmdBuildHeader		( cmd_t *a )
 	return cmdMsg;
 }
 
-void	cmdBuildAnswer( cmd_t *a , uint8_t id , enum data_typ_enum dataType , uint8_t exitcode , uint8_t dataLen , uint8_t *dataPtr )
+void	cmdBuildAnswer( cmd_t *a , uint8_t id , enum Data_Type_Enum dataType , uint8_t exitcode , uint8_t dataLen , uint8_t *dataPtr )
 {
 	a->id		= id; // Beschreibt den Nachrichten Type. Damit die gegenstelle die Nachrichten unterscheiden kann
 	a->dataType = dataType; // Gibt an um welchen Daten Typ es sich handelt

@@ -32,7 +32,7 @@ enum Communication_Header_Enum
 	__CMD_HEADER_ENTRYS__
 };
 
-enum data_typ_enum
+enum Data_Type_Enum
 {
 	DATA_TYP_UINT8,
 	DATA_TYP_UINT16,
@@ -41,6 +41,15 @@ enum data_typ_enum
 	DATA_TYP_STRING,
 	
 	__DATA_TYP_MAX_INDEX__
+};
+
+enum Cmd_Id_Enum
+{
+	ID_PING = 0, // Darauf sollte die Firmware ein Lebenszeichen zurückliefern
+	
+	/*...*/
+	
+	ID_APPLICATION = 255 // Für irgendwelche System spezifschen Meldungen
 };
 
 typedef struct
@@ -57,10 +66,18 @@ typedef struct
 
 }cmd_t;
 
+/*	Hinweis
+*	Das erste Element ist IMMER eine "Ping" Funktion.
+*	Die einfach den String "ping" zurückliefert.
+*	Dies sollte in jedem Projekt beachtet werden.
+*/
 typedef struct 
 {
 	uint8_t (*fnc)( cmd_t *);	
 }cmdFuncTab_t;
+
+
+
 
 
 
@@ -76,7 +93,7 @@ uint8_t	cmdCrc8StrCCITT		( uint8_t *str , uint8_t leng );
 
 uint8_t	*cmdBuildHeader		( cmd_t *a );					
 
-void	cmdBuildAnswer		( cmd_t *a , uint8_t id , enum data_typ_enum dataType , uint8_t exitcode , uint8_t dataLen , uint8_t *dataPtr );
+void	cmdBuildAnswer		( cmd_t *a , uint8_t id , enum Data_Type_Enum dataType , uint8_t exitcode , uint8_t dataLen , uint8_t *dataPtr );
 
 void	cmdSendAnswer		( cmd_t *a );					
 
