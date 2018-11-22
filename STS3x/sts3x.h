@@ -61,43 +61,72 @@
 
 enum sts3xState
 {
-	STS3X_NO_NEW_DATA = 1<<0,	
+	STS3X_NO_NEW_DATA = 1<<0,
+	STS3X_CRC_ERR	  = 1<<1,	
+};
+
+enum sts3xBytes
+{
+	STS3X_MSB,
+	STS3X_LSB,
+	STS3X_CRC,
+	
+	STS3X_NUM_OF_BYTES,	
 };
 
 typedef struct  
 {
+	/*
+	*	Status Bits ( enum sts3xState )
+	*/
 	uint8_t state;
+	
+	/*
+	*	Niedrigst gemessene Temperatur
+	*/
+	int8_t lowest;
+	
+	/*
+	*	Aktuell gemessene Temperatur
+	*/
+	int8_t actual;
+	
+	/*
+	*	Höchst gemessene Temperatur
+	*/
+	int8_t highest;
+	
 }sts3x_t;
 
 extern sts3x_t sts3x;
 
-/* sts3x_init
+/* sts3xInit
 * @para             -> -none
 * @return           -> -none
 * @description      -> please read the init
 */
-void sts3x_init(void);
+void sts3xInit(void);
 
-/* sts3x_calc
+/* sts3xCalc
 * @para             -> temp = temp AD - Value
 * @return           -> temp in °C
 * @description      -> -none
 */
-int16_t sts3x_calc(uint16_t temp);
+int16_t sts3xCalc(uint16_t temp);
 
-/* sts3x_read
+/* sts3xRead
 * @para             -> -none
 * @return           -> -AD Value
 * @description      -> -none
 */
-uint16_t sts3x_read(void);
+uint16_t sts3xRead(void);
 
 
-/* sts3x_get_temp
+/* sts3xGetTemp
 * @para             -> -none
 * @return           -> - Temperature in °C
 * @description      -> -none
 */
-int16_t sts3x_get_temp(void);
+int16_t sts3xGetTemp(void);
 
 #endif

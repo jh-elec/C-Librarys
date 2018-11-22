@@ -12,12 +12,22 @@
 
 #include <avr/io.h>
 #include <avr/crc16.h>
+
 #include "sts3x.h"
 #include "i2cmaster.h"
 
-sts3x_t sts3x;
 
-void sts3x_init(void)
+
+sts3x_t sts3x =
+{
+	.lowest  =	127,
+	.actual  =	25,
+	.highest = -127,
+};
+
+
+
+void sts3xInit(void)
 {
 	i2c_start_wait( STS3x_ADDR + I2C_WRITE );
 	
@@ -25,13 +35,12 @@ void sts3x_init(void)
 	i2c_write( STS3x_1_MPS_HIG_LSB );
  	i2c_write( STS3x_FETCH_DATA_MSB );
  	i2c_write( STS3x_FETCH_DATA_LSB );	
-
+	 
 	i2c_stop();
-	
 }
 
-int16_t sts3x_calc(uint16_t temp)
-{
+int16_t sts3xCalc(uint16_t temp)
+{	
 	double stemp=temp;
 	stemp *= 175;
 	stemp /= 0xffff;
@@ -40,30 +49,44 @@ int16_t sts3x_calc(uint16_t temp)
 	return (int16_t)stemp;
 }
 
-uint16_t sts3x_read(void)
+uint16_t sts3xRead(void)
 {
-	#define MSB	0
-	#define LSB 1
-	#define CRC	2
+	uint8_t read[STS3X_NUM_OF_BYTES] = "";
 	
-	uint8_t read[3] = { 0 , 0 , 0 };
+	/*
+	*	Alle Status Bits reseten..
+	*/
+	sts3x.state = 0;
 	
-	i2c_start_wait( STS3x_ADDR + I2C_READ );
-	read[MSB] = i2c_readAck();
-	read[LSB] = i2c_readAck();
-	read[CRC] = i2c_readNak();
+	if ( i2c_rep_start( STS3x_ADDR + I2C_READ ) )
+	{
+		sts3x.state |= STS3X_NO_NEW_DATA;
+		i2c_start_wait( STS3x_ADDR + I2C_READ );
+	}
+
+	read[STS3X_MSB] = i2c_readAck();
+	read[STS3X_LSB] = i2c_readAck();
+	read[STS3X_CRC] = i2c_readNak();
+
 	i2c_stop();
 
 	uint8_t crc = 0xff;
-	crc = _crc8_ccitt_update(crc,read[MSB]);
-	crc = _crc8_ccitt_update(crc,read[LSB]);
+	crc = _crc8_ccitt_update(crc,read[STS3X_MSB]);
+	crc = _crc8_ccitt_update(crc,read[STS3X_LSB]);
 
 	/* 
 	* Generierten CRC mit empfangenen überprüfen 
 	*/
-	if ( crc == read[CRC] )
+	if ( crc == read[STS3X_CRC] )
 	{
-		return (uint16_t)read[MSB] << 8 | read[LSB];
+		return (uint16_t)read[STS3X_MSB] << 8 | read[STS3X_LSB];
+	}
+	else
+	{
+		/*
+		*	CRC Error
+		*/
+		sts3x.state |= STS3X_CRC_ERR;		
 	}
 	
 	/*
@@ -73,7 +96,18 @@ uint16_t sts3x_read(void)
 	return 17000;
 }
 
-int16_t sts3x_get_temp(void)
+int16_t sts3xGetTemp(void)
 {
-	return sts3x_calc( sts3x_read() );
+	/*
+	*	Sollte ein Checksummenfehler auftreten,
+	*	so wird der zuletzt gemessene Wert zurück gegeben
+	*/
+	if ( (sts3x.state & STS3X_CRC_ERR)  )
+	{
+		//return sts3x.actual;
+	}
+	
+	sts3x.actual = sts3xCalc( sts3xRead() );
+	
+	return (sts3x.actual);
 }
