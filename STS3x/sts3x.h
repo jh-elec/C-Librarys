@@ -74,6 +74,34 @@ enum sts3xBytes
 	STS3X_NUM_OF_BYTES,	
 };
 
+/* periodic measure commands (high precision mode) */
+static const char periodic_measure_commands_hpm[][2] = {
+	/* 0.5 measurements per second */
+	{0x20, 0x32},
+	/* 1 measurements per second */
+	{0x21, 0x30},
+	/* 2 measurements per second */
+	{0x22, 0x36},
+	/* 4 measurements per second */
+	{0x23, 0x34},
+	/* 10 measurements per second */
+	{0x27, 0x37},
+};
+
+/* periodic measure commands (low power mode) */
+static const char periodic_measure_commands_lpm[][2] = {
+	/* 0.5 measurements per second */
+	{0x20, 0x2f},
+	/* 1 measurements per second */
+	{0x21, 0x2d},
+	/* 2 measurements per second */
+	{0x22, 0x2b},
+	/* 4 measurements per second */
+	{0x23, 0x29},
+	/* 10 measurements per second */
+	{0x27, 0x2a},
+};
+
 typedef struct  
 {
 	/*
@@ -127,6 +155,14 @@ uint16_t sts3xRead(void);
 * @return           -> - Temperature in °C
 * @description      -> -none
 */
-int16_t sts3xGetTemp(void);
+int8_t sts3xGetTemp(void);
+
+
+/* sts3xReset
+* @para             -> -none
+* @return           -> -none
+* @description      -> Initiate Software Reset
+*/
+void sts3xReset(void);
 
 #endif
