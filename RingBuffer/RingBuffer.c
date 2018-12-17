@@ -1,166 +1,123 @@
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdbool.h>
-
-
 #include "RingBuffer.h"
 
 
-static uint8_t Length = 0;
-
-
-static void RingBufferAdd( RingBuff_t *RingBuff , uint8_t *Data , uint8_t Offset , uint8_t Length )
+void		RingBufferInit( RingBuffer_t *RingBuff , void *Buff , uint16_t BufferSize )
 {
-	uint16_t i = 0;
-	uint8_t *tmpPtr = Data;
-	for ( ; i < Length ; i++ )
-	{
-		RingBuff->Buffer[Offset+i] = *tmpPtr++;
-	}
+	RingBuff->BufferPtr = Buff;
+	RingBuff->BufferSize = (BufferSize - 1);
+	RingBuff->NewestIndex = 0;
+	RingBuff->OldestIndex = 0;
 }
 
-RingBuff_t RingBufferCreate( uint8_t Capacity )
-{	
-	RingBuff_t RingBuffer;
-
-	RingBuffer.ReadPos = 0;
-	RingBuffer.WritePos = 0;
-	RingBuffer.IsFull = false;
-	
-	RingBuffer.Buffer = (uint8_t*)malloc( (sizeof(uint8_t)) * (Capacity-1) );
-	RingBuffer.BufferSize = Capacity;
-
-	return RingBuffer;
+void		RingBufferClear( RingBuffer_t *RingBuff )
+{
+	RingBuff->Entrys = 0;
+	RingBuff->NewestIndex = 0;
+	RingBuff->OldestIndex = 0;
 }
 
-void RingBufferDestroy( RingBuff_t *RingBuff )
+size_t		RingBufferLength( RingBuffer_t *RingBuff )
 {
-	free(RingBuff);
-	free(RingBuff->Buffer);
+	return (RingBuff->NewestIndex-RingBuff->OldestIndex);
 }
 
-uint8_t RingBufferGetLength( RingBuff_t *RingBuff )
+
+enum RingBufferStatus RingBufferWrite(volatile RingBuffer_t *RingBuff , uint8_t Byte )
 {
-	if ( RingBuff->IsFull == true )
+	uint8_t NextIndex = (((RingBuff->NewestIndex)+1) % RingBuff->BufferSize);
+	
+	if (NextIndex == RingBuff->OldestIndex)
 	{
-		return RingBuff->BufferSize;
-	}
-	else
-	{
-		if ( RingBuff->ReadPos == RingBuff->WritePos )
-		{
-			Length = 0;
-		}
-		else if ( RingBuff->ReadPos < RingBuff->WritePos )
-		{
-			Length = RingBuff->WritePos -RingBuff->ReadPos;
-		}
-		else
-		{
-			Length = (RingBuff->BufferSize - RingBuff->ReadPos) + RingBuff->WritePos;
-		}
+		return BUFFER_FULL;
 	}
 	
-	return Length;
+	RingBuff->BufferPtr[RingBuff->NewestIndex] = Byte;
+	
+	RingBuff->NewestIndex = NextIndex;
+	
+	return BUFFER_OK;
 }
 
-void RingBufferClear( RingBuff_t *RingBuff )
+enum RingBufferStatus RingBufferRead(volatile RingBuffer_t *RingBuff , uint8_t *Byte)
 {
-	RingBuff->ReadPos = 0;
-	RingBuff->WritePos = 0;
+	if (RingBuff->NewestIndex == RingBuff->OldestIndex)
+	{
+		return BUFFER_EMPTY;
+	}
+	
+	*Byte = RingBuff->BufferPtr[RingBuff->OldestIndex];
+	
+	RingBuff->OldestIndex = ((RingBuff->OldestIndex+1) % RingBuff->BufferSize);
+	
+	return BUFFER_OK;
 }
 
-uint8_t RingBufferPush( RingBuff_t *RingBuff , uint8_t *Data , uint8_t Length )
+enum RingBufferStatus RingBufferPeek(volatile RingBuffer_t *RingBuff , uint8_t *Byte)
 {
-	if ( Data == NULL || Length == 0 )
-	{
-		return 1;
-	}
-
-	if ( RingBuff->WritePos + Length <= RingBuff->BufferSize )
-	{
-		RingBufferAdd( RingBuff , Data , RingBuff->WritePos , Length );
-		
-		RingBuff->WritePos += Length;
-	}
-	else
-	{
-		int16_t i = (RingBuff->WritePos + Length) - RingBuff->BufferSize;
+	uint8_t LastIndex = ((RingBuff->BufferSize + (RingBuff->NewestIndex) - 1) % RingBuff->BufferSize);
 	
-		if ( RingBuff->ReadPos < i )
-		{
-			#ifdef RINGBUFFER_DEBUG_ENABLE
-				printf("RingBufferPush(): RingBuff->ReadPos < i\r\n");
-			#endif
-			//return 2; // nicht gelesene Daten werden überschrieben
-		}
-		
-		RingBufferAdd( RingBuff , Data , RingBuff->WritePos , (RingBuff->BufferSize - RingBuff->WritePos) );
-		RingBufferAdd( RingBuff , Data+(Length-i) , 0 , i );
-		
-		RingBuff->WritePos = i;
+	if (RingBuff->NewestIndex == RingBuff->OldestIndex)
+	{
+		return BUFFER_EMPTY;
 	}
 	
-	if ( RingBuff->ReadPos == RingBuff->WritePos )
-	{
-		RingBuff->IsFull = true;
-	}
+	*Byte = RingBuff->BufferPtr[LastIndex];
 	
-	return 0;
+	return BUFFER_OK;
 }
 
-uint8_t RingBufferPull( RingBuff_t *RingBuffer , uint8_t *Buff , uint8_t Length )
+
+uint16_t RingBufferReadByte( volatile RingBuffer_t *RingBuff )
 {
-	if ( Length <= 0 )
-	{
-		#ifdef RINGBUFFER_DEBUG_ENABLE
-			printf("RingBufferPull(): Length <= 0\r\n");
-		#endif
-		return 1;
-	}
+	uint8_t ReadedByte;
 	
-	if ( Length > RingBuffer->BufferSize )
-	{
-		#ifdef RINGBUFFER_DEBUG_ENABLE
-			printf("RingBufferPull(): Length > RingBuffer->BufferSize\r\n");
-		#endif
-		return 2;
-	}
+	enum RingBufferStatus BufferStatus;
+	BufferStatus = RingBufferRead( RingBuff , &ReadedByte );
 	
-	
-	if ( (RingBuffer->ReadPos + Length) <= RingBuffer->BufferSize )
+	return ((uint16_t)(BufferStatus << 8) + (uint8_t)ReadedByte);
+}
+
+
+enum RingBufferStatus RingBufferWriteBurst(volatile RingBuffer_t *RingBuff , uint8_t *Source , uint16_t Length )
+{
+	enum RingBufferStatus BufferState;
+	for ( uint16_t i = 0 ; i < Length ; i++ )
 	{
-		int16_t x = 0;
-		for ( ; x < Length ; x++ )
+		BufferState = RingBufferWrite( RingBuff , *Source+i );
+		if ( BufferState != BUFFER_OK )
 		{
-			Buff[x] = RingBuffer->Buffer[RingBuffer->ReadPos+x];
-		}RingBuffer->ReadPos += Length;
-	}
-	else
-	{
-		int16_t l = (RingBuffer->ReadPos + Length) - RingBuffer->BufferSize;
-		if ( RingBuffer->ReadPos < l )
-		{
-			#ifdef RINGBUFFER_DEBUG_ENABLE
-				printf("RingBufferPull(): RingBuffer->ReadPos < l\r\n");
-			#endif
-			return 3; // Requested data length larger than stored data. Buffer underrun!
+			return BufferState;
 		}
-		
-		int16_t x = 0;
-		for ( ; x < Length - l ; x++ )
-		{
-			Buff[x] = RingBuffer->Buffer[RingBuffer->ReadPos+x];
-		}
-			
-		for ( x = 0 ; x < l ; x++ )
-		{
-			Buff[(Length-l)+x] = RingBuffer->Buffer[x];
-		}
-					
-		RingBuffer->ReadPos = l;
 	}
 	
-	return 0;
+	return BUFFER_OK;
+}
+
+Burst_Info_t RingBufferReadBurst(volatile RingBuffer_t *RingBuff , uint16_t Length )
+{
+	Burst_Info_t BurstInfo;
+	
+	BurstInfo.Status = 0;
+	BurstInfo.DataPtr = NULL;
+	
+	BurstInfo.Status = RingBufferRead( RingBuff, BurstInfo.DataPtr );
+	if ( BurstInfo.Status != BUFFER_OK )
+	{
+		return BurstInfo;
+	}
+	
+	uint8_t tmp;
+	for ( uint16_t i = 0 ; i < (Length-1) ; i-- ) // -1 da wir schon ein Byte gelesen haben
+	{
+		BurstInfo.Status = RingBufferRead( RingBuff , &tmp );
+		if ( BurstInfo.Status != BUFFER_OK )
+		{
+			return BurstInfo;
+		}
+	}
+	
+	BurstInfo.Status = BUFFER_OK;
+	
+	return BurstInfo;
 }
