@@ -25,6 +25,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 typedef struct
 {
@@ -34,7 +35,7 @@ typedef struct
 	uint8_t NewestIndex;
 	uint8_t OldestIndex;
 	
-	uint8_t Entrys;
+	bool IsFull;
 }RingBuffer_t;
 
 enum RingBufferStatus {BUFFER_OK, BUFFER_EMPTY, BUFFER_FULL};
