@@ -30,10 +30,10 @@
 typedef struct
 {
 	uint8_t *BufferPtr;
-	uint8_t BufferSize;
+	uint16_t BufferSize;
 	
-	uint8_t NewestIndex;
-	uint8_t OldestIndex;
+	uint16_t NewestIndex;
+	uint16_t OldestIndex;
 	
 	bool IsFull;
 }RingBuffer_t;

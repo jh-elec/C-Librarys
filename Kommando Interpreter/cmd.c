@@ -23,8 +23,12 @@
 *	Die Nutzdaten werden werden dem Zeiger
 *	der cmd_t Struktur übergeben!
 */
-static uint8_t cmdMsg[__CMD_HEADER_ENTRYS__];
+static uint8_t	Frame[__CMD_HEADER_ENTRYS__];
 
+static uint8_t MasterFrameCRC = 0;
+static uint8_t SlaveFrameCRC = 0;
+
+static int8_t FrameStart = 0;
 
 static inline uint8_t cmdCrc8CCITTUpdate ( uint8_t inCrc , uint8_t *inData )
 {
@@ -49,78 +53,95 @@ static inline uint8_t cmdCrc8CCITTUpdate ( uint8_t inCrc , uint8_t *inData )
 	return data;
 }
 
-
-void	cmdInit				( cmd_t *c )					
+int8_t		cmdSearchFrame( uint8_t *frame )
 {
-	c->msgLen	= 0; // Länge der gesamten Message
-	c->dataLen	= 0; // Länge der Nutzdaten Bytes
-	c->dataType	= 0; // Datentyp der Nutzdaten
-	c->id		= 0; // Message Erkennung
-	c->exitcode = 0; // Exitkode aus Funktionen
-	c->inCrc	= 0; // Checksumme der gesamten Message
-	c->outCrc	= 0;
-	c->dataPtr	= NULL; // Zeiger auf Nutzdaten
-}
-
-int8_t	cmdGetStartIndex	( uint8_t *rx )					
-{
-	uint8_t index;
-	for( index = 0 ; index < 255 ; index++ )
+	for ( uint8_t x = 0 ; x < 127 ; x++ )
 	{
-		if ( rx[index] == '-' && rx[index+1] == '+' )
+		if ( frame[x] == '-' )
 		{
-			return index;
+			if ( x < 127 )
+			{
+				if ( frame[x+1] == '+' )
+				{
+					return x + 2;
+				}
+			}
+			else
+			{
+				return -1; // Überlauf
+			}
 		}
 	}
-
-	return -1; // Kein Kommando gefunden
-}
-
-uint8_t	cmdGetEndIndex		( uint8_t *rx )					
-{
-	return ( strlen( ( char* )rx ) );
-}
-
-uint8_t	cmdParse			( uint8_t *rx , cmd_t *c )		
-{
-	int8_t indexStart 	= cmdGetStartIndex( rx );
 	
-	if ( indexStart == (int8_t)-1 )
+	return -1;
+}
+
+void		cmdInit				( cmd_t *c )					
+{
+	c->DataLength	= 0;	// Länge der Nutzdaten Bytes
+	c->DataType		= 0;	// Datentyp der Nutzdaten
+	c->MessageID	= 0;	// Message Erkennung
+	c->Exitcode		= 0;	// Exitkode aus Funktionen
+	MasterFrameCRC	= 0;	// Checksumme der gesamten Message ( Vom PC )
+	SlaveFrameCRC	= 0;	// Checksumme der gesamten Message ( Vom µC )
+	c->DataPtr		= NULL; // Zeiger auf Nutzdaten
+	FrameStart		= 0;	// Index eines Frames
+}
+
+uint8_t		cmdParse			( uint8_t *rx , cmd_t *c )		
+{
+	FrameStart = cmdSearchFrame( rx );
+	
+	if ( FrameStart == - 1 )
 	{
 		return 1;
 	}
-
-	c->msgLen	= rx[ indexStart + CMD_HEADER_LENGHT		];
-	c->dataLen 	= rx[ indexStart + CMD_HEADER_DATA_LENGHT	];
-	c->dataType	= rx[ indexStart + CMD_HEADER_DATA_TYP		];
-	c->id 		= rx[ indexStart + CMD_HEADER_ID			];
-	c->exitcode	= rx[ indexStart + CMD_HEADER_EXITCODE		];	
-	c->inCrc 	= rx[ indexStart + CMD_HEADER_CRC			];
-
-	c->dataPtr = NULL;
-	if ( c->dataLen )
+		
+	c->DataLength 	= rx[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_LENGHT		] -__CMD_HEADER_ENTRYS__;
+	c->DataType		= rx[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_DATA_TYP		];
+	c->MessageID 	= rx[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_ID			];
+	c->Exitcode		= rx[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_Exitcode		];	
+	MasterFrameCRC	= rx[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_CRC			];
+	
+	if ( c->DataLength )
 	{
-		c->dataPtr = rx +  (indexStart + __CMD_HEADER_ENTRYS__);
+		c->DataPtr = rx + ( FrameStart + CMD_START_FRAME_OFFSET + __CMD_HEADER_ENTRYS__ );
+	}
+	else
+	{
+		c->DataPtr = NULL; // Keine Nutzdaten
 	}
 	
-	uint8_t crc = 0;
-	c->outCrc = 0;
-	rx[ indexStart + CMD_HEADER_CRC ] = 0;
+	SlaveFrameCRC = 0;
+	
+	rx[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_CRC ] = 0;
+	
 	for ( uint8_t x = 0 ; x < __CMD_HEADER_ENTRYS__ ; x++ )
 	{
-		crc = cmdCrc8CCITTUpdate( crc , &rx[ (indexStart + CMD_HEADER_START_BYTE1) + x ] );
+		SlaveFrameCRC = cmdCrc8CCITTUpdate( SlaveFrameCRC , &rx[FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_LENGHT + x ] );
 	}
 	
-	for ( uint8_t x = 0 ; x < c->dataLen ; x++ )
+	for ( uint8_t x = 0 ; x < c->DataLength ; x++ )
 	{
-		crc = cmdCrc8CCITTUpdate( crc , &rx[  (indexStart + __CMD_HEADER_ENTRYS__ ) + x ] );
+		SlaveFrameCRC = cmdCrc8CCITTUpdate( SlaveFrameCRC , &rx[FrameStart + CMD_START_FRAME_OFFSET + __CMD_HEADER_ENTRYS__ + x ] );
 	}
-	c->outCrc = crc;
+	
+	/* Checksumme überprüfen */
+	if ( SlaveFrameCRC != MasterFrameCRC )
+	{
+		return 2;
+	}
+	
+	/* Synchrosnisations Frame empfangen? */
+	if ( c->MessageID == ID_PING && c->DataPtr[0] == 'C')
+	{
+		return 3; // Sync 
+	}
 	
 	return 0;
 }
 
-uint8_t	cmdCrc8StrCCITT		( uint8_t *str , uint8_t leng )	
+uint8_t		cmdCrc8StrCCITT		( uint8_t *str , uint8_t leng )	
 {
 	uint8_t crc = 0;
 		
@@ -133,66 +154,73 @@ uint8_t	cmdCrc8StrCCITT		( uint8_t *str , uint8_t leng )
 	return crc;
 }
 
-uint8_t	*cmdBuildHeader		( cmd_t *a )					
-{			
-	cmdMsg[CMD_HEADER_CRC]	= 0;
+Header_t	cmdBuildHeader		( cmd_t *a )					
+{		
+	static Header_t HeaderInfo;
+		
+	Frame[CMD_HEADER_CRC]	= 0;
 	
-	uint8_t *tmpPtr	= a->dataPtr;
-	uint8_t	msgLen	= __CMD_HEADER_ENTRYS__ + a->dataLen;
+	uint8_t *tmpPtr	= a->DataPtr;
+
+	uint16_t FrameSize = __CMD_HEADER_ENTRYS__ + a->DataLength;
 	
-	cmdMsg[CMD_HEADER_START_BYTE1]	= '-';			// Start Byte 1
-	cmdMsg[CMD_HEADER_START_BYTE2]	= '+';			// Start Byte 2 
-	cmdMsg[CMD_HEADER_ID]			= a->id;		// 0..255
-	cmdMsg[CMD_HEADER_LENGHT]		= msgLen;		// Länge der ganzen Antwort
-	cmdMsg[CMD_HEADER_DATA_LENGHT]	= a->dataLen;	// Länge der Rohdaten
-	cmdMsg[CMD_HEADER_DATA_TYP]		= a->dataType;	// (u)char , (u)int8 , (u)int16 , (u)int32 usw.
-	cmdMsg[CMD_HEADER_EXITCODE]		= a->exitcode;	// 0..255
+	if ( FrameSize >= 255 )
+	{
+		HeaderInfo.Exitcode = 1;	
+	}
+	
+	Frame[CMD_HEADER_LENGHT]		= (uint8_t)FrameSize; // Länge der ganzen Antwort
+	Frame[CMD_HEADER_DATA_TYP]		= a->DataType;		  // (u)char , (u)int8 , (u)int16 , (u)int32 usw.	
+	Frame[CMD_HEADER_ID]			= a->MessageID;		  // 0..255
+	Frame[CMD_HEADER_Exitcode]		= a->Exitcode;		  // 0..255
 	
 	/*	Checksumme vom Header bilden
 	*/
-	uint8_t crc = 0;
+	uint8_t FrameCRC = 0;
 	for ( uint8_t x = 0 ; x < __CMD_HEADER_ENTRYS__ ; x++)
 	{
-		crc = cmdCrc8CCITTUpdate( crc , &cmdMsg[x] );
+		FrameCRC = cmdCrc8CCITTUpdate( FrameCRC , &Frame[x] );
 	}
 	
 	/*	Checksumme von Nutzdaten bilden
 	*/	
-	if ( a->dataLen )
+	if ( a->DataLength )
 	{
-		for ( uint8_t x = 0 ; x < a->dataLen ; x++ )
+		for ( uint8_t x = 0 ; x < a->DataLength ; x++ )
 		{
-			crc = cmdCrc8CCITTUpdate( crc , tmpPtr++ );	
+			FrameCRC = cmdCrc8CCITTUpdate( FrameCRC , tmpPtr++ );	
 		}			
 	}
 	else
 	{
-		a->dataPtr = NULL;
+		HeaderInfo.Exitcode = 1; // Keine Nutzdaten vorhanden
+		a->DataPtr = NULL;
 	}
+
+	Frame[CMD_HEADER_CRC] = FrameCRC;
 		
-	cmdMsg[CMD_HEADER_CRC] = crc;
-		
-	a->id			= 0;
-	a->dataType		= 0;
-	a->exitcode		= 0;
-			
-	a->msgLen = msgLen;
+	a->MessageID	= 0;
+	a->DataType		= 0;
+	a->Exitcode		= 0;
 				
-	return cmdMsg;
+	HeaderInfo.FramePtr = Frame;
+				
+	return HeaderInfo;
 }
 
-void	cmdBuildAnswer( cmd_t *a , uint8_t id , enum Data_Type_Enum dataType , uint8_t exitcode , uint8_t dataLen , uint8_t *dataPtr )
+void		cmdBuildAnswer		( cmd_t *a , uint8_t id , enum Data_Type_Enum DataType , uint8_t Exitcode , uint8_t DataLength , uint8_t *DataPtr )
 {
-	a->id		= id; // Beschreibt den Nachrichten Type. Damit die gegenstelle die Nachrichten unterscheiden kann
-	a->dataType = dataType; // Gibt an um welchen Daten Typ es sich handelt
-	a->exitcode = exitcode; // Rückgabewert einer Funktion 
-	a->dataPtr	= dataPtr; // Zeiger auf die Daten die gesendet werden sollen
-	a->dataLen	= dataLen; // Anzahl der Bytes
+	a->MessageID	= id;			// Beschreibt den Nachrichten Type. Damit die gegenstelle die Nachrichten unterscheiden kann
+	a->DataType		= DataType;		// Gibt an um welchen Daten Typ es sich handelt
+	a->Exitcode		= Exitcode;		// Rückgabewert einer Funktion 
+	a->DataPtr		= DataPtr;		// Zeiger auf die Daten die gesendet werden sollen
+	a->DataLength	= DataLength;	// Anzahl der Bytes
 }
 
-void	cmdSendAnswer		( cmd_t *a )					
+void		cmdSendAnswer		( cmd_t *a )					
 {
-	uint8_t *cmdBuff  = cmdBuildHeader( (cmd_t*)a );
-	uartPutByteStr( cmdBuff , __CMD_HEADER_ENTRYS__ );
-	uartPutByteStr( a->dataPtr , a->dataLen );
+	Header_t HeaderInfo  = cmdBuildHeader( a );
+	
+	uartPutByteStr( HeaderInfo.FramePtr , __CMD_HEADER_ENTRYS__ );
+	uartPutByteStr( a->DataPtr , a->DataLength );
 }
