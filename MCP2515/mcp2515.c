@@ -11,12 +11,6 @@
 
 uint8_t Mcp2515Write( uint8_t *Frame , uint8_t Lenght )
 {
-	/*	**Struktur**
-	*	Frame[0]	= SPI_WRITE Befehl	// ..
-	*	Frame[1] 	= Register Adresse	// Diese beiden Befehle müssen gesendet werden!
-	*	Frame[2..n] = Daten 			// Hier kommen die eigentlichen Daten..
-	*/
-	
 	if( Lenght < 2 )
 	{
 		return 1; // Zu wenig Daten übergeben
@@ -82,16 +76,13 @@ uint8_t Mcp2515ReadState(uint8_t Type)
 	return Data;
 }
 
-typedef struct
+uint8_t Mcp2515Init(uint8_t Bitrate)
 {
-	uint8_t PHSEG21;
-	BTLMODE
-	PHSEG11
-	BRP2
-}
-
-uint8_t Mcp2515Init(uint8_t Speed)
-{
+	if( Bitrate >= 8 )
+	{
+		return 1;
+	}
+	
 	MCP2515_INT_DDR	|= (1<<MCP2515_INT_BP);
 	MCP2515_CS_DDR  |= (1<<MCP2515_CS_BP);
 		
@@ -105,128 +96,170 @@ uint8_t Mcp2515Init(uint8_t Speed)
 	
 	MCP2515_CS_LOW;
 	
-	/*	Config
-	*	Bitrate: 125kbps @ 16 MHz
-	*/
-	uint8_t Frame[] = 
-	{ 
-		SPI_WRITE, 
-		CNFG3, 
-		(1<<PHSEG21),
-		(1<<BTLMODE)|(1<<PHSEG11),
-		(1<<BRP2)|(1<<BRP1)|(1<<BRP0),
-		Speed, // ???
-		(1<<RX1IE)|(1<<RX0IE) // Interrupts aktivieren
-	};
+	uint8_t Frame[]={SPI_WRITE,CNF3,0,0,0,MCP2515_INTERRUPTS}; // 0 = Platzhalter für Timinig Werte
 	
-	Mcp2515Write(Frame , sizeof(Frame));
+	for(uint8_t i = 0 ; i < 3 ; i++)
+	{
+		Frame[2+x] = Mcp2515SpeedCnfg[Bitrate][i];
+	}
+	
+	Mcp2515Write(Frame,sizeof(Frame)); // Init schreiben
 	
 	MCP2515_CS_HIGH;
 
 	
-	// test if we could read back the value => is the chip accessible?
-	if (mcp2515_read_register(CNF1) != speed) 
+	// TXnRTS Bits als Inputs schalten
+	Frame[0] = SPI_WRITE;
+	Frame[1] = TXRTSCTRL;
+	Frame[2] = 0;
+	
+	Mcp2515Write(Frame,3);
+	
+	
+	#if defined(MCP2515_INT)
+		SET_INPUT(MCP2515_INT);
+		SET(MCP2515_INT);
+	#endif
+	
+	#ifdef RXnBF_FUNKTION
+		MCP2515_RX0BF_DDR &= ~(1<<MCP2515_RX0BF_BP);
+		MCP2515_RX1BF_DDR &= ~(1<<MCP2515_RX1BF_BP);
+		
+		/* PullUps aktivieren */
+		MCP2515_RX0BF_PORT |= (1<<MCP2515_RX0BF_BP);
+		MCP2515_RX1BF_PORT |= (1<<MCP2515_RX1BF_BP);
+		
+		// Aktivieren der Pin-Funktionen fuer RX0BF und RX1BF
+		// Frame[0] sollte hier noch "SPI_WRITE" beeinhalten
+		Frame[1] = BFPCTRL;
+		Frame[2] = (1<<B0BFE)|(1<<B1BFE)|(1<<B0BFM)|(1<<B1BFM);
+		Mcp2515Write(Frame,3);
+		
+	#else
+		#ifdef MCP2515_TRANSCEIVER_SLEEP
+			// activate the pin RX1BF as GPIO which is connected 
+			// to RS of MCP2551 and set it to 0
+			// Frame[0] sollte hier noch "SPI_WRITE" beeinhalten
+			Frame[1] = BFPCTRL;
+			Frame[2] = 1<<B1BFE);
+			Mcp2515Write(Frame,3);
+		#else
+			// Deaktivieren der Pins RXnBF Pins (High Impedance State)
+			// Frame[0] sollte hier noch "SPI_WRITE" beeinhalten
+			Frame[1] = BFPCTRL;
+			Frame[2] = 0;
+			Mcp2515Write(Frame,3);
+		#endif
+	#endif
+		
+	// Device zurueck in den normalen Modus versetzten
+	// und aktivieren/deaktivieren des Clkout-Pins
+	// Frame[0] sollte hier noch "SPI_WRITE" beeinhalten
+	Frame[1] = CANCTRL;
+	Frame[2] = CLKOUT_PRESCALER_;
+	Mcp2515Write(Frame,3);
+	
+	
+	uint8_t Result = 0;
+	uint32_t Timeout = 10e6;
+	while ( (Result & 0xE0) != 0 && Timeout-- > 0 ) 
 	{
-		SET(LED2_HIGH);
-
-		return false;
+		// warten bis der neue Modus uebernommen wurde
+		Mcp2515Read(CANSTAT , &Result , 1 );
 	}
 	
-	// deaktivate the RXnBF Pins (High Impedance State)
-	mcp2515_write_register(BFPCTRL, 0);
-	
-	// set TXnRTS as inputs
-	mcp2515_write_register(TXRTSCTRL, 0);
-	
-	// turn off filters => receive any message
-	mcp2515_write_register(RXB0CTRL, (1<<RXM1)|(1<<RXM0));
-	mcp2515_write_register(RXB1CTRL, (1<<RXM1)|(1<<RXM0));
-	
-	// reset device to normal mode
-	mcp2515_write_register(CANCTRL, 0);
-//	SET(LED2_HIGH);
-	return true;
+	if(Timeout == 0) 
+	{
+		return 2;
+	}
+		
+	return 0;
 }
 
-// ----------------------------------------------------------------------------
-// check if there are any new messages waiting
-
-uint8_t mcp2515_check_message(void) {
-	return (!IS_SET(MCP2515_INT));
-}
-
-// ----------------------------------------------------------------------------
-// check if there is a free buffer to send messages
-
-uint8_t mcp2515_check_free_buffer(void)
+uint8_t Mcp2515CheckNewMessage(void) 
 {
-	uint8_t status = mcp2515_read_status(SPI_READ_STATUS);
+	/* INT Pin auswerten */
+	return (!(MCP2515_INT_PORT) & (1<<MCP2515_INT_BP));
+}
+
+uint8_t Mcp2515CheckFreeBuffer(void)
+{
+	uint8_t Status = Mcp2515ReadState(SPI_READ_STATUS);
 	
-	if ((status & 0x54) == 0x54) {
-		// all buffers used
-		return false;
+	if ((Status & 0x54) == 0x54) 
+	{
+		// Alle Puffer sind in benutzung..
+		return 0;
 	}
 	
-	return true;
+	return 1;// Mindestens 1 Puffer ist frei..
 }
 
-// ----------------------------------------------------------------------------
-uint8_t mcp2515_get_message(tCAN *message)
+uint8_t mcp2515_get_message(tCAN *Message)
 {
-	// read status
-	uint8_t status = mcp2515_read_status(SPI_RX_STATUS);
-	uint8_t addr;
+	uint8_t Status = Mcp2515ReadState(SPI_RX_STATUS);
+	uint8_t Address;
 	uint8_t t;
-	if (bit_is_set(status,6)) {
-		// message in buffer 0
-		addr = SPI_READ_RX;
+	
+	if( ((Status & 1<<6) == 1) ) 
+	{
+		// Nachricht in Puffer 0
+		Address = SPI_READ_RX;
 	}
-	else if (bit_is_set(status,7)) {
-		// message in buffer 1
-		addr = SPI_READ_RX | 0x04;
+	else if ( ((Status & 1<<7) == 1) ) 
+	{
+		// Nachricht in Puffer 1
+		Address = (SPI_READ_RX | 0x04);
 	}
-	else {
-		// Error: no message available
+	else 
+	{
+		// Error: Keine neue Nachricht vorhanden
 		return 0;
 	}
 
-	RESET(MCP2515_CS);
-	spi_putc(addr);
+	MCP2515_CS_LOW;
 	
-	// read id
-	message->id  = (uint16_t) spi_putc(0xff) << 3;
-	message->id |=            spi_putc(0xff) >> 5;
+	uint8_t ReceiveFrame[2] = "";
 	
-	spi_putc(0xff);
-	spi_putc(0xff);
+	Mcp2515Read( Address , ReceiveFrame , 2 );
 	
-	// read DLC
-	uint8_t length = spi_putc(0xff) & 0x0f;
+	// Empfangenen Nachrichten "Idetifier" lesen
+	Message->Id  = (uint16_t) Frame[0] << 3;
+	Message->Id |=            Frame[1] >> 5;
 	
-	message->header.length = length;
-	message->header.rtr = (bit_is_set(status, 3)) ? 1 : 0;
+	uint8_t Frame[] = { 0xFF , 0xFF };
+	Mcp2515Write( Frame , 2 );
+	
+	
+	// DLC lesen
+	uint8_t Length = spi_putc(0xFF) & 0x0F;
+	
+	Message->Header.Length = Length;
+	Message->Header.Rtr = (bit_is_set(Status, 3)) ? 1 : 0;
 	
 	// read data
-	for (t=0;t<length;t++) {
-		message->data[t] = spi_putc(0xff);
+	for ( t = 0 ; t < Length ; t++ ) 
+	{
+		Message->Data[t] = spi_putc(0xff);
 	}
-	SET(MCP2515_CS);
+	MCP2515_CS_HIGH;
 	
 	// clear interrupt flag
-	if (bit_is_set(status, 6)) {
+	if (bit_is_set(Status, 6)) 
+	{
 		mcp2515_bit_modify(CANINTF, (1<<RX0IF), 0);
 	}
-	else {
+	else 
+	{
 		mcp2515_bit_modify(CANINTF, (1<<RX1IF), 0);
 	}
 	
-	return (status & 0x07) + 1;
+	return (Status & 0x07) + 1;
 }
 
-// ----------------------------------------------------------------------------
-uint8_t mcp2515_send_message(tCAN *message)
+uint8_t Mcp2515SendMessage(tCAN *Message)
 {
-	uint8_t status = mcp2515_read_status(SPI_READ_STATUS);
+	uint8_t Status = Mcp2515ReadState(SPI_READ_STATUS);
 	
 	/* Statusbyte:
 	 *
@@ -235,56 +268,76 @@ uint8_t mcp2515_send_message(tCAN *message)
 	 *  4	TXB1CNTRL.TXREQ
 	 *  6	TXB2CNTRL.TXREQ
 	 */
-	uint8_t address;
+	 
+	uint8_t Address;
 	uint8_t t;
-//	SET(LED2_HIGH);
-	if (bit_is_clear(status, 2)) {
-		address = 0x00;
+	
+	if(((Status & 1<<2) == 0)) 
+	{
+		Address = 0x00;
 	}
-	else if (bit_is_clear(status, 4)) {
-		address = 0x02;
+	else if (((Status & 1<<4) == 0)) 
+	{
+		Address = 0x02;
 	} 
-	else if (bit_is_clear(status, 6)) {
-		address = 0x04;
+	else if (((Status & 1<<6) == 0)) 
+	{
+		Address = 0x04;
 	}
-	else {
-		// all buffer used => could not send message
+	else 
+	{
+		/* Alle Puffer sind in benutzung, es kann gerade keine 
+		*  Nachricht gesendet werden 
+		*/
 		return 0;
 	}
 	
-	RESET(MCP2515_CS);
-	spi_putc(SPI_WRITE_TX | address);
+	MCP2515_CS_LOW;
 	
-	spi_putc(message->id >> 3);
-    spi_putc(message->id << 5);
+	uint8_t Frame[16] = 
+	{ 
+		SPI_WRITE_TX | Address, 
+		Message->id >> 3, 
+		Message->id << 5, 
+		0, 
+		0 
+	};
 	
-	spi_putc(0);
-	spi_putc(0);
+	uint8_t Length = Message->Header.Length & 0x0F;
 	
-	uint8_t length = message->header.length & 0x0f;
-	
-	if (message->header.rtr) {
-		// a rtr-frame has a length, but contains no data
-		spi_putc((1<<RTR) | length);
+	if (Message->Header.Rtr) 
+	{
+		// Ein RTR (Remote Transmission Request) Frame hat eine Länge von x aber enhält kein Nutzdatenfeld
+		Frame[5] = ((1<<RTR) | Length);
 	}
-	else {
-		// set message length
-		spi_putc(length);
+	else 
+	{
+		// Länge der Nachricht 
+		Frame[6] = (Length);
 		
-		// data
-		for (t=0;t<length;t++) {
-			spi_putc(message->data[t]);
+		// Daten aus dem Frame
+		for(t = 0 ; t < Length ; t++ ) 
+		{
+			Frame[7+t] = (Message->Data[t]);
 		}
 	}
-	SET(MCP2515_CS);
+	
+	Mcp2515Write(Frame,sizeof(Frame));
+	
+	MCP2515_CS_HIGH;
 	
 	_delay_us(1);
 	
 	// send message
-	RESET(MCP2515_CS);
-	address = (address == 0) ? 1 : address;
-	spi_putc(SPI_RTS | address);
-	SET(MCP2515_CS);
+	MCP2515_CS_LOW;
 	
-	return address;
+	Address = (Address == 0) ? 1 : Address;
+	
+	Address |= SPI_RTS;
+	
+	Mcp2515Write(&Address , 1);
+	
+	MCP2515_CS_HIGH;
+	
+	return Address;
 }
