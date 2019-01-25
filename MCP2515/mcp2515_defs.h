@@ -2,6 +2,14 @@
 #ifndef	MCP2515_DEFS_H
 #define	MCP2515_DEFS_H
 
+#define MCP2515_CS_DDR		DDRA
+#define MCP2515_CS_PORT		PORTA
+#define MCP2515_CS_BP		1
+
+#define MCP2515_CS_LOW		MCP2515_CS_PORT &= ~(1<<MCP2515_CS_BP)
+#define MCP2515_CS_HIGH		MCP2515_CS_PORT |= (1<<MCP2515_CS_BP)
+
+
 /** \name	SPI Kommandos */
 /*@{*/
 #define SPI_RESET		0xC0

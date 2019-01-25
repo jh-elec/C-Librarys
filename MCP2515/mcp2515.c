@@ -1,178 +1,132 @@
-/* Copyright (c) 2007 Fabian Greif
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
-// ----------------------------------------------------------------------------
-
 
 #include <avr/io.h>
 #include <util/delay.h>
 
-#if ARDUINO>=100
-#include <Arduino.h> // Arduino 1.0
-#else
-#include <Wprogram.h> // Arduino 0022
-#endif
 #include <stdint.h>
 #include <avr/pgmspace.h>
 
-#include "global.h"
 #include "mcp2515.h"
 #include "mcp2515_defs.h"
 
 
-#include "defaults.h"
-
-// -------------------------------------------------------------------------
-// Schreibt/liest ein Byte ueber den Hardware SPI Bus
-
-uint8_t spi_putc( uint8_t data )
+uint8_t Mcp2515Write( uint8_t *Frame , uint8_t Lenght )
 {
-	// put byte in send-buffer
-	SPDR = data;
+	/*	**Struktur**
+	*	Frame[0]	= SPI_WRITE Befehl	// ..
+	*	Frame[1] 	= Register Adresse	// Diese beiden Befehle müssen gesendet werden!
+	*	Frame[2..n] = Daten 			// Hier kommen die eigentlichen Daten..
+	*/
 	
-	// wait until byte was send
-	while( !( SPSR & (1<<SPIF) ) )
-		;
+	if( Lenght < 2 )
+	{
+		return 1; // Zu wenig Daten übergeben
+	}
 	
-	return SPDR;
+	MCP2515_CS_LOW;
+	for( uint8_t i = 0 ; i < Lenght ; i++ ) 
+	{
+		// Daten senden via. SPI
+	}
+	MCP2515_CS_HIGH;
+	
+	return 0; // Alles inordnung
 }
 
-// -------------------------------------------------------------------------
-void mcp2515_write_register( uint8_t adress, uint8_t data )
+uint8_t	Mcp2515Read( uint8_t Adress , uint8_t *Buffer , uint8_t Lenght )
 {
-	RESET(MCP2515_CS);
+	/*	**Info**
+	*	Adress: Register Adresse die gelesen werden soll
+	*	Buffer: Hier werden die Daten gespeichert
+	*	Lenght: Nur die Länge der Bytes die gelesen werden sollen
+	*/
 	
-	spi_putc(SPI_WRITE);
-	spi_putc(adress);
-	spi_putc(data);
+	if( Buffer == NULL || Lenght < 1 )
+	{
+		return 1; // Ungültige Übergabeparameter
+	}
 	
-	SET(MCP2515_CS);
+	uint8_t Frame[] = { SPI_READ , Adress };
+	Mcp2515Write( Frame , sizeof(Frame) ); // Lese Modus + Register Adresse
+	
+	MCP2515_CS_LOW;
+	for( uint8_t i = 0 ; i < Lenght ; i++ )
+	{
+		Frame[i] = 
+	}
+	MCP2515_CS_HIGH;
+	
+	return 0; // Alles inordnung
 }
 
-// -------------------------------------------------------------------------
-uint8_t mcp2515_read_register(uint8_t adress)
-{
-	uint8_t data;
+void Mcp2515BitModify(uint8_t Adress , uint8_t Mask , uint8_t Data )
+{	
+	MCP2515_CS_LOW;
 	
-	RESET(MCP2515_CS);
+	uint8_t Frame[] = { SPI_BIT_MODIFY , Adress , Mask , Data };
 	
-	spi_putc(SPI_READ);
-	spi_putc(adress);
+	Mcp2515Write(Frame,sizeof(Frame));
 	
-	data = spi_putc(0xff);	
-	
-	SET(MCP2515_CS);
-	
-	return data;
+	MCP2515_CS_HIGH;
 }
 
-// -------------------------------------------------------------------------
-void mcp2515_bit_modify(uint8_t adress, uint8_t mask, uint8_t data)
+uint8_t Mcp2515ReadState(uint8_t Type)
 {
-	RESET(MCP2515_CS);
+	uint8_t Data;
 	
-	spi_putc(SPI_BIT_MODIFY);
-	spi_putc(adress);
-	spi_putc(mask);
-	spi_putc(data);
+	MCP2515_CS_LOW;
 	
-	SET(MCP2515_CS);
+	Mcp2515Read(&Type,&Data,1);
+	
+	MCP2515_CS_HIGH;
+	
+	return Data;
 }
 
-// ----------------------------------------------------------------------------
-uint8_t mcp2515_read_status(uint8_t type)
+typedef struct
 {
-	uint8_t data;
-	
-	RESET(MCP2515_CS);
-	
-	spi_putc(type);
-	data = spi_putc(0xff);
-	
-	SET(MCP2515_CS);
-	
-	return data;
+	uint8_t PHSEG21;
+	BTLMODE
+	PHSEG11
+	BRP2
 }
 
-// -------------------------------------------------------------------------
-uint8_t mcp2515_init(uint8_t speed)
+uint8_t Mcp2515Init(uint8_t Speed)
 {
+	MCP2515_INT_DDR	|= (1<<MCP2515_INT_BP);
+	MCP2515_CS_DDR  |= (1<<MCP2515_CS_BP);
 		
-	
-	SET(MCP2515_CS);
-	SET_OUTPUT(MCP2515_CS);
-	
-	RESET(P_SCK);
-	RESET(P_MOSI);
-	RESET(P_MISO);
-	
-	SET_OUTPUT(P_SCK);
-	SET_OUTPUT(P_MOSI);
-	SET_INPUT(P_MISO);
-	
-	SET_INPUT(MCP2515_INT);
-	SET(MCP2515_INT);
-	
-	// active SPI master interface
-	SPCR = (1<<SPE)|(1<<MSTR) | (0<<SPR1)|(1<<SPR0);
-	SPSR = 0;
-	
 	// reset MCP2515 by software reset.
 	// After this he is in configuration mode.
-	RESET(MCP2515_CS);
-	spi_putc(SPI_RESET);
-	SET(MCP2515_CS);
+	Mcp2515Write(&SPI_RESET,1);
 	
 	// wait a little bit until the MCP2515 has restarted
 	_delay_us(10);
 	
-	// load CNF1..3 Register
-	RESET(MCP2515_CS);
-	spi_putc(SPI_WRITE);
-	spi_putc(CNF3);
 	
-/*	spi_putc((1<<PHSEG21));		// Bitrate 125 kbps at 16 MHz
-	spi_putc((1<<BTLMODE)|(1<<PHSEG11));
-	spi_putc((1<<BRP2)|(1<<BRP1)|(1<<BRP0));
-*/
-/*	
-	spi_putc((1<<PHSEG21));		// Bitrate 250 kbps at 16 MHz
-	spi_putc((1<<BTLMODE)|(1<<PHSEG11));
-	spi_putc((1<<BRP1)|(1<<BRP0));
-*/	
-	spi_putc((1<<PHSEG21));		// Bitrate 250 kbps at 16 MHz
-	spi_putc((1<<BTLMODE)|(1<<PHSEG11));
-	//spi_putc(1<<BRP0);
-    spi_putc(speed);
+	MCP2515_CS_LOW;
+	
+	/*	Config
+	*	Bitrate: 125kbps @ 16 MHz
+	*/
+	uint8_t Frame[] = 
+	{ 
+		SPI_WRITE, 
+		CNFG3, 
+		(1<<PHSEG21),
+		(1<<BTLMODE)|(1<<PHSEG11),
+		(1<<BRP2)|(1<<BRP1)|(1<<BRP0),
+		Speed, // ???
+		(1<<RX1IE)|(1<<RX0IE) // Interrupts aktivieren
+	};
+	
+	Mcp2515Write(Frame , sizeof(Frame));
+	
+	MCP2515_CS_HIGH;
 
-	// activate interrupts
-	spi_putc((1<<RX1IE)|(1<<RX0IE));
-	SET(MCP2515_CS);
 	
 	// test if we could read back the value => is the chip accessible?
-	if (mcp2515_read_register(CNF1) != speed) {
+	if (mcp2515_read_register(CNF1) != speed) 
+	{
 		SET(LED2_HIGH);
 
 		return false;
