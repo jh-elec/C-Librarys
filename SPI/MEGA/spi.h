@@ -12,6 +12,7 @@
 
 #include <avr/interrupt.h>
 
+//#define SPI_CS_ENABLE
 
 #if defined ( __AVR_ATmega32__ )
 	
@@ -31,6 +32,23 @@
 	#define SPI_SS_PORT		PORTC
 	#define SPI_SS_bp		PC1
 
+#elif defined (__AVR_ATmega168PA__ )
+
+	#define SPI_DDR			DDRB
+	#define SPI_PORT		PORTB
+	#define SPI_PIN			PINB
+	#define SPI_SCK_bp		PB5
+	#define SPI_MISO_bp		PB4
+	#define SPI_MOSI_bp		PB3
+	
+	/*
+	*	Software Slave Select Signal
+	*	Muss bei dem Master selbst organisiert werden.
+	*	Der "SS" Hardware Pin wird nur bei dem Slave verwendet.
+	*/
+	#define SPI_SS_DDR		DDRB
+	#define SPI_SS_PORT		PORTB
+	#define SPI_SS_bp		PB2
 #else
 	#error "no definition for MCU"
 #endif
