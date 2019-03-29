@@ -13,27 +13,43 @@
 #include <avr/io.h>
 #include "Switch.h"
 
-/* Prototypen */
+/* Nur für die Bibliothek gedacht, nicht für "extern"
+*	@Info: Sollte optimal in einer ISR hochgezählt werden..
+*/
+volatile static uint8_t Repeat;
+
+/* Prototypen ******************************************************************************************************/
 
 void SwitchInit( volatile uint8_t *SwitchInPort , uint8_t SwitchMask , Switch_t *Switch )
 {
-	PORT_DDR_ADDR(SwitchInPort) &= ~( SwitchMask );
+	PORT_DDR_ADDR(SwitchInPort) &= ~( SwitchMask ); // Daten Richtungs Register konfigurieren
 	Switch->Old = 0;
 	Switch->New = 0;
 	Switch->Info = 0;
-	Switch->Mask = SwitchMask;
+	Switch->Repeat = 0;
+	Switch->Mask = SwitchMask; // Tasten Maskierung speichern
 }
 
 void SwitchRead( Switch_t *Switch , volatile uint8_t *SwitchInPort )
 {
 	Switch->New = ( ( PORT_PIN_ADDR( SwitchInPort ) & Switch->Mask ) ^ Switch->Mask );
 	
-	if (Switch->New != Switch->Old) // Eingang geaendert
+	if ( Switch->New != Switch->Old) // Eingang geaendert
 	{
 		Switch->Info = ( Switch->Info | ( Switch->New & ( Switch->Old ^ Switch->New ) ) );
 	}
-	
+
 	Switch->Old = Switch->New;
+
+	if ( ( Switch.Info &  Switch.Mask ) == 0 )
+	{
+		Repeat = SWITCH_BEGINN_FIRST_REPEAT;
+		if ( --Repeat == 0 )
+		{
+			Repeat = SWITCH_NEXT_REPEAT;
+			Switch.Repeat |= Switch.Info & Switch.Mask;
+		}		
+	}
 }
 
 void SwitchClear( Switch_t *Switch )
@@ -41,6 +57,7 @@ void SwitchClear( Switch_t *Switch )
 	Switch->Old = 0;
 	Switch->New = 0;
 	Switch->Info = 0;
+	Switch->Repeat = 0;
 }
 
-/* Ende Prototypen */
+/* Ende Prototypen ******************************************************************************************************/
