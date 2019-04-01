@@ -13,6 +13,10 @@
 #ifndef __SWITCH_H__
 #define __SWITCH_H__
 
+#include <avr/io.h>
+
+#define SWITCH_BEGINN_FIRST_REPEAT		(uint16_t)20000;
+#define SWITCH_BEGINN_NEXT_REPEAT		(uint16_t)1000;
 
 /*	Macro 
 *	- Calculate Address of Data Direction Register
@@ -32,6 +36,13 @@ typedef struct
 	uint8_t Old;
 	uint8_t Info;
 	uint8_t Mask;
+	
+	struct  
+	{
+		uint8_t State;
+		uint8_t Info;
+	}Repeat;
+
 }Switch_t;
 
 
