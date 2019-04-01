@@ -13,7 +13,7 @@
 #include <avr/io.h>
 #include "Switch.h"
 
-/* Nur für die Bibliothek gedacht, nicht für "extern"
+/* Nur für diese Bibliothek gedacht, nicht für "extern"
 *	@Info: Sollte optimal in einer ISR hochgezählt werden..
 */
 volatile static uint8_t Repeat;
@@ -27,7 +27,7 @@ void SwitchInit( volatile uint8_t *SwitchInPort , uint8_t SwitchMask , Switch_t 
 	Switch->New = 0;
 	Switch->Info = 0;
 	Switch->Repeat = 0;
-	Switch->Mask = SwitchMask; // Tasten Maskierung speichern
+	Switch->Mask = SwitchMask; // Maskierung speichern
 }
 
 void SwitchRead( Switch_t *Switch , volatile uint8_t *SwitchInPort )
