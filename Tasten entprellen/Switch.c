@@ -33,9 +33,62 @@ void SwitchInit( volatile uint8_t *SwitchInPort , uint8_t SwitchMask , Switch_t 
 void SwitchRead( Switch_t *Switch , volatile uint8_t *SwitchInPort )
 {	
 	static uint8_t RepeatInfo = 0;
-	
+
+
+	/*	Beispielberechnung
+	*
+	*	PORT_PIN_ADDR( SwitchInPort ) = 0b0b00001001
+	*	Switch->Mask = 0b00001111
+	*	
+	*	Switch->New = ( ( PORT_PIN_ADDR( SwitchInPort ) & Switch->Mask ) ^ Switch->Mask );
+	*
+	*			Switch->New = 	
+	*							Erstmal -> ( PORT_PIN_ADDR( SwitchInPort ) & Switch->Mask )
+	*							|& UND
+	*							|PORT_PIN_ADDR( SwitchInPort )	: 0b00001001|
+	*							|Switch->Mask					: 0b00001111|
+	*							|-------------------------------------------|
+	*			Ergebniss 1 =	|								  0b00001001|
+	*
+	*							Dann -> Ergebniss 1 ^ Switch->Mask
+	*							|^ XOR
+	*							|Ergebniss 1  : 0b00001001|
+	*							|Switch->Mask : 0b00001111|
+	*							|-------------------------|
+	*			Ergebniss 2 =	|				0b00000110|
+	*
+	*	Switch->New = Ergebniss 2
+	*/	
 	Switch->New = ( ( PORT_PIN_ADDR( SwitchInPort ) & Switch->Mask ) ^ Switch->Mask );
 	
+	
+	/*	Beispielberechnung
+	*
+	*	( Sollten die Tasten trodzdem prellen, kann es später noch mit einem Timer verzögert
+	*	aufgerufen werden, um zu testen ob sich das Verhalten verbessert )
+	*
+	*
+	*	if ( Switch->New != Switch->Old )
+	*	{
+	*							Erstmal -> ( Switch->Old ^ Switch->New )
+	*							|^ XOR 				 	 |
+	*							|Switch->New : 0b00000110|
+	*							|Switch->Old : 0b00000000|
+	*							|------------------------|
+	*			Ergebniss 1 =	|	  		   0b00001001|
+	*
+	*							Dann -> ( Switch->New & Ergebniss 1 ) )
+	*							|& UND
+	*							|Switch->New : 0b00000110|
+	*							|Ergebniss 1 : 0b00001001|
+	*							|------------------------|
+	*			Ergebniss 2 =   |			   0b00001001|
+	*
+	*
+	*
+	*			Switch->Info |= Ergebniss 2
+	*	}Switch->Old = Switch->New;							  
+	*/
 	if ( Switch->New != Switch->Old) 
 	{
 		Switch->Info = ( Switch->Info | ( Switch->New & ( Switch->Old ^ Switch->New ) ) );
