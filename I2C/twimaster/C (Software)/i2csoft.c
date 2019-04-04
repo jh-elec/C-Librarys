@@ -10,133 +10,124 @@
 *
 */
 
+#define F_CPU	16e6
+
 #include <avr/io.h>
 #include <util/delay.h>
 
 #include "i2csoft.h"
 
 
-void I2cSoftInit( tI2c *Object ) 
-{
-	__PORT_DDR__( Object->Port ) |= ( 1 << Object->Scl ); // Scl als Ausgang konfigurieren
-	__PORT_DDR__( Object->Port ) |= ( 1 << Object->Sda ); // Sda als Ausgang konfigurieren
+void I2cSoftInit( void ) 
+{	
+	_I2C_PORT &= ( ( 1<<_I2C_SCL_BP ) | ( 1<<_I2C_SDA_BP ) );
 	
-	*Object->Port |= ( 1 << Object->Scl ); // Default Pegel einstellen
-	*Object->Port |= ( 1 << Object->Sda ); // ..	
+	_I2C_PORT_SDA_HIGH;
+	_I2C_PORT_SCL_HIGH;
 }
 
-void I2cSoftStart( tI2c *Object )
+void I2cSoftStart( void )
 {
-	*Object->Port |= ( 1 << Object->Scl ); // High
+	_I2C_PORT_SCL_HIGH;
 	H_DEL;
 	
-	*Object->Port &= ~( 1 << Object->Sda ); // Low
+	_I2C_PORT_SDA_LOW;
 	H_DEL;
 }
 
-void I2cSoftStop( tI2c *Object )
+void I2cSoftStop( void )
 {
-	*Object->Port &= ~( 1 << Object->Sda ); // Low
+	_I2C_PORT_SDA_LOW;
 	H_DEL;
 	
-	*Object->Port |= ( 1 << Object->Scl ); // High
+	_I2C_PORT_SCL_HIGH;
 	Q_DEL;
 	
-	*Object->Port |= ( 1 << Object->Sda ); // High;
+	_I2C_PORT_SDA_HIGH;
 	H_DEL;
 }
 
-uint8_t I2cSoftWrite( tI2c *Object , uint8_t Data )
+uint8_t I2cSoftWrite( uint8_t Data )
 {
 	static uint8_t Acknowledge = 0;
 	uint8_t ui;
 	
 	for ( ui = 0 ; ui < 8 ; ui++ )
 	{
-		*Object->Port &= ~( 1 << Object->Scl ); // Low
-		
+		_I2C_PORT_SCL_LOW;
 		Q_DEL;
+		
 		if ( Data & 0x80 )
 		{
-			*Object->Port |= ( 1 << Object->Sda ); // High
+			_I2C_PORT_SDA_HIGH;
 		}else
 		{
-			*Object->Port &= ~( 1 << Object->Sda ); // Low
+			_I2C_PORT_SDA_LOW;
 		}
+		
+		H_DEL;
+		_I2C_PORT_SCL_HIGH;
 		H_DEL;
 		
-		*Object->Port |= ( 1 << Object->Scl ); // High
-		H_DEL;
-		
- 		__PORT_DDR__( Object->Port ) &= ~( 1 << Object->Scl ); // Scl als Eingang konfigurieren
- 		while ( ( __PORT_PIN__( Object->Port ) & ( 1 << Object->Scl ) ) == 0 ); // Warten bis "Scl" Low..
- 		__PORT_DDR__( Object->Port ) |= ( 1 << Object->Scl ); // Scl als Ausgang konfigurieren
+ 		while ( ( __PORT_PIN__( &_I2C_PORT ) & ( 1<<_I2C_SCL_BP ) ) == 0 ); // Warten bis "Scl" Low..
 		
 		Data <<= 1;
 	}
 
-	//The 9th clock (ACK Phase)	
-	*Object->Port &= ~( 1 << Object->Scl ); // Low
+
+	_I2C_PORT_SCL_LOW; // Ack Bestätigung
 	Q_DEL;
 	
-	*Object->Port |= ( 1 << Object->Sda ); // High
+	_I2C_PORT_SDA_HIGH;
 	H_DEL;
 	
-	*Object->Port |= ( 1 << Object->Scl ); // High
+	_I2C_PORT_SCL_HIGH;
 	H_DEL;
 		
-	__PORT_DDR__( Object->Port ) &= ~( 1 << Object->Sda ); // Als Eingang verwenden
-	Acknowledge = !(__PORT_PIN__( Object->Port ) & ( 1 << Object->Sda ) );
-	__PORT_DDR__( Object->Port ) |= ( 1 << Object->Sda ); // Als Ausgang verwenden	
+	Acknowledge = !( __PORT_PIN__( &_I2C_PORT ) & ( 1<<_I2C_SDA_BP ) );
 	
-	*Object->Port &= ~( 1 << Object->Scl ); // Low 
+	_I2C_PORT_SCL_LOW;
 	H_DEL;
 	
 	return Acknowledge;	
 }
 
- 
- uint8_t I2cSoftRead( tI2c *Object , uint8_t Acknowledge )
+ uint8_t I2cSoftRead( uint8_t Acknowledge )
  {
 	 uint8_t uiData = 0;
 	 uint8_t ui;
 	 
 	 for ( ui = 0 ; ui < 8 ; ui++ )
 	 {
-		*Object->Port &= ~( 1 << Object->Scl ); // Low
+		_I2C_PORT_SCL_LOW;
 		H_DEL;
-		*Object->Port |= ( 1 << Object->Scl ); // High
+		_I2C_PORT_SCL_HIGH;
 		H_DEL;	
 
-		__PORT_DDR__( Object->Port ) &= ~( 1 << Object->Scl ); // Als Eingang nutzen
-		while((__PORT_PIN__( Object->Port ) & ( 1 << Object->Scl ) ) == 0 );
-		__PORT_DDR__( Object->Port ) |= ( 1 << Object->Scl ); // Als Ausgang nutzen
+		while( ( __PORT_PIN__( &_I2C_PORT ) & ( 1<<_I2C_SCL_BP ) ) == 0 );
 		
-		
-		__PORT_DDR__( Object->Port ) &= ~( 1 << Object->Sda ); // Als Eingang nutzen
-		if( __PORT_PIN__( Object->Port ) & ( 1 << Object->Sda ) )
+		if( __PORT_PIN__( &_I2C_PORT ) & ( 1<<_I2C_SDA_BP ) )
 		{
 			uiData |= ( 0x80 >> ui );
 		}
-		__PORT_DDR__( Object->Port ) |= ( 1 << Object->Sda ); // Als Ausgang nutzen	
 	 }
 
-	*Object->Port &= ~( 1 << Object->Scl ); //Soft_I2C_Put_Ack
+	_I2C_PORT_SCL_LOW;
 	Q_DEL;
 
 	if ( Acknowledge )
 	{
-		*Object->Port &= ~( 1 << Object->Sda ); // Low
+		_I2C_PORT_SDA_LOW;
 	}else
 	{
-		*Object->Port |= ( 1 << Object->Sda ); // High
+		_I2C_PORT_SDA_HIGH;
 	}
 	H_DEL;
 	
-	*Object->Port |= ( 1 << Object->Scl ); // High
+	_I2C_PORT_SCL_HIGH;
 	H_DEL;
 	
-	*Object->Port &= ~( 1 << Object->Scl ); // Low
+	_I2C_PORT_SCL_LOW;
 	H_DEL;
 			
 	return uiData;
