@@ -1,10 +1,16 @@
 
 
-#include <avr/io.h>
-#include <util/delay.h>
+
 
 #ifndef __I2CSOFT_H__
 #define ___I2CSOFT_H__
+
+#ifndef F_CPU
+#define F_CPU	16e6
+#endif
+
+#include <avr/io.h>
+#include <util/delay.h>
 
 #ifdef __AVR__
 #define	__PORT_DDR__( _p )		(*( (_p-1) ))	
@@ -16,9 +22,8 @@
 #define Q_DEL _delay_loop_2(3)
 #define H_DEL _delay_loop_2(5)
 
-typedef static uint8_t PortBit_t;
-typedef static uint8_t Port_t;
-
+typedef uint8_t PortBit_t;
+typedef uint8_t Port_t;
 
 typedef struct
 {
@@ -27,7 +32,7 @@ typedef struct
 	*	Es wird die Adresse von dem Daten Richtungs Register
 	*	später rechnerisch ermittelt.
 	*/
-	volatile Port_t Port;
+	volatile Port_t *Port;
 	
 	/*
 	*	SCL Pin 
@@ -42,7 +47,7 @@ typedef struct
 }tI2c;
 
 
-void I2cSoftInit( tI2c *Object );
+void I2cSoftInit(  tI2c *Object );
 
 void I2cSoftStart( tI2c *Object );
 
