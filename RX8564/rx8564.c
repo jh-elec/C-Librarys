@@ -121,7 +121,7 @@ void					rtcInit					( void )
 {
 	buff[0] = RX8564_CONTROL_1;
 	buff[1] = 0x00;
-	rtcWrite( buff , sizeof( buff ) );
+	rtcWrite( buff , 2 );
 }
 
 void					rtcSetTime				( uint8_t hour , uint8_t minutes , uint8_t seconds )				
@@ -130,7 +130,7 @@ void					rtcSetTime				( uint8_t hour , uint8_t minutes , uint8_t seconds )
 	buff[1] = rtcDecToBcd( seconds );
 	buff[2] = rtcDecToBcd( minutes );
 	buff[3] = rtcDecToBcd( hour );
-	rtcWrite( buff , sizeof( buff ) );
+	rtcWrite( buff , 4 );
 } 
    
 void					rtcSetDate				( uint8_t day , uint8_t weekDay , uint8_t month, uint16_t year )	
@@ -140,7 +140,7 @@ void					rtcSetDate				( uint8_t day , uint8_t weekDay , uint8_t month, uint16_t
 	buff[2] = rtcDecToBcd( weekDay );
 	buff[3] = rtcDecToBcd( month );
 	buff[4] = rtcDecToBcd( year - 2000 );
-	rtcWrite( buff , sizeof( buff ) );    
+	rtcWrite( buff , 5 );    
 }
   
 void					rtcSetAlert				( uint8_t day , uint8_t weekDay , uint8_t hour, uint8_t minutes )	
@@ -150,14 +150,14 @@ void					rtcSetAlert				( uint8_t day , uint8_t weekDay , uint8_t hour, uint8_t 
 	buff[2] = rtcDecToBcd( hour );
 	buff[3] = rtcDecToBcd( day );
 	buff[4] = rtcDecToBcd( weekDay );
-	rtcWrite( buff , sizeof( buff ) );
+	rtcWrite( buff , 5 );
  }
   
 void					rtcSetClkOut			( uint8_t frequency )	
 {    
 	buff[0] = RX8564_CLKOUT_FREQUENCY;
 	buff[1] = frequency;
-	rtcWrite( buff , sizeof( buff ) );	
+	rtcWrite( buff , 2 );	
 }
  
 void					rtcGetData				( rx8564_t *buffer )	
@@ -196,20 +196,20 @@ void					rtcSetCtrl2				( uint8_t mask )
 {
 	buff[0] = RX8564_CONTROL_2;
 	buff[1] = mask;
-	rtcWrite( buff , sizeof( buff ) );
+	rtcWrite( buff , 2 );
 }
  
 void					rtcSetTimerControl		( uint8_t mask )		
 {
 	buff[0] = RX8564_TIMER_CONTROL;
 	buff[1] = mask;
-	rtcWrite( buff , sizeof( buff ) );
+	rtcWrite( buff , 2 );
 }
 
 uint8_t					rtcReadTimer			( void )				
 {	
 	buff[0] = RX8564_TIMER;
-	rtcRead( buff , sizeof( buff ) );
+	rtcRead( buff , 1 );
 
 	return buff[0];
 }
