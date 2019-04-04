@@ -68,9 +68,9 @@ uint8_t I2cSoftWrite( tI2c *Object , uint8_t Data )
 		*Object->Port |= ( 1 << Object->Scl ); // High
 		H_DEL;
 		
-// 		__PORT_DDR__( Object->Port ) &= ~( 1 << Object->Scl ); // Scl als Eingang konfigurieren
-// 		while ( ( __PORT_PIN__( Object->Port ) & ( 1 << Object->Scl ) ) == 0 ); // Warten bis "Scl" Low..
-// 		__PORT_DDR__( Object->Port ) |= ( 1 << Object->Scl ); // Scl als Ausgang konfigurieren
+ 		__PORT_DDR__( Object->Port ) &= ~( 1 << Object->Scl ); // Scl als Eingang konfigurieren
+ 		while ( ( __PORT_PIN__( Object->Port ) & ( 1 << Object->Scl ) ) == 0 ); // Warten bis "Scl" Low..
+ 		__PORT_DDR__( Object->Port ) |= ( 1 << Object->Scl ); // Scl als Ausgang konfigurieren
 		
 		Data <<= 1;
 	}
