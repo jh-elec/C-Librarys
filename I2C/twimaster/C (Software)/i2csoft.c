@@ -92,6 +92,65 @@ uint8_t I2cSoftWrite( uint8_t Data )
 	return Acknowledge;	
 }
 
+
+uint8_t I2cSoftStartWait( uint8_t Address ) 
+{
+	I2cSoftStart(); // Kommunikation starten
+
+	static uint8_t Acknowledge = 0;
+	uint8_t ui;
+	
+	for ( ui = 0 ; ui < 8 ; ui++ )
+	{
+		_I2C_PORT_SCL_LOW;
+		Q_DEL;
+		
+		if ( Data & 0x80 )
+		{
+			_I2C_PORT_SDA_HIGH;
+		}else
+		{
+			_I2C_PORT_SDA_LOW;
+		}
+		
+		H_DEL;
+		_I2C_PORT_SCL_HIGH;
+		H_DEL;
+		
+ 		while ( ( __PORT_PIN__( &_I2C_PORT ) & ( 1<<_I2C_SCL_BP ) ) == 0 ); // Warten bis "Scl" Low..
+		
+		Data <<= 1;
+	}
+
+
+	_I2C_PORT_SCL_LOW; // Ack Bestätigung
+	Q_DEL;
+	
+	_I2C_PORT_SDA_HIGH;
+	H_DEL;
+	
+	_I2C_PORT_SCL_HIGH;
+	H_DEL;
+	
+	/*	Acknowledge (ACK) and Not Acknowledge (NACK)
+	*
+	*	When SDA remains HIGH during this ninth clock pulse, this is defined as the Not
+	*	Acknowledge signal. The master can then generate either a STOP condition to abort the
+	*	transfer, or a repeated START condition to start a new transfer. There are five conditions
+	*	that lead to the generation of a NACK:
+	*/
+	do
+	{
+		Acknowledge = !( __PORT_PIN__( &_I2C_PORT ) & ( 1<<_I2C_SDA_BP ) );	
+	}while( Acknowledge );
+	
+	_I2C_PORT_SCL_LOW;
+	H_DEL;
+	
+	return Acknowledge;	
+	
+}
+
  uint8_t I2cSoftRead( uint8_t Acknowledge )
  {
 	 uint8_t uiData = 0;
