@@ -49,8 +49,11 @@
 * No license is granted by implication or otherwise under any patent or
 * patent rights of the copyright holder.
 **************************************************************************/
+#define F_CPU	8000000
+
 #include "bmp180.h"
-#include "xmega_twi.h"
+#include "I2C.h"
+#include "../error.h"
 #include <util/delay.h>
 
 
@@ -59,17 +62,32 @@ struct bmp180_t bmp180;
 
 s8 BMP180_I2C_bus_write(u8 dev_addr, u8 reg_addr, u8 *reg_data, u8 cnt)
 {
-	twiWriteBytes( dev_addr , reg_addr , cnt , reg_data );
+	I2cTransfer_t Tx;
 	
-	return (s8)0;
+	Tx.ptrData = reg_data;
+	Tx.uiLength = cnt;
+	Tx.uiRegisterAddress = reg_addr;
+	Tx.SpecialAddressHandling.uiHandlingAddress = I2C_TRANSFER_ADDR_NIDS;
+	Tx.uiSlaveAddress = dev_addr;
+	
+	enum I2c_Return_Codes Exitcode = I2cWriteBytes( &Tx );
+			
+	return (s8)Exitcode;
 }
-
 
 s8 BMP180_I2C_bus_read(u8 dev_addr, u8 reg_addr, u8 *reg_data, u8 cnt)
 {
-	twiReadBytes( dev_addr , reg_addr , cnt , reg_data );
+	I2cTransfer_t Rx;
 	
-	return (s8)0;
+	Rx.ptrData = reg_data;
+	Rx.uiLength = cnt;
+	Rx.uiRegisterAddress = reg_addr;
+	Rx.SpecialAddressHandling.uiHandlingAddress = I2C_TRANSFER_ADDR_NIDS;
+	Rx.uiSlaveAddress = dev_addr;
+	
+	enum I2c_Return_Codes Exitcode = I2cReadBytes( &Rx );
+				
+	return (s8)Exitcode;
 }
 
 void BMP180_delay_msek(u32 msek)
@@ -118,6 +136,8 @@ s8 I2C_routine(void)
 */
 BMP180_RETURN_FUNCTION_TYPE bmp180_init(struct bmp180_t *bmp180)
 {
+	I2C_routine();
+	
 	/* used to return the bus communication results*/
 	BMP180_RETURN_FUNCTION_TYPE v_com_rslt_s8 = E_BMP_COMM_RES;
 	u8 v_data_u8 = BMP180_INIT_VALUE;
