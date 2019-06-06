@@ -38,6 +38,9 @@
 
 #elif __MEGA__
 	
+	#define _GET_DDR_REG_( _port )					( * ( &_port - 1 ) )
+	#define _GET_PIN_REG_( _port )					( * ( &_port + 1 ) )
+	
 	#define _PIN_CNFG_OUTPUT_( _port , _pin )		( _port |= 1<<_pin )
 	#define	_PIN_CNFG_INPUT_( _port , _pin )		( _port &= ~(1<<_pin) )
 
@@ -61,6 +64,14 @@
 /*
 *	Allgemeines
 */
-#define _CALC_ARRAY_SIZE_( _array )				( sizeof( _array ) / sizeof( *_array ) )
+#define _GET_ARRAY_SIZE_( _array )				( sizeof( _array ) / sizeof( *_array ) )
+#define _CAT( x , y )							( x ## y )
+#define _XCAT( x , y )							( _CAT( x , y ) )
+
+/*
+*	Castet einen beliebigen Wert in "Word" oder "Long"..
+*/
+#define _WORD( x )								( * ( ( unsigned int * ) &( x ) ) )
+#define _LONG( x )   							( * ( ( unsigned long * ) &( x ) ) )
 
 #endif
