@@ -15,7 +15,7 @@
 #include "convert.h"
 
 
-/* uiDecHex8()
+/* uiDecHex8
 * @para             -> uiDec , *pcBuffer
 * @return           -> *pcBuffer
 * @description      -> Convert "uiDec" to Hexadecimal
@@ -37,7 +37,7 @@ char *uiDecHex8( uint8_t uiDec, char *pcBuffer )
     return pcBuffer;
 }
 
-/* uiDecHex16()
+/* uiDecHex16
 * @para             -> uiDec , *pcBuffer
 * @return           -> *pcBuffer
 * @description      -> Convert "uiDec" to Hexadecimal
@@ -61,7 +61,7 @@ char *uiDecHex16( uint16_t uiDec, char *pcBuffer )
     return pcBuffer;
 }
 
-/* uiDecHex32()
+/* uiDecHex32
 * @para             -> uiDec , *pcBuffer
 * @return           -> *pcBuffer
 * @description      -> Convert "uiDec" to Hexadecimal
@@ -89,7 +89,7 @@ char *uiDecHex32( uint32_t uiDec, char *pcBuffer )
     return pcBuffer;
 }
 
-/* uiDecBcd8()
+/* uiDecBcd8
 * @para             -> uiDec , *pcBuffer
 * @return           -> *pcBuffer
 * @description      -> Convert "uiDec" to Binary Coded Decimal
@@ -106,10 +106,10 @@ char *uiDecBcd8( uint8_t uiDec, char *pcBuffer )
 	
 	pcBuffer[4] = '\0';
 	
-	return b;
+	return pcBuffer;
 }
 
-/* uiDecBin8()
+/* uiDecBin8
 * @para             -> uiDec , *pcBuffer
 * @return           -> *pcBuffer
 * @description      -> Convert "uiDec" to Binary
@@ -136,4 +136,22 @@ char *uiDecBin8( uint8_t uiDec, char *pcBuffer )
 	pcBuffer[++uiPos] = '\0';
 	
 	return pcBuffer;
+}
+
+/* NumToStr
+* @para             -> ulNum = Number to Convert , pBuffer = Output 
+* @return           -> Pointer to Output Buffer
+* @description      -> Convert Number to ASCII String
+*					  
+*/
+char *NumToStr( unsigned long ulNum , char *pcBuffer )
+{
+	uint8_t uPos = 0;
+	do
+	{
+		pBuffer[uPos++] = ulNum % 10 + '0';
+		ulNum /= 10;
+	} while (ulNum != 0);	
+	
+	return pBuffer;
 }

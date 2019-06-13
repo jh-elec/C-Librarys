@@ -18,6 +18,7 @@
 #define __XMEGA__
 //#define __MEGA__
 
+
 #ifdef __XMEGA__
 
 	#define _PIN_CNFG_OUTPUT_( _port , _pin )		( _port.DIRSET = 1<<_pin )
@@ -67,6 +68,10 @@
 #define _GET_ARRAY_SIZE_( _array )				( sizeof( _array ) / sizeof( *_array ) )
 #define _CAT( x , y )							( x ## y )
 #define _XCAT( x , y )							( _CAT( x , y ) )
+#define __PACKED__								( __attribute__( ( packed ) ) )
+
+typedef char* 	String;
+typedef uint8_t Byte;
 
 /*
 *	Castet einen beliebigen Wert in "Word" oder "Long"..

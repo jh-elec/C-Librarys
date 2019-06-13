@@ -29,6 +29,8 @@ char *uiDecBcd8( uint8_t uiDec, char *pcBuffer )
 
 char *uiDecBin8( uint8_t uiDec, char *pcBuffer )
 
+char *NumToStr( unsigned long ulNum , char *pcBuffer );
+
 /*End Prototypes*********************************************************************/
 
 #endif
