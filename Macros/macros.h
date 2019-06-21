@@ -56,7 +56,7 @@
 	#define _PORT_SET_LOW_( _port )					( _port = 0x00 )
 	#define _PORT_TGL_( _port )						( _port ^= 0xFF )
 
-	#define _GET_PIN_STATE_( _oin , _pin )			( _port & 1<<_pin )
+	#define _GET_PIN_STATE_( _port , _pin )			( _port & 1<<_pin )
 	
 #else
 	#warning <Es wurde kein Prozessor ausgewaehlt..!>
@@ -68,6 +68,29 @@
 #define _GET_ARRAY_SIZE_( _array )				( sizeof( _array ) / sizeof( *_array ) )
 #define _CAT( x , y )							( x ## y )
 #define _XCAT( x , y )							( _CAT( x , y ) )
+
+
+/*	Struktur & __PACKED__
+*	Sorgt dafür, dass eine Struktur nicht mit "Padding" Bytes belegt wird.
+*	
+*	typedef struct
+*	{
+*		uint8_t x;
+*		uint16_t y;
+*	}pos_t;
+*	pos_t Position = [x][Padding][Padding][Padding][Padding][Padding][y][y]
+*	sizeof(pos_t) = 8 Bytes bei einem "AVR", mit Padding Bytes
+*	
+*
+*	typedef struct __PACKED__
+*	{
+*		uint8_t x;
+*		uint16_t y;
+*	}pos_t;
+*	pos_t Position = [x][y][y]
+*	sizeof(pos_t) = 3 Bytes ( AVR ) // Ohne Padding Bytes
+*
+*/
 #define __PACKED__								( __attribute__( ( packed ) ) )
 
 typedef char* 	String;
