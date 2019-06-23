@@ -128,13 +128,7 @@ uint8_t		cmdParse			( uint8_t *rx , cmd_t *c )
 	{
 		return 2;
 	}
-	
-	/* Synchrosnisations Frame empfangen? */
-	if ( c->MessageID == ID_PING && c->DataPtr[0] == 'C')
-	{
-		return 3; // Sync 
-	}
-	
+		
 	return 0;
 }
 
