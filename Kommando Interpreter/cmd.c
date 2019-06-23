@@ -19,9 +19,9 @@
 #include "cmd.h"
 #include "Hardware Libs/uart.h"
 
-/*	Speicher für den Antwort Header
+/*	Speicher fÃ¼r den Antwort Header
 *	Die Nutzdaten werden werden dem Zeiger
-*	der cmd_t Struktur übergeben!
+*	der cmd_t Struktur Ã¼bergeben!
 */
 static uint8_t	Frame[__CMD_HEADER_ENTRYS__];
 
@@ -68,10 +68,6 @@ int16_t		cmdSearchFrame( uint8_t *frame )
 			  return -1;
 		  }
 		}
-		else
-		{
-			return -2; // Überlauf
-		}
 	}
 	
 	return -1;
@@ -79,12 +75,12 @@ int16_t		cmdSearchFrame( uint8_t *frame )
 
 void		cmdInit				( cmd_t *c )					
 {
-	c->DataLength	= 0;	// Länge der Nutzdaten Bytes
+	c->DataLength	= 0;	// LÃ¤nge der Nutzdaten Bytes
 	c->DataType		= 0;	// Datentyp der Nutzdaten
 	c->MessageID	= 0;	// Message Erkennung
 	c->Exitcode		= 0;	// Exitkode aus Funktionen
 	MasterFrameCRC	= 0;	// Checksumme der gesamten Message ( Vom PC )
-	SlaveFrameCRC	= 0;	// Checksumme der gesamten Message ( Vom µC )
+	SlaveFrameCRC	= 0;	// Checksumme der gesamten Message ( Vom ÂµC )
 	c->DataPtr		= NULL; // Zeiger auf Nutzdaten
 	FrameStart		= 0;	// Index eines Frames
 }
@@ -127,7 +123,7 @@ uint8_t		cmdParse			( uint8_t *rx , cmd_t *c )
 		SlaveFrameCRC = cmdCrc8CCITTUpdate( SlaveFrameCRC , &rx[FrameStart + CMD_START_FRAME_OFFSET + __CMD_HEADER_ENTRYS__ + x ] );
 	}
 	
-	/* Checksumme überprüfen */
+	/* Checksumme Ã¼berprÃ¼fen */
 	if ( SlaveFrameCRC != MasterFrameCRC )
 	{
 		return 2;
@@ -170,7 +166,7 @@ Header_t	cmdBuildHeader		( cmd_t *a )
 		HeaderInfo.Exitcode = 1;	
 	}
 	
-	Frame[CMD_HEADER_LENGHT]		= (uint8_t)FrameSize; // Länge der ganzen Antwort
+	Frame[CMD_HEADER_LENGHT]		= (uint8_t)FrameSize; // LÃ¤nge der ganzen Antwort
 	Frame[CMD_HEADER_DATA_TYP]		= a->DataType;		  // (u)char , (u)int8 , (u)int16 , (u)int32 usw.	
 	Frame[CMD_HEADER_ID]			= a->MessageID;		  // 0..255
 	Frame[CMD_HEADER_Exitcode]		= a->Exitcode;		  // 0..255
@@ -213,7 +209,7 @@ void		cmdBuildAnswer		( cmd_t *a , uint8_t id , enum Data_Type_Enum DataType , u
 {
 	a->MessageID	= id;			// Beschreibt den Nachrichten Type. Damit die gegenstelle die Nachrichten unterscheiden kann
 	a->DataType		= DataType;		// Gibt an um welchen Daten Typ es sich handelt
-	a->Exitcode		= Exitcode;		// Rückgabewert einer Funktion 
+	a->Exitcode		= Exitcode;		// RÃ¼ckgabewert einer Funktion 
 	a->DataPtr		= DataPtr;		// Zeiger auf die Daten die gesendet werden sollen
 	a->DataLength	= DataLength;	// Anzahl der Bytes
 }
