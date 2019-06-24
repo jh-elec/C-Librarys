@@ -10,7 +10,10 @@
 *
 */
 
+#ifndef _WIN64
 #include <avr/io.h>
+#endif 
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -93,8 +96,10 @@ static inline int8_t cmdSearchFrame			( uint8_t *pReceive , uint8_t uiLength )
 
 void		cmdInit				( cmd_t *psAnswer )					
 {
+	#ifndef _WIN64
 	pCmdSendCallback = _CMD_SEND_CB_FNC_PTR_;
-
+	#endif
+	
 	if ( pCmdSendCallback == NULL ){
 		return;
 	}
@@ -147,7 +152,7 @@ uint8_t		cmdParse			( uint8_t *pReceive , cmd_t *psParsed , uint16_t uiBufferLen
 	*/
 	sCrc.uiInternal = _Crc8StrCCITT( sCrc.uiInternal , 
 									 &pReceive[FrameStart + CMD_START_FRAME_OFFSET + __CMD_HEADER_ENTRYS__ ] , 
-									 psIncommingMessage->uiDataLength );
+									 psParsed->uiDataLength );
 	
 	
 	/* Checksummen vergleichen */
@@ -213,7 +218,7 @@ void		cmdBuildAnswer		(
 {
 	psAnswer->eMessageID	= eIdent;		// Beschreibt den Nachrichten Typ. Damit die gegenstelle die Nachrichten unterscheiden kann
 	psAnswer->eDataType		= eDataType;	// Gibt an um welchen Daten Typ es sich handelt
-	psAnswer->eExitcode		= eExitcode;	// Rückgabewert einer Funktion 
+	psAnswer->eExitcode		= eExitcode;	// Ruekgabewert einer Funktion 
 	psAnswer->pData			= pData;		// Zeiger auf die Daten die gesendet werden sollen
 	psAnswer->uiDataLength	= DataLength;	// Anzahl der Bytes
 }
@@ -222,6 +227,11 @@ void		cmdSendAnswer		( cmd_t *psAnswer )
 {
 	Header_t HeaderInfo  = cmdBuildHeader( psAnswer );
 	
+	#ifndef _WIN64
 	pCmdSendCallback( HeaderInfo.FramePtr , __CMD_HEADER_ENTRYS__ );
 	pCmdSendCallback( psAnswer->pData , psAnswer->uiDataLength );
+	#else
+	printf( "eMessageID = %d\r\neDataType = %d\r\neExitcode = %d\r\npData = %s\r\nuiDataLength = %d\r\nsCrc.uiInternal = %d" , psAnswer->eMessageID , psAnswer->eDataType , psAnswer->eExitcode , psAnswer->pData , psAnswer->uiDataLength , sCrc.uiInternal );
+	#endif
+	
 }

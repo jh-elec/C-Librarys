@@ -31,7 +31,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifndef _WIN64
 #include "uart.h"
+#endif
 
 #ifndef NULL
 	#define NULL 0
@@ -51,8 +53,9 @@
 *	1 = Zeiger auf Daten ( *uint8_t ) 
 *	2 = Länge
 */
+#ifndef _WIN64
 #define _CMD_SEND_CB_FNC_PTR_		uartPutByteStr
-
+#endif
 
 
 enum Cmd_Communication_Header_Enum
