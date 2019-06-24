@@ -16,12 +16,21 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "Hardware Libs/uart.h"
 
 /*	Frame Offset
 *	Specifies where the command package begins
 */
 #define CMD_START_FRAME_OFFSET	0
 
+
+/*
+*	Callback Funktion zum senden von Frames..
+*	Parameter ->
+*	1 = Zeiger auf Daten ( uint8_t ) , 2 = Länge der Daten
+*/
+void (*CmdSendCallback)			( uint8_t *Data , uint8_t Length );
+#define _CMD_SEND_CALLBACK_		uartPutByteStr
 
 enum Communication_Header_Enum
 {

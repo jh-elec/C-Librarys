@@ -23,12 +23,14 @@
 *	Die Nutzdaten werden werden dem Zeiger
 *	der cmd_t Struktur übergeben!
 */
-static uint8_t	Frame[__CMD_HEADER_ENTRYS__];
+static uint8_t	HeaderFrame[__CMD_HEADER_ENTRYS__];
 
 static uint8_t MasterFrameCRC = 0;
 static uint8_t SlaveFrameCRC = 0;
 
 static int8_t FrameStart = 0;
+
+CmdSendCallback = _CMD_SEND_CALLBACK_;
 
 static inline uint8_t cmdCrc8CCITTUpdate ( uint8_t inCrc , uint8_t *inData )
 {
@@ -145,11 +147,11 @@ uint8_t		cmdCrc8StrCCITT		( uint8_t *str , uint8_t leng )
 	return crc;
 }
 
-Header_t	cmdBuildHeader		( cmd_t *a )					
+Header_t	cmdBuildHeader		( cmd_t *Answer )					
 {		
 	static Header_t HeaderInfo;
 		
-	Frame[CMD_HEADER_CRC]	= 0;
+	HeaderFrame[CMD_HEADER_CRC]	= 0;
 	
 	uint8_t *tmpPtr	= a->DataPtr;
 
@@ -160,10 +162,10 @@ Header_t	cmdBuildHeader		( cmd_t *a )
 		HeaderInfo.Exitcode = 1;	
 	}
 	
-	Frame[CMD_HEADER_LENGHT]		= (uint8_t)FrameSize; // Länge der ganzen Antwort
-	Frame[CMD_HEADER_DATA_TYP]		= a->DataType;		  // (u)char , (u)int8 , (u)int16 , (u)int32 usw.	
-	Frame[CMD_HEADER_ID]			= a->MessageID;		  // 0..255
-	Frame[CMD_HEADER_Exitcode]		= a->Exitcode;		  // 0..255
+	HeaderFrame[CMD_HEADER_LENGHT]		= (uint8_t)FrameSize; // Länge der ganzen Antwort
+	HeaderFrame[CMD_HEADER_DATA_TYP]	= Answer->DataType;	  // (u)char , (u)int8 , (u)int16 , (u)int32 usw.	
+	HeaderFrame[CMD_HEADER_ID]			= Answer->MessageID;  // 0..255
+	HeaderFrame[CMD_HEADER_Exitcode]	= Answer->Exitcode;	  // 0..255
 	
 	/*	Checksumme vom Header bilden
 	*/
@@ -185,33 +187,33 @@ Header_t	cmdBuildHeader		( cmd_t *a )
 	else
 	{
 		HeaderInfo.Exitcode = 1; // Keine Nutzdaten vorhanden
-		a->DataPtr = NULL;
+		Answer->DataPtr = NULL;
 	}
 
-	Frame[CMD_HEADER_CRC] = FrameCRC;
+	HeaderFrame[CMD_HEADER_CRC] = FrameCRC;
 		
-	a->MessageID	= 0;
-	a->DataType		= 0;
-	a->Exitcode		= 0;
+	Answer->MessageID	= 0;
+	Answer->DataType	= 0;
+	Answer->Exitcode	= 0;
 				
 	HeaderInfo.FramePtr = Frame;
 				
 	return HeaderInfo;
 }
 
-void		cmdBuildAnswer		( cmd_t *a , uint8_t id , enum Data_Type_Enum DataType , uint8_t Exitcode , uint8_t DataLength , uint8_t *DataPtr )
+void		cmdBuildAnswer		( cmd_t *Answer , uint8_t id , enum Data_Type_Enum DataType , uint8_t Exitcode , uint8_t DataLength , uint8_t *DataPtr )
 {
-	a->MessageID	= id;			// Beschreibt den Nachrichten Type. Damit die gegenstelle die Nachrichten unterscheiden kann
-	a->DataType		= DataType;		// Gibt an um welchen Daten Typ es sich handelt
-	a->Exitcode		= Exitcode;		// Rückgabewert einer Funktion 
-	a->DataPtr		= DataPtr;		// Zeiger auf die Daten die gesendet werden sollen
-	a->DataLength	= DataLength;	// Anzahl der Bytes
+	Answer->MessageID	= id;			// Beschreibt den Nachrichten Type. Damit die gegenstelle die Nachrichten unterscheiden kann
+	Answer->DataType	= DataType;		// Gibt an um welchen Daten Typ es sich handelt
+	Answer->Exitcode	= Exitcode;		// Rückgabewert einer Funktion 
+	Answer->DataPtr		= DataPtr;		// Zeiger auf die Daten die gesendet werden sollen
+	Answer->DataLength	= DataLength;	// Anzahl der Bytes
 }
 
-void		cmdSendAnswer		( cmd_t *a )					
+void		cmdSendAnswer		( cmd_t *Answer )					
 {
-	Header_t HeaderInfo  = cmdBuildHeader( a );
+	Header_t HeaderInfo  = cmdBuildHeader( Answer );
 	
-	uartPutByteStr( HeaderInfo.FramePtr , __CMD_HEADER_ENTRYS__ );
-	uartPutByteStr( a->DataPtr , a->DataLength );
+	CmdSendCallback( HeaderInfo.FramePtr , __CMD_HEADER_ENTRYS__ );
+	CmdSendCallback( Answer->DataPtr , Answer->DataLength );
 }
