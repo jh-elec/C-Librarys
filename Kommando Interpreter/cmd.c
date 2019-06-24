@@ -14,30 +14,31 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 
 #include "cmd.h"
-#include "Hardware Libs/uart.h"
 
-/*	Speicher für den Antwort Header
-*	Die Nutzdaten werden werden dem Zeiger
-*	der cmd_t Struktur übergeben!
+
+/*	++Speicherplatz für den Antwort Header++
+*	Die Nutzdaten sind in "pData" von
+*	der "cmd_t" Struktur abzurufen
 */
-static uint8_t	HeaderFrame[__CMD_HEADER_ENTRYS__];
+static uint8_t	FrameHeader[ __CMD_HEADER_ENTRYS__ ];
 
-static uint8_t MasterFrameCRC = 0;
-static uint8_t SlaveFrameCRC = 0;
+static Crc_t sCrc;
 
 static int8_t FrameStart = 0;
 
-CmdSendCallback = _CMD_SEND_CALLBACK_;
+void ( *pCmdSendCallback )			( uint8_t *pData , uint8_t uiLength );
 
-static inline uint8_t cmdCrc8CCITTUpdate ( uint8_t inCrc , uint8_t *inData )
+
+static inline uint8_t _Crc8CCITTUpdate	( uint8_t uiCrcStart , uint8_t *pData )
 {
 	uint8_t   i = 0;
 	static uint8_t data = 0;
 	
-	data = ( inCrc ^ ( *inData ) );
+	uint8_t *pDataTmp = pData;
+	
+	data = ( uiCrcStart ^ ( *pDataTmp ) );
 	
 	for ( i = 0; i < 8; i++ )
 	{
@@ -55,15 +56,28 @@ static inline uint8_t cmdCrc8CCITTUpdate ( uint8_t inCrc , uint8_t *inData )
 	return data;
 }
 
-int16_t		cmdSearchFrame( uint8_t *frame )
+static inline uint8_t _Crc8StrCCITT		( uint8_t uiCrcStart , uint8_t *pData , uint8_t uiLength )
 {
-	for ( int16_t x = 0 ; x < 65534 ; x++ )
+	uint8_t crc = uiCrcStart;
+	uint8_t *pDataTmp = pData;
+	
+	for( uint8_t x = 0 ; x < uiLength ; x++ )
 	{
-		if ( frame[x] == '-' )
+		crc = _Crc8CCITTUpdate( crc , ( uint8_t * ) pDataTmp++ );
+	}
+	
+	return crc;
+}
+
+static inline int8_t cmdSearchFrame			( uint8_t *pReceive , uint8_t uiLength )
+{
+	for ( uint8_t x = 0 ; x < uiLength ; x++ )
+	{
+		if ( pReceive[x] == '-' )
 		{
-		  if ( frame[x+1] == '+' )
+		  if ( pReceive[x+1] == '+' )
 		  {
-			return x + 2;
+			return (int8_t)x + 2;
 		  }
 		  else
 		  {
@@ -75,145 +89,139 @@ int16_t		cmdSearchFrame( uint8_t *frame )
 	return -1;
 }
 
-void		cmdInit				( cmd_t *c )					
+
+
+void		cmdInit				( cmd_t *psAnswer )					
 {
-	c->DataLength	= 0;	// Länge der Nutzdaten Bytes
-	c->DataType		= 0;	// Datentyp der Nutzdaten
-	c->MessageID	= 0;	// Message Erkennung
-	c->Exitcode		= 0;	// Exitkode aus Funktionen
-	MasterFrameCRC	= 0;	// Checksumme der gesamten Message ( Vom PC )
-	SlaveFrameCRC	= 0;	// Checksumme der gesamten Message ( Vom µC )
-	c->DataPtr		= NULL; // Zeiger auf Nutzdaten
-	FrameStart		= 0;	// Index eines Frames
+	pCmdSendCallback = _CMD_SEND_CB_FNC_PTR_;
+
+	if ( pCmdSendCallback == NULL ){
+		return;
+	}
+
+	psAnswer->uiDataLength	= 0;			// Länge der Nutzdaten Bytes
+	psAnswer->eDataType		= DATA_TYP_UINT8;	// Datentyp der Nutzdaten
+	psAnswer->eMessageID	= ID_APPLICATION;	// Message Identifikation
+	psAnswer->eExitcode		= CMD_EXIT_OK;		// Exitcode aus Funktionen
+	psAnswer->pData			= NULL;				// Zeiger auf Nutzdaten
+	
+	sCrc.uiExternal		= 0;	// Extern resetten
+	sCrc.uiInternal		= 0;	// Intern resetten 
+	FrameStart			= 0;	// Index eines Frames
 }
 
-uint8_t		cmdParse			( uint8_t *rx , cmd_t *c )		
+uint8_t		cmdParse			( uint8_t *pReceive , cmd_t *psParsed , uint16_t uiBufferLength )		
 {
-	FrameStart = cmdSearchFrame( rx );
+	FrameStart = cmdSearchFrame( pReceive , uiBufferLength );
 	
-	if ( FrameStart == - 1 )
-	{
+	if ( FrameStart == - 1 ){
 		return 1;
 	}
 		
-	c->DataLength 	= rx[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_LENGHT		] -__CMD_HEADER_ENTRYS__;
-	c->DataType		= rx[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_DATA_TYP		];
-	c->MessageID 	= rx[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_ID			];
-	c->Exitcode		= rx[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_Exitcode		];	
-	MasterFrameCRC	= rx[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_CRC			];
+	psParsed->uiDataLength 	= pReceive[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_LENGTH_OF_FRAME ] -__CMD_HEADER_ENTRYS__;
+	psParsed->eDataType		= pReceive[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_DATA_TYP		];
+	psParsed->eMessageID 	= pReceive[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_ID				];
+	psParsed->eExitcode		= pReceive[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_Exitcode		];	
+	sCrc.uiExternal			= pReceive[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_CRC			];
 	
-	if ( c->DataLength )
-	{
-		c->DataPtr = rx + ( FrameStart + CMD_START_FRAME_OFFSET + __CMD_HEADER_ENTRYS__ );
+	if ( psParsed->uiDataLength ){
+		psParsed->pData = pReceive + ( FrameStart + CMD_START_FRAME_OFFSET + __CMD_HEADER_ENTRYS__ );
 	}
-	else
-	{
-		c->DataPtr = NULL; // Keine Nutzdaten
+	else{
+		psParsed->pData = NULL; // Keine Nutzdaten
 	}
 	
-	SlaveFrameCRC = 0;
+	sCrc.uiInternal = 0;
 	
-	rx[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_CRC ] = 0;
+	pReceive[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_CRC ] = 0;
+
+	/*
+	*	Checksumme vom Frame Header bilden
+	*/
+	sCrc.uiInternal = _Crc8StrCCITT( sCrc.uiInternal , 
+									 &pReceive[FrameStart + CMD_START_FRAME_OFFSET ] , 
+									 __CMD_HEADER_ENTRYS__ );
 	
-	for ( uint8_t x = 0 ; x < __CMD_HEADER_ENTRYS__ ; x++ )
-	{
-		SlaveFrameCRC = cmdCrc8CCITTUpdate( SlaveFrameCRC , &rx[FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_LENGHT + x ] );
-	}
+	/*
+	*	Checksumme von Rohdaten bilden
+	*/
+	sCrc.uiInternal = _Crc8StrCCITT( sCrc.uiInternal , 
+									 &pReceive[FrameStart + CMD_START_FRAME_OFFSET + __CMD_HEADER_ENTRYS__ ] , 
+									 psIncommingMessage->uiDataLength );
 	
-	for ( uint8_t x = 0 ; x < c->DataLength ; x++ )
-	{
-		SlaveFrameCRC = cmdCrc8CCITTUpdate( SlaveFrameCRC , &rx[FrameStart + CMD_START_FRAME_OFFSET + __CMD_HEADER_ENTRYS__ + x ] );
-	}
 	
-	/* Checksumme überprüfen */
-	if ( SlaveFrameCRC != MasterFrameCRC )
-	{
+	/* Checksummen vergleichen */
+	if ( sCrc.uiInternal != sCrc.uiExternal ){
 		return 2;
 	}
 		
 	return 0;
 }
 
-uint8_t		cmdCrc8StrCCITT		( uint8_t *str , uint8_t leng )	
-{
-	uint8_t crc = 0;
-		
-	for( uint8_t x = 0 ; x < leng ; x++ )
-	{
-		crc = cmdCrc8CCITTUpdate( crc , ( uint8_t * ) str );
-		str++;
-	}
-	
-	return crc;
-}
-
-Header_t	cmdBuildHeader		( cmd_t *Answer )					
+Header_t	cmdBuildHeader		( cmd_t *psAnswer )					
 {		
 	static Header_t HeaderInfo;
 		
-	HeaderFrame[CMD_HEADER_CRC]	= 0;
-	
-	uint8_t *tmpPtr	= a->DataPtr;
+	FrameHeader[CMD_HEADER_CRC]	= 0;
 
-	uint16_t FrameSize = __CMD_HEADER_ENTRYS__ + a->DataLength;
+	uint16_t FrameSize = __CMD_HEADER_ENTRYS__ + psAnswer->uiDataLength;
 	
-	if ( FrameSize >= 255 )
-	{
-		HeaderInfo.Exitcode = 1;	
+	if ( FrameSize >= 255 ){
+		HeaderInfo.Exitcode |= CMD_HEADER_EXITCODE_OVF; // Frame darf nicht >= 255 Bytes sein	
+		return HeaderInfo;
 	}
 	
-	HeaderFrame[CMD_HEADER_LENGHT]		= (uint8_t)FrameSize; // Länge der ganzen Antwort
-	HeaderFrame[CMD_HEADER_DATA_TYP]	= Answer->DataType;	  // (u)char , (u)int8 , (u)int16 , (u)int32 usw.	
-	HeaderFrame[CMD_HEADER_ID]			= Answer->MessageID;  // 0..255
-	HeaderFrame[CMD_HEADER_Exitcode]	= Answer->Exitcode;	  // 0..255
-	
-	/*	Checksumme vom Header bilden
-	*/
-	uint8_t FrameCRC = 0;
-	for ( uint8_t x = 0 ; x < __CMD_HEADER_ENTRYS__ ; x++)
-	{
-		FrameCRC = cmdCrc8CCITTUpdate( FrameCRC , &Frame[x] );
+	if ( psAnswer->pData == NULL ){
+		HeaderInfo.Exitcode |= CMD_HEADER_EXITCODE_NO_DATA; // Es wurden keine Nutzdaten übergeben
+		// Wir brauchen deswegen nicht direkt die Funktion zu verlassen!
 	}
+	
+	FrameHeader[CMD_HEADER_LENGTH_OF_FRAME]	= (uint8_t)FrameSize;	// Länge der ganzen Antwort
+	FrameHeader[CMD_HEADER_DATA_TYP]		= psAnswer->eDataType;	// (u)char , (u)int8 , (u)int16 , (u)int32 usw.	
+	FrameHeader[CMD_HEADER_ID]				= psAnswer->eMessageID; // 0..255
+	FrameHeader[CMD_HEADER_Exitcode]		= psAnswer->eExitcode;	// 0..255
+	
+	sCrc.uiInternal = 0; // alte Checksumme löschen
+	
+	sCrc.uiInternal = _Crc8StrCCITT( sCrc.uiInternal , FrameHeader , __CMD_HEADER_ENTRYS__ );
 	
 	/*	Checksumme von Nutzdaten bilden
+	*	Falls keine Nutzdaten vorhanden sind, sollte die "for Schleife" von "_Crc8StrCCITT"
+	*	ohne einen Durchlauf beendet werden.
 	*/	
-	if ( a->DataLength )
-	{
-		for ( uint8_t x = 0 ; x < a->DataLength ; x++ )
-		{
-			FrameCRC = cmdCrc8CCITTUpdate( FrameCRC , tmpPtr++ );	
-		}			
-	}
-	else
-	{
-		HeaderInfo.Exitcode = 1; // Keine Nutzdaten vorhanden
-		Answer->DataPtr = NULL;
-	}
+	sCrc.uiInternal = _Crc8StrCCITT( sCrc.uiInternal , psAnswer->pData , psAnswer->uiDataLength );		
 
-	HeaderFrame[CMD_HEADER_CRC] = FrameCRC;
+	FrameHeader[CMD_HEADER_CRC] = sCrc.uiInternal;
 		
-	Answer->MessageID	= 0;
-	Answer->DataType	= 0;
-	Answer->Exitcode	= 0;
+	psAnswer->eMessageID	= 0;
+	psAnswer->eDataType	= 0;
+	psAnswer->eExitcode	= 0;
 				
-	HeaderInfo.FramePtr = Frame;
+	HeaderInfo.FramePtr = FrameHeader;
 				
 	return HeaderInfo;
 }
 
-void		cmdBuildAnswer		( cmd_t *Answer , uint8_t id , enum Data_Type_Enum DataType , uint8_t Exitcode , uint8_t DataLength , uint8_t *DataPtr )
+void		cmdBuildAnswer		(	
+									cmd_t *psAnswer , 
+									enum Cmd_Ident_Enum eIdent , 
+									enum Cmd_Data_Type_Enum eDataType , 
+									enum Cmd_Exitcodes_Enum eExitcode , 
+									uint8_t DataLength , 
+									uint8_t *pData 
+								)
 {
-	Answer->MessageID	= id;			// Beschreibt den Nachrichten Type. Damit die gegenstelle die Nachrichten unterscheiden kann
-	Answer->DataType	= DataType;		// Gibt an um welchen Daten Typ es sich handelt
-	Answer->Exitcode	= Exitcode;		// Rückgabewert einer Funktion 
-	Answer->DataPtr		= DataPtr;		// Zeiger auf die Daten die gesendet werden sollen
-	Answer->DataLength	= DataLength;	// Anzahl der Bytes
+	psAnswer->eMessageID	= eIdent;		// Beschreibt den Nachrichten Typ. Damit die gegenstelle die Nachrichten unterscheiden kann
+	psAnswer->eDataType		= eDataType;	// Gibt an um welchen Daten Typ es sich handelt
+	psAnswer->eExitcode		= eExitcode;	// Rückgabewert einer Funktion 
+	psAnswer->pData			= pData;		// Zeiger auf die Daten die gesendet werden sollen
+	psAnswer->uiDataLength	= DataLength;	// Anzahl der Bytes
 }
 
-void		cmdSendAnswer		( cmd_t *Answer )					
+void		cmdSendAnswer		( cmd_t *psAnswer )					
 {
-	Header_t HeaderInfo  = cmdBuildHeader( Answer );
+	Header_t HeaderInfo  = cmdBuildHeader( psAnswer );
 	
-	CmdSendCallback( HeaderInfo.FramePtr , __CMD_HEADER_ENTRYS__ );
-	CmdSendCallback( Answer->DataPtr , Answer->DataLength );
+	pCmdSendCallback( HeaderInfo.FramePtr , __CMD_HEADER_ENTRYS__ );
+	pCmdSendCallback( psAnswer->pData , psAnswer->uiDataLength );
 }

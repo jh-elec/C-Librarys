@@ -4,9 +4,24 @@
 * Version           -> 1.0.1.1124
 * Author            -> Hm @ Workstadion.: QP-01-02
 * Build Date        -> 20.09.2017 07:50:01
-* Description       -> Description
+* Description       -> 
 *
 *
+*	++ Telegramm Aufbau ++ 
+*	
+*
+*	'-' | '+ ' | | 0x05 | | 0x01 | | 0x04 | | 0x00 | | 0x32 | | 0..n ( max. 255 Bytes) |
+*	+----------+ +------+ +------+ +------+ +------+ +------+ +------------------------+
+*		 ^			^		 ^		   ^		^		 ^				  ^
+*		 |			|		 |		   |		|		 |				  |
+*	Startzeichen    |	  Datentyp	   |	Exitcode	 |			  Nutzdaten
+*					|				   |				 |
+*			Länge des gesamten		   |			Checksumme
+*			Telegrammes				   |
+*							Telegramm Identifikation
+*
+*
+*	1.: Initalisierung der ganzen Struktur + Callback für die Sendefunktion
 *
 */
 
@@ -16,7 +31,12 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "Hardware Libs/uart.h"
+#include "uart.h"
+
+#ifndef NULL
+	#define NULL 0
+#endif
+
 
 /*	Frame Offset
 *	Specifies where the command package begins
@@ -26,24 +46,29 @@
 
 /*
 *	Callback Funktion zum senden von Frames..
-*	Parameter ->
-*	1 = Zeiger auf Daten ( uint8_t ) , 2 = Länge der Daten
+*	2 Parameter müssen übergeben werden ->
+*	
+*	1 = Zeiger auf Daten ( *uint8_t ) 
+*	2 = Länge
 */
-void (*CmdSendCallback)			( uint8_t *Data , uint8_t Length );
-#define _CMD_SEND_CALLBACK_		uartPutByteStr
+#define _CMD_SEND_CB_FNC_PTR_		uartPutByteStr
 
-enum Communication_Header_Enum
+
+
+enum Cmd_Communication_Header_Enum
 {
-	CMD_HEADER_LENGHT, 		// Länge des ganzen Streams
-	CMD_HEADER_DATA_TYP, 	// (u)char , (u)int8 , (u)int16 , (u)int32
-	CMD_HEADER_ID, 			// Stream ID
-	CMD_HEADER_Exitcode,	// Exitkode aus Funktionen
-	CMD_HEADER_CRC, 		// Checksumme von der Message
+	CMD_HEADER_LENGTH_OF_FRAME, // Länge des gesamten Telegrammes
+	CMD_HEADER_DATA_TYP, 		// (u)char , (u)int8 , (u)int16 , (u)int32
+	CMD_HEADER_ID, 				// Telegramm Identifikation
+	CMD_HEADER_Exitcode,		// Exitkode aus Funktionen
+	CMD_HEADER_CRC, 			// Checksumme von dem Telegramm
 
 	__CMD_HEADER_ENTRYS__
 };
 
-enum Data_Type_Enum
+
+
+enum Cmd_Data_Type_Enum
 {
     DATA_TYP_UINT8,
     DATA_TYP_UINT16,
@@ -58,27 +83,61 @@ enum Data_Type_Enum
     __DATA_TYP_MAX_INDEX__
 };
 
-enum Cmd_Id_Enum
+
+
+enum Cmd_Ident_Enum
 {
-	ID_PING = 0, // Darauf sollte die Firmware ein Lebenszeichen zurückliefern
+	ID_PING = 0, // Darauf sollte die Firmware ein Lebenszeichen melden
 	ID_VERSION,
 	/*...*/
 	
-	ID_APPLICATION = 255 // Für irgendwelche System spezifschen Meldungen
+	ID_APPLICATION = 255 // Für irgendwelche System spezifischen Meldungen
+};
+
+
+
+enum Cmd_Exitcodes_Enum
+{
+	CMD_EXIT_OK,
+	CMD_EXIT_FAIL,
 };
 
 
 
 typedef struct
-{
-	uint8_t DataLength;
-	uint8_t DataType;
-	uint8_t MessageID;
-	uint8_t Exitcode;	
+{	
+	/*
+	*	Welcher Datentyp wird gesendet?
+	*	siehe "Cmd_Data_Type_Enum"
+	*/
+	enum Cmd_Data_Type_Enum	eDataType;
+	
+	/*
+	*	Nachrichten Identifikation
+	*	Die Identifikations Codes sind in 
+	*	"Cmd_Ident_Enum" einzutragen
+	*/
+	enum Cmd_Ident_Enum	eMessageID;
+	
+	/*
+	*	Rückgabewerte aus letzten 
+	*	Funktionsaufrufen
+	*/
+	enum Cmd_Exitcodes_Enum	eExitcode;	
 
-	uint8_t *DataPtr;
+	/*
+	*	Zeiger auf Nutzdaten
+	*/
+	uint8_t *pData;
+	
+	/*
+	*	Länge der zu sendenen Nutzdaten
+	*/
+	uint8_t uiDataLength;
 
 }cmd_t;
+
+
 
 /*	Hinweis
 *	Das erste Element ist IMMER eine "Ping" Funktion.
@@ -91,28 +150,54 @@ typedef struct
 }cmdFuncTab_t;
 
 
+
+enum Header_Exitcode_Enum
+{
+	CMD_HEADER_EXITCODE_OVF = 1<<0,
+	CMD_HEADER_EXITCODE_NO_DATA = 1<<1,
+	
+		
+};
+
 typedef struct  
 {
 	uint8_t	*FramePtr;
-	uint8_t	Exitcode;
+	enum Header_Exitcode_Enum Exitcode;
 }Header_t;
 	
+typedef struct  
+{
+	/*
+	*	generiert von dieser CPU
+	*/
+	uint8_t uiInternal;
+	
+	/*
+	*	generiert von externer CPU
+	*/
+	uint8_t uiExternal;
+	
+}Crc_t;
+
 
 void		cmdInit				( cmd_t *c );					
 
-int8_t		cmdGetStartIndex	( uint8_t *rx );					
+int8_t		cmdGetStartIndex	( uint8_t *pReceive );					
 
-uint8_t		cmdGetEndIndex		( uint8_t *rx );					
+uint8_t		cmdGetEndIndex		( uint8_t *pReceive );					
 
-uint8_t		cmdParse			( uint8_t *rx , cmd_t *c );		
+uint8_t		cmdParse			( uint8_t *pReceive , cmd_t *c , uint16_t uiBufferLength );		
 
-uint8_t		cmdCrc8StrCCITT		( uint8_t *str , uint8_t leng );
+Header_t	cmdBuildHeader		( cmd_t *psAnswer );					
 
-Header_t	cmdBuildHeader		( cmd_t *a );					
+void		cmdBuildAnswer		( cmd_t *psAnswer , 
+								  enum Cmd_Ident_Enum eIdent , 
+								  enum Cmd_Data_Type_Enum eDataType , 
+								  enum Cmd_Exitcodes_Enum eExitcode , 
+								  uint8_t DataLength , 
+								  uint8_t *pData );
 
-void		cmdBuildAnswer		( cmd_t *a , uint8_t id , enum Data_Type_Enum DataTypee , uint8_t Exitcode , uint8_t DataLength , uint8_t *DataPtr );
-
-void		cmdSendAnswer		( cmd_t *a );					
+void		cmdSendAnswer		( cmd_t *psAnswer );					
 
 
 
