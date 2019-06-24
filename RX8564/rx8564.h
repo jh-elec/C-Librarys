@@ -12,21 +12,7 @@
 #ifndef __RX8564_H__
 #define __RX8564_H__
 
-#include <stdint.h>
-
-#ifdef __AVR__
-	#include <avr/io.h>
-	#include <avr/interrupt.h>	
-	#include "i2cmaster.h"
-#endif
-
-//#define _WITH_ERROR_REPORT_
-
-#ifdef _WITH_ERROR_REPORT_
-	#include "../error.h"
-#endif
-
-
+#include <avr/io.h>
 
 /* Slave Address */
 #define RX8564_ADDR 0xA2 
@@ -40,25 +26,22 @@
 
 
 /* register addresses */
-enum rx8564_register
-{
-	RX8564_CONTROL_1,
-	RX8564_CONTROL_2,
-	RX8564_SECONDS,
-	RX8564_MINUTES,
-	RX8564_HOURS,
-	RX8564_DAYS,
-	RX8564_DAY_NAME,
-	RX8564_MONTH,
-	RX8564_YEAR,
-	RX8564_MINUTE_ALERT,
-	RX8564_HOUR_ALERT,
-	RX8564_DAY_ALERT,
-	RX8564_DAY_NAME_ALERT,
-	RX8564_CLKOUT_FREQUENCY,
-	RX8564_TIMER_CONTROL,
-	RX8564_TIMER,	
-}rx8564_regs_enum;
+#define control_1_register			0x00
+#define control_2_register			0x01
+#define seconds_register			0x02
+#define minutes_register			0x03
+#define hours_register				0x04
+#define day_register				0x05
+#define day_name_register			0x06
+#define month_Register				0x07
+#define year_Register				0x08
+#define minute_alert_register		0x09
+#define hour_alert_register			0x0A
+#define day_alert_register			0x0B
+#define day_Name_alert_register		0x0C
+#define	clkout_frequency_register	0x0D
+#define timer_control_register		0x0E
+#define timer_register				0x0F
 
 
 
@@ -80,41 +63,72 @@ enum rx8564_register
  }rx8564_t;
 
 
+/* rtcInit
+* @para             -> init the rtc
+* @return           -> -none
+* @description      -> starts all timer
+*/
+void rtcInit(void);
 
-uint8_t					rtcBcdToDec				( uint8_t val );
+/* rtcSetTime
+* @para             -> hour, minutes, seconds
+* @return           -> -none
+* @description      -> all parameters in dec
+*/
+void rtcSetTime(uint8_t hour, uint8_t minutes, uint8_t seconds);
 
-uint8_t					rtcDecToBcd				( uint8_t val );
+/* rtcSetDate
+* @para             -> day, week_day, month, year
+* @return           -> -none
+* @description      -> all parameters in dec
+*/
+void rtcSetDate(uint8_t day,uint8_t week_day, uint8_t month, uint16_t year);
+
+/* rtcSetAlrt
+* @para             -> day, week_day, hour, minutes
+* @return           -> -none
+* @description      -> all parameters in dec
+*/
+void rtcSetAlrt(uint8_t day, uint8_t week_day, uint8_t hour, uint8_t minutes);
+
+/* rtcSetClkOut
+* @para             -> frequency
+* @return           -> -none
+* @description      -> set the speed of clkout pin
+*/
+void rtcSetClkOut(uint8_t frequency);
+
+/* rtcGetData
+* @para             -> struct of rx8564_t
+* @return           -> -none
+* @description      -> save all read outs in the buffer
+*/
+void rtcGetData(rx8564_t *buffer);
+
+/* rtcSetTimCtrl
+* @para             -> config of timer mask
+* @return           -> -none
+* @description      -> for more details see datasheet
+*/
+void rtcSetTimCtrl(uint8_t mask);
+
+/* rtcSetCtrl2
+* @para             -> config of rtc
+* @return           -> -none
+* @description      -> for more details see datasheet
+*/
+void rtcSetCtrl2(uint8_t mask);
+
+/* rtcReadTim
+* @para             -> -none
+* @return           -> register value
+* @description      -> for more details see datasheet
+*/
+uint8_t rtcReadTim(void);
 
 
-void					rtcInit					( void );
-
-void					rtcSetTime				( uint8_t hour , uint8_t minutes , uint8_t seconds );
-
-void					rtcSetDate				( uint8_t day , uint8_t weekDay , uint8_t month, uint16_t year );
-
-void					rtcSetAlert				( uint8_t day , uint8_t weekDay , uint8_t hour, uint8_t minutes );
-
-void					rtcSetClkOut			( uint8_t frequency );
-
-void					rtcGetData				( rx8564_t *buffer );
-
-void					rtcSetCtrl2				( uint8_t mask );
-
-void					rtcSetTimerControl		( uint8_t mask );
-
-uint8_t					rtcReadTimer			( void );
-
-bool					rtcIsLeapYear			( const uint16_t year );
-
-uint16_t				rtcGetNumOfDaysAtMonth	( const uint8_t month , const uint16_t year );
-
-uint16_t				rtcGetDays				( const uint16_t year );
-
-uint16_t				rtcGetWeekDay			( const uint8_t day , const uint8_t month , const uint16_t year );
-
-uint16_t				rtcGetDayofYear			( const uint8_t day , const uint8_t month , const uint16_t year );
-
-uint16_t				rtcGetWeek				( uint16_t day , uint16_t month , uint16_t year );
+uint8_t bcdToDec(uint8_t val);
+uint8_t decToBcd(uint8_t val);
 
 
-#endif //__RX8564_H__ 
+#endif

@@ -63,7 +63,7 @@ enum Cmd_Communication_Header_Enum
 	CMD_HEADER_LENGTH_OF_FRAME, // Länge des gesamten Telegrammes
 	CMD_HEADER_DATA_TYP, 		// (u)char , (u)int8 , (u)int16 , (u)int32
 	CMD_HEADER_ID, 				// Telegramm Identifikation
-	CMD_HEADER_Exitcode,		// Exitkode aus Funktionen
+	CMD_HEADER_EXITCODE,		// Exitkode aus Funktionen
 	CMD_HEADER_CRC, 			// Checksumme von dem Telegramm
 
 	__CMD_HEADER_ENTRYS__
