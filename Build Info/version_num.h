@@ -17,7 +17,7 @@
 #define VERSION_MAJOR  		1
 #define VERSION_MINOR		0
 
-
+#define APP_COMPANY			"J.H - Elec"
 
 #if (VERSION_MAJOR >= '0' && VERSION_MAJOR <= '9')
 	static char VersionMajor = VERSION_MAJOR;

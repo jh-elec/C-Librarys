@@ -20,8 +20,8 @@
 
 typedef struct
 {
-	char	*Number;
-	char 	*Name;
+	char	Number[2];
+	char 	Name[3];
 }MonthTab_t;
 
 
@@ -30,7 +30,7 @@ char *BuildVersion(void)
 {
 	static char Version[10];
 
-	const MonthTab_t Month[12] = 
+	const MonthTab_t Month[] = 
 	{
 		{ "01" , "Jan" },
 		{ "02" , "Feb" },
@@ -47,7 +47,7 @@ char *BuildVersion(void)
 	};
 	
 	/*
-	*	major and minor version
+	*	Major & Minor V
 	*/
 	Version[0] = VersionMajor;
 	Version[1] = '.';
@@ -55,22 +55,21 @@ char *BuildVersion(void)
 	Version[3] = '.';
 	
 	/*
-	*	day
+	*	Erstellungs Tag
 	*/
 	Version[4] = ((__DATE__[4] >= '0') ? (__DATE__[4]) : '0');
-	Version[5] = (__DATE__[ 5]);
-	
+	Version[5] = (__DATE__[5]);
 	Version[6] = '.';
 	
 	/*
-	*	month
+	*	Erstellungs Monat
 	*/
 	for( uint8_t ui = 0 ; ui < 12 ; ui++ )
 	{
-		if( __DATE__[0] == Month[ui].Name[0] && __DATE__[1] == Month[ui].Name[1] && __DATE__[2] == Month[ui].Name[2] )
+		if( ( __DATE__[0] == Month[ui].Name[0] ) && ( __DATE__[1] == Month[ui].Name[1] ) && ( __DATE__[2] == Month[ui].Name[2] ) )
 		{
-			Version[7] = Month[ui].Number[0];
-			Version[8] = Month[ui].Number[1];
+			Version[7] = Month[ui].Number[0]; // Zehner
+			Version[8] = Month[ui].Number[1]; // Einer
 			
 			break;
 		}
