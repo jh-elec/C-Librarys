@@ -9,27 +9,23 @@
 *
 *	Versions - String.:
 *
-*	Hauptversion(Major) | Nebenversion(Minior) | Fehler Korrekturen | Stunden & Minuten | Tag & Monat
+*	Hauptversion(Major) | Nebenversion(Minior) |  Tag & Monat
 *
 *
 *	Hauptversion.:			Gibt an wie oft die Firmware komplett neu erstellt wurde
 *	Nebenversion.:			Gibt an ob es eine neue Subroutine gibt
-*	Fehler Korrekturen.:	Sprechen für sich!
-*	Stunden & Minuten.:		Zeit der letzten Übersetzung
 *	Tag & Monat.:			Datum der letzten Übersetzung
 */
 
 #ifndef _BUILD_INFO_H_
 #define _BUILD_INFO_H_
 
-/* buildVer
+/* BuildVersion
 * @para             -> none
 * @return           -> pointer @ string address
 * @description      -> build info of project
 */
-char *buildVer(void);
+char *BuildVersion(void);
 
-
-uint8_t *buildVerBytes(void);
 
 #endif // _BUILD_INFO_H_

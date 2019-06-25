@@ -10,211 +10,74 @@
 *
 */
 
+#ifndef _WIN64
 #include <avr/io.h>
+#endif 
 
-#include "Headers/version_num.h"
-#include "Headers/build_info.h"
+#include "version_num.h"
+#include "build_info.h"
 
 
-char *buildVer(void)
+typedef struct
 {
-	static char build[17];
+	char	*Number;
+	char 	*Name;
+}MonthTab_t;
+
+
+
+char *BuildVersion(void)
+{
+	static char Version[10];
+
+	const MonthTab_t Month[12] = 
+	{
+		{ "01" , "Jan" },
+		{ "02" , "Feb" },
+		{ "03" , "Mrz" },
+		{ "04" , "Apr" },
+		{ "05" , "Mai" },
+		{ "06" , "Jun" },
+		{ "07" , "Jul" },
+		{ "08" , "Aug" },
+		{ "09" , "Sep" },
+		{ "10" , "Okt" },
+		{ "11" , "Nov" },
+		{ "12" , "Dez" },
+	};
 	
 	/*
 	*	major and minor version
 	*/
-	build[0] = verMajor;
-	build[1] = '.';
-	build[2] = ' ';
-	build[3] = verMinor;
-	build[4] = '.';
-	build[5] = ' ';
-		
-	/*
-	*	time.: hour|min
-	*/
-	build[6] = __TIME__[0];
-	build[7] = __TIME__[1];
-	build[8] = __TIME__[3];
-	build[9] = __TIME__[4];
-	
-	build[10] = '.';
-	build[11] = ' ';
+	Version[0] = VersionMajor;
+	Version[1] = '.';
+	Version[2] = VersionMinor;
+	Version[3] = '.';
 	
 	/*
 	*	day
 	*/
-	build[12] = ((__DATE__[4] >= '0') ? (__DATE__[4]) : '0');
-	build[13] = (__DATE__[ 5]);
+	Version[4] = ((__DATE__[4] >= '0') ? (__DATE__[4]) : '0');
+	Version[5] = (__DATE__[ 5]);
+	
+	Version[6] = '.';
 	
 	/*
 	*	month
 	*/
-	if(__DATE__[0] == 'J' && __DATE__[1] == 'a')
+	for( uint8_t ui = 0 ; ui < 12 ; ui++ )
 	{
-		build[14] = '0'; // Januar
-		build[15] = '1'; // Januar		
+		if( __DATE__[0] == Month[ui].Name[0] && __DATE__[1] == Month[ui].Name[1] && __DATE__[2] == Month[ui].Name[2] )
+		{
+			Version[7] = Month[ui].Number[0];
+			Version[8] = Month[ui].Number[1];
+			
+			break;
+		}
 	}
 
-	if(__DATE__[0] == 'F')
-	{
-		build[14] = '0'; // Februar
-		build[15] = '2'; // Februar		
-	}
-
-	if(__DATE__[0] == 'M' && __DATE__[1] == 'a' && __DATE__[2] == 'r')
-	{
-		build[14] = '0'; // März
-		build[15] = '3'; // März		
-	}
-
-	if(__DATE__[0] == 'A' && __DATE__[1] == 'p')
-	{
-		build[14] = '0'; // April
-		build[15] = '4'; // April		
-	}
-
-	if(__DATE__[0] == 'M' && __DATE__[1] == 'a' && __DATE__[2] == 'y')
-	{
-		build[14] = '0'; // Mai	
-		build[15] = '5'; // Mai		
-	}
-
-	if(__DATE__[0] == 'J' && __DATE__[1] == 'u' && __DATE__[2] == 'n')
-	{
-		build[14] = '0'; // Juni	
-		build[15] = '6'; // Juni		
-	}
-
-	if(__DATE__[0] == 'J' && __DATE__[1] == 'u' && __DATE__[2] == 'l')
-	{
-		build[14] = '0'; // Juli	
-		build[15] = '7'; // Juli		
-	}
-
-	if(__DATE__[0] == 'A' && __DATE__[1] == 'u')
-	{
-		build[14] = '0'; // August	
-		build[15] = '8'; // August	
-	}
-
-	if(__DATE__[0] == 'S')
-	{
-		build[14] = '0'; // September	
-		build[15] = '9'; // September		
-	}
-
-	if(__DATE__[0] == 'O')
-	{
-		build[14] = '1';
-		build[15] = '0'; // Oktober
-	}
-
-	if(__DATE__[0] == 'N')
-	{
-		build[14] = '1';
-		build[15] = '1'; // November
-	}
+	Version[9] = '\0';
 	
-	if(__DATE__[0] == 'D')
-	{
-		build[14] = '1';
-		build[15] = '2'; // Dezember
-	}
-
-	build[16] = '\0';
-	
-	return build;
+	return Version;
 }
 
-
-uint8_t *buildVerBytes(void)
-{
-	static uint8_t build[9];
-	
-	/*
-	*	major and minor version
-	*/
-	build[0] = VERSION_MAJOR;
-	build[1] = VERSION_MINOR;
-
-		
-	/*
-	*	time.: hour|min
-	*/
-	build[2] = __TIME__[0] - '0';
-	build[3] = __TIME__[1] - '0';
-	build[4] = __TIME__[3] - '0';
-	build[5] = __TIME__[4] - '0';
-	
-	/*
-	*	day
-	*/
-	build[6] = ((__DATE__[4] >= '0') ? (__DATE__[4]) : '0' ) - '0';
-	build[7] = (__DATE__[ 5]) - '0';
-	
-	/*
-	*	month
-	*/
-	if(__DATE__[0] == 'J' && __DATE__[1] == 'a')
-	{
-		build[8] = 1; // Januar
-	}
-
-	if(__DATE__[0] == 'F')
-	{
-		build[8] = 2; // Februar
-	}
-
-	if(__DATE__[0] == 'M' && __DATE__[1] == 'a' && __DATE__[2] == 'r')
-	{
-		build[8] = 3; // März	
-	}
-
-	if(__DATE__[0] == 'A' && __DATE__[1] == 'p')
-	{
-		build[8] = 4; // April	
-	}
-
-	if(__DATE__[0] == 'M' && __DATE__[1] == 'a' && __DATE__[2] == 'y')
-	{
-		build[8] = 5; // Mai		
-	}
-
-	if(__DATE__[0] == 'J' && __DATE__[1] == 'u' && __DATE__[2] == 'n')
-	{
-		build[8] = 6; // Juni		
-	}
-
-	if(__DATE__[0] == 'J' && __DATE__[1] == 'u' && __DATE__[2] == 'l')
-	{
-		build[8] = 7; // Juli	
-	}
-
-	if(__DATE__[0] == 'A' && __DATE__[1] == 'u')
-	{
-		build[8] = 8; // August	
-	}
-
-	if(__DATE__[0] == 'S')
-	{
-		build[8] = 9; // September	
-	}
-
-	if(__DATE__[0] == 'O')
-	{
-		build[8] = 10;
-	}
-
-	if(__DATE__[0] == 'N')
-	{
-		build[8] = 11;
-	}
-	
-	if(__DATE__[0] == 'D')
-	{
-		build[8] = 12;
-	}
-	
-	return build;
-}

@@ -20,22 +20,22 @@
 
 
 #if (VERSION_MAJOR >= '0' && VERSION_MAJOR <= '9')
-	static char verMajor = VERSION_MAJOR;
+	static char VersionMajor = VERSION_MAJOR;
 #else
 	#if(VERSION_MAJOR >= 'a' && VERSION_MAJOR <= 'z' || VERSION_MAJOR >= 'A' && VERSION_MAJOR <= 'Z')
 		#error VERSION_MAJOR.: only character from (0-9)
 	#else
-		static char verMajor = VERSION_MAJOR + '0';
+		static char VersionMajor = VERSION_MAJOR + '0';
 	#endif
 #endif
 
 #if (VERSION_MINOR >= '0' && VERSION_MINOR <= '9')
-	static char verMinor = VERSION_MINOR;
+	static char VersionMinor = VERSION_MINOR;
 #else
 	#if(VERSION_MINOR >= 'a' && VERSION_MINOR <= 'z' || VERSION_MINOR >= 'A' && VERSION_MINOR <= 'Z')
 		#error VERSION_MINOR.: only character from (0-9)
 	#else
-		static char verMinor = VERSION_MINOR + '0';
+		static char VersionMinor = VERSION_MINOR + '0';
 	#endif
 #endif
 
