@@ -31,6 +31,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "cmd_types.h"
+#include "cmd_exit.h"
+#include "cmd_id.h"
+
 #ifndef _WIN64
 #include "uart.h"
 #endif
@@ -67,42 +71,6 @@ enum Cmd_Communication_Header_Enum
 	CMD_HEADER_CRC, 			// Checksumme von dem Telegramm
 
 	__CMD_HEADER_ENTRYS__
-};
-
-
-
-enum Cmd_Data_Type_Enum
-{
-    DATA_TYP_UINT8,
-    DATA_TYP_UINT16,
-    DATA_TYP_UINT32,
-    DATA_TYP_FLOAT,
-    DATA_TYP_STRING,
-
-    DATA_TYP_INT8,
-    DATA_TYP_INT16,
-    DATA_TYP_INT32,
-
-    __DATA_TYP_MAX_INDEX__
-};
-
-
-
-enum Cmd_Ident_Enum
-{
-	ID_PING = 0, // Darauf sollte die Firmware ein Lebenszeichen melden
-	ID_VERSION,
-	/*...*/
-	
-	ID_APPLICATION = 255 // Für irgendwelche System spezifischen Meldungen
-};
-
-
-
-enum Cmd_Exitcodes_Enum
-{
-	CMD_EXIT_OK,
-	CMD_EXIT_FAIL,
 };
 
 
@@ -157,9 +125,7 @@ typedef struct
 enum Header_Exitcode_Enum
 {
 	CMD_HEADER_EXITCODE_OVF = 1<<0,
-	CMD_HEADER_EXITCODE_NO_DATA = 1<<1,
-	
-		
+	CMD_HEADER_EXITCODE_NO_DATA = 1<<1,	
 };
 
 typedef struct  

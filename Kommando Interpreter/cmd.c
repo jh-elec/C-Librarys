@@ -127,11 +127,11 @@ uint8_t		cmdParse			( uint8_t *pReceive , cmd_t *psParsed , uint16_t uiBufferLen
 		return 1;
 	}
 		
-	psParsed->uiDataLength 	= pReceive[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_LENGTH_OF_FRAME ] -__CMD_HEADER_ENTRYS__;
-	psParsed->eDataType		= pReceive[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_DATA_TYP		 ];
-	psParsed->eMessageID 	= pReceive[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_ID				 ];
-	psParsed->eExitcode		= pReceive[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_EXITCODE		 ];	
-	sCrc.uiExternal			= pReceive[ FrameStart + CMD_START_FRAME_OFFSET + CMD_HEADER_CRC			 ];
+	psParsed->uiDataLength 	= pReceive[ FrameStart + CMD_HEADER_LENGTH_OF_FRAME ] -__CMD_HEADER_ENTRYS__;
+	psParsed->eDataType		= pReceive[ FrameStart + CMD_HEADER_DATA_TYP		];
+	psParsed->eMessageID	= pReceive[ FrameStart + CMD_HEADER_ID				];
+	psParsed->eExitcode		= pReceive[ FrameStart + CMD_HEADER_EXITCODE		];	
+	sCrc.uiExternal			= pReceive[ FrameStart + CMD_HEADER_CRC			 	];
 	
 	if ( psParsed->uiDataLength ){
 		psParsed->pData = pReceive + ( FrameStart + CMD_START_FRAME_OFFSET + __CMD_HEADER_ENTRYS__ );
@@ -202,9 +202,9 @@ Header_t	cmdBuildHeader		( cmd_t *psAnswer )
 
 	FrameHeader[CMD_HEADER_CRC] = sCrc.uiInternal;
 		
+	psAnswer->eDataType		= 0;
 	psAnswer->eMessageID	= 0;
-	psAnswer->eDataType	= 0;
-	psAnswer->eExitcode	= 0;
+	psAnswer->eExitcode		= 0;
 				
 	HeaderInfo.FramePtr = FrameHeader;
 				
@@ -235,17 +235,15 @@ void		cmdSendAnswer		( cmd_t *psAnswer )
 		pCmdSendCallback( HeaderInfo.FramePtr , __CMD_HEADER_ENTRYS__ );
 		pCmdSendCallback( psAnswer->pData , psAnswer->uiDataLength );
 	#else
-		printf( "eMessageID = %d\r\neDataType = %d\r\neExitcode = %d\r\npData = %s\r\nuiDataLength = %d\r\nsCrc.uiInternal = %d" , psAnswer->eMessageID , psAnswer->eDataType , psAnswer->eExitcode , psAnswer->pData , psAnswer->uiDataLength , sCrc.uiInternal );
-	
-		printf( "\r\nTelegramm: " );
+		printf( "Telegramm: " );
 		for ( uint8_t ui = 0 ; ui < __CMD_HEADER_ENTRYS__ ; ui++ )
 		{
-			printf( "%02x " , HeaderInfo.FramePtr[ui] );
+			printf( "%#02x " , HeaderInfo.FramePtr[ui] );
 		}
 	
 		for( uint8_t ui = 0 ; ui < psAnswer->uiDataLength ; ui++ )
 		{
-			printf( "%02x " , psAnswer->pData[ui] );
+			printf( "%#02x " , psAnswer->pData[ui] );
 		}
 	#endif
 	
