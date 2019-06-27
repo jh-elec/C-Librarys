@@ -8,174 +8,75 @@
 *
 *	Aufbau des Fehlerspeichers.:
 *
-*	*->buff[ID][NUM] -> ID = Fehler Typ (I2C , USART , LCD usw.).
-*						NUM = Fehler die Aufgetreten sind ( Anzahl der zu speichernden -
-*							  Fehler hängt von "ERROR_BUFFER_ID_SIZE" ab.
-*	
-*	WICHTIG! -> Es dürfen keine Fehler <= 0x00 eingetragen werden.
-*				z.B -> errorWrite( &err , 0x01 ,  *0x00 ); *Ist nicht zulässig
+*
+*	z.B.:	SLOT ( max. ERROR_SLOTS )	|	Errorcode ( max. ERROR_BUFFER_MASK )
+*		   +------------------------+	|  +-----------------------------------+
+*			0							| 	1 , 4 , 2 , 5 , 1
+*			1							| 	5 , 7 , 8 , 32 , 212
+*			...							|
 *
 *
-*	Vor dem Zugriff auf den Fehlerspeicher ( lesen oder schreiben ) muss dieser 
-*	initalisiert werden ( errorInit( &err ) ).
+*	- Jeder einzelne Slot arbeitet nach dem "LIFO" Prinzip		
 *
-*	Die "länge" des Fehlerspeichers wird mit "ERROR_BUFFER_LENG" bestimmt
-*	Die anzahl der verschiedenen Fehlertypen (ID´s) wird anhand von "err_id" bestimmt.
 *
-*	z.B.:	ID	|	ERR 
-*		   -----|----------------
-*			0	| 1 , 4 , 2 , 5 , 1
-*			1	| 5 , 7 , 8 , 32 , 212
-*			...	|
+*
 */
 
 #ifndef __ERROR_H__
 #define __ERROR_H__
 
-
-#define ERROR_BUFFER_LENG		5
-
 #include <stdint.h>
 
-enum err_id
-{
-	_ERROR_GLCD_I2C_,
-	_ERROR_RTC_I2C_,
-	_ERROR_SHT21_I2C_,
-	_ERROR_BMP180_I2C_,
-	
-	
-	/*
-	*	Darf nicht verändert werden
-	*/
-	_ERROR_NUM_OF_ID_
-};
+
+
+#define ERROR_SLOTS				10
 
 /*
-*	Darf nicht geändert werden!
+*	Muss das vielfache von n² sein!
 */
-#define	ERROR_BUFFER_ID_SIZE	_ERROR_NUM_OF_ID_
-#define ERROR_ENTRYS			0
+#define ERROR_BUFFER_LENG		16
+#define ERROR_BUFFER_MASK		( ERROR_BUFFER_LENG - 1 )
 
-enum i2c_err_nums
+
+
+/*<-----------------------------------------Enumerations----------------------------------------->*/
+
+enum Error_Return_Codes_Enum
 {
-	/*
-	*	Darf nicht verändert werden!
-	*	Muss stehen bleiben.
-	*	( Fehlerkodes dürfen nicht <= 0 sein )
-	*/
-	DONT_USE_IT,
-	
-	/*
-	*	Ab hier dürfen eigene Fehlerkodes ( uint8_t ) 
-	*	eingetragen werden.
-	*/
-	ERROR_I2C_NO_ACK,
-	ERROR_I2C_ADDRESS_TX,
-	ERROR_I2C_BYTE_TX,
+	ERROR_RETURN_SLOTS_OK,
+	ERROR_RETURN_SLOTS_EMPTY,
+	ERROR_RETURN_SLOTS_FULL,	
+	ERROR_RETURN_SLOTS_OVF,
 };
+
+/*<-----------------------------------------Ende Enumerations----------------------------------------->*/
+
+/*<-----------------------------------------Strukturen----------------------------------------->*/
 
 typedef struct
 {
-	#define ERROR_ID	0
-	#define ERROR_BEGIN	1
-	
-	/*
-	*	Fehlerspeicher
-	*/
-	uint8_t buff[ERROR_BUFFER_ID_SIZE][ERROR_BUFFER_LENG + 1];
-	
-	/*
-	*	Anzahl der befindlichen Meldungen im Fehlerspeicher
-	*/
-	uint16_t len;
-	
-	/*
-	*	Welche Art von Fehler ist aufgetreten?!
-	*	
-	*	z.B.: UART , LCD , I2C usw.
-	*/
-	uint8_t id;
-	
-	/*
-	*	Letzte Fehlermeldung
-	*/
-	uint8_t lastErr;
-	
-	/*
-	*	Zähler für aufgetretene Fehler
-	*/
-	uint8_t err[ERROR_BUFFER_ID_SIZE][1];
-	
-}error_t;
+	uint8_t uiWrite;
+	uint8_t	uiRead;
+	uint8_t pBuffer[ERROR_BUFFER_LENG];
+}Error_t;
 
-extern error_t err;
+/*<-----------------------------------------Ende Strukturen----------------------------------------->*/
+
+/*<-----------------------------------------Variabeln----------------------------------------->*/
+
+static Error_t sError[ERROR_SLOTS];
+
+/*<-----------------------------------------Ende Variabeln----------------------------------------->*/
 
 
+/*<-----------------------------------------Prototypen----------------------------------------->*/
 
+void ErrorInit( void );
 
-/* errorInit
-* @para             -> Fehlerstruktur ( error_t )
-* @return           -> 0 = alles inordnung
-* @description      -> Muss aufgerufen werden bevor überhaupt irgendein
-					   Zugriff auf den Fehlerspeicher erfolgt
-*/
-uint8_t errorInit( error_t *strc );
+enum Error_Return_Codes_Enum ErrorWrite( uint8_t uiSlot , uint8_t uiError );
 
-/* errorWrite
-* @para             -> Fehlerstruktur ( error_t ) , Fehler ID ( id ) ,
-* @return           -> 0 = alles inordnung
-*					   1 = Kompletter Fehlerspeicher ist belegt
-*					   2 = Für diese ID ist kein Speicherplatz vorhanden
-*					   3 = 30 + ID = ID Fehlerspeicher ist komplett belegt
-*					   4 = Fehlermeldung ist <= 0
-*		
-* @description      -> Fehler + Fehler ID´s werden in den Speicher geschrieben
-*/
-uint8_t errorWrite( error_t *strc , uint8_t id , uint8_t err );
+enum Error_Return_Codes_Enum ErrorRead( uint8_t uiSlot , uint8_t *pByte );
 
-/* errorWriteCircular
-* @para             -> Fehlerstruktur ( error_t ) , Fehler ID ( id ) ,
-* @return           -> 0 = alles inordnung
-*					   2 = Für diese ID ist kein Speicherplatz vorhanden
-*					   4 = Fehlermeldung ist <= 0
-*
-* @description      -> Fehler + Fehler ID´s werden in den Speicher geschrieben
-*					   Hier werden die Fehlermeldungen im "Kreis geschrieben.
-					   Sollten die Fehler größer als ERROR_BUFFER_LENG werden,
-					   wird ab ERROR_BEGIN die neuen Fehler eingetragen.
-*/
-uint8_t errorWriteCircular( error_t *strc , uint8_t id , uint8_t err );
+/*<-----------------------------------------Ende Prototypen----------------------------------------->*/
 
-/* errorClear
-* @para             -> Fehlerstruktur ( error_t ) , Fehler ID ( id )
-* @return           -> 0 = alles inordnung
-* @description      -> -none
-*/
-void errorClear( error_t *strc , uint8_t id );
-
-/* errorFreeSize
-* @para             -> Fehlerstruktur ( error_t ) , Fehler ID ( id )
-* @return           -> x = Anzahl freier Speicherplätze
-* @description      -> Gibt den noch freien Speicherplatz für die jeweilige ID zurück
-*/
-uint8_t errorFreeSize( error_t *strc , uint8_t id );
-
-/* errorGetExist
-* @para             -> Fehlerstruktur ( error_t )
-* @return           -> Zeiger auf den Fehlerstring oder wenn nicht vorhanden "NULL"
-* @description      -> Gibt alle vorhanden Fehlermeldungen zurück der vorhandenen ID´s
-*					   <0#1,2,3,4> oder <4#4,3,1,2,4>
-*/
-char *errorGetExist( error_t *strc );
-
-/* errorGetExist
-* @para             -> Fehlerstruktur ( error_t )
-* @return           -> Zeiger auf den Fehlerstring oder wenn nicht vorhanden "NULL"
-* @description      -> Gibt den Fehlerstring der Fehler ID zurück
-*					   <0#1,2,3,4> oder <4#4,3,1,2,4>
-*/
-char *errorGetById( error_t * strc , uint8_t id );
-
-
-#endif
+#endif // __ERROR_H__

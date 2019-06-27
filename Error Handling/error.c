@@ -8,249 +8,82 @@
 *
 *	Aufbau des Fehlerspeichers.:
 *
-*	*->buff[ID][NUM] -> ID = Fehler Typ (I2C , USART , LCD usw.).
-*						NUM = Fehler die Aufgetreten sind ( Anzahl der zu speichernden -
-*							  Fehler hängt von "ERROR_BUFFER_ID_SIZE" ab.
 *
-*	WICHTIG! -> Es dürfen keine Fehler <= 0x00 eingetragen werden.
-*				z.B -> errorWrite( &err , 0x01 ,  *0x00 ); *Ist nicht zulässig
+*	z.B.:	SLOT ( max. ERROR_SLOTS )	|	Errorcode ( max. ERROR_BUFFER_MASK )
+*		   +------------------------+	|  +-----------------------------------+
+*			0							| 	1 , 4 , 2 , 5 , 1
+*			1							| 	5 , 7 , 8 , 32 , 212
+*			...							|
 *
 *
-*	Vor dem Zugriff auf den Fehlerspeicher ( lesen oder schreiben ) muss dieser
-*	initalisiert werden ( errorInit( &err ) ).
+*	- Jeder einzelne Slot arbeitet nach dem "LIFO" Prinzip		
 *
-*	Die "länge" des Fehlerspeichers wird mit "ERROR_BUFFER_LENG" bestimmt
-*	Die anzahl der verschiedenen Fehlertypen (ID´s) wird anhand von "err_id" bestimmt.
 *
-*	z.B.:	ID	|	ERR
-*		   -----|----------------
-*			0	| 1 , 4 , 2 , 5 , 1
-*			1	| 5 , 7 , 8 , 32 , 212
-*			...	|
+*
 */
 
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <string.h>
 
 #include "error.h"
 
-error_t err;
 
-static uint8_t checkBuff( error_t *strc )
-{	
-	uint8_t index = 0;
-	
-	if( strc->len >= ERROR_BUFFER_ID_SIZE * ERROR_BUFFER_LENG )
-	{
-		return 1; // Kompletter Fehlerspeicher ist voll	
-	}
-	
-	if( strc->id >= ERROR_BUFFER_ID_SIZE )
-	{
-		return 2; // ID nicht vorgesehen!
-	}
+#if ( ERROR_BUFFER_LENG & ERROR_BUFFER_MASK )
+#error Buffer size is not power of nÂ²
+#endif
 
-	if( strc->err[strc->id][0] >= ERROR_BUFFER_LENG )
-	{
-		/*
-		*	Sollte ein ID "Fehlerspeicher" voll sein,
-		*	so wird 30 + die ID des vollen "Fehlerspeichers"
-		*	zurückgegeben
-		*/
-		return ( (3 * 10) + index );
-	}
 
-	if( strc->lastErr == 0 )
-	{
-		return 4; // Fehlermeldungen dürfen nicht <= 0 sein!
-	}
 
-	return 0; // Alles inordnung!
-}
-
-uint8_t errorInit( error_t *strc )
+void ErrorInit( void )
 {
-	uint8_t index;
-	uint8_t cnt;
-		
-	for( index = 0 ; index < ERROR_BUFFER_ID_SIZE ; index++ )
+	for( uint8_t ui = 0 ; ui < ERROR_SLOTS ; ui++ )
 	{
-		strc->buff[index][ERROR_ID] = 0xFF;
-		strc->err[index][0] = 0;
-		for( cnt = 0 ; cnt < ERROR_BUFFER_LENG ; cnt++ )
+		sError[ui].uiRead = 0;
+		sError[ui].uiWrite = 0;
+		for( uint8_t ux = 0 ; ux < ERROR_BUFFER_LENG ; ux++ )
 		{
-			strc->buff[index][ERROR_BEGIN + cnt] = 0;
+			sError[ui].pBuffer[ux] = 0;
 		}
 	}
-	
-	return 0;
 }
 
-uint8_t errorWrite( error_t *strc , uint8_t id , uint8_t err )
+enum Error_Return_Codes_Enum ErrorWrite( uint8_t uiSlot , uint8_t uiError )
 {
-	strc->id = id;
-	strc->lastErr = err;
-	
-	uint8_t retCode = checkBuff( strc );
-	
-	if( retCode > 0 )
-	{
-		return retCode;
+	if( uiSlot > ERROR_SLOTS ){
+		return ERROR_RETURN_SLOTS_OVF;		
 	}
 	
-	strc->buff[id][ERROR_ID] = id;
+	uint8_t uiNextPosition = ( ( sError[uiSlot].uiWrite + 1 ) & ERROR_BUFFER_MASK );
 	
-	if( strc->err[id][0] < ERROR_BUFFER_LENG )
-	{
-		strc->len++;
-		strc->buff[id][ERROR_BEGIN + strc->err[id][0]++] = err;
-	}
+//	if( sError[uiSlot].uiRead == uiNextPosition ){
+//		return ERROR_RETURN_SLOTS_FULL;
+//	}
+    
+	sError[uiSlot].pBuffer[sError[uiSlot].uiWrite] = uiError;
 	
-	return 0;
+	sError[uiSlot].uiWrite = uiNextPosition;
+	
+	return ERROR_RETURN_SLOTS_OK;
 }
 
-uint8_t errorWriteCircular( error_t *strc , uint8_t id , uint8_t err )
+enum Error_Return_Codes_Enum ErrorRead( uint8_t uiSlot , uint8_t *pByte )
 {
-	strc->id = id;
-	strc->lastErr = err;
-	
-	uint8_t retCode = checkBuff( strc );
-	
-	if( retCode == 2 || retCode == 4 )
-	{
-		return retCode;
-	}
-	
-	strc->buff[id][ERROR_ID] = id;
-	
-	if( strc->err[id][0] >= ERROR_BUFFER_LENG )
-	{
-		strc->err[id][0] = 0;
-	}
-	
-	if( strc->err[id][0] < ERROR_BUFFER_LENG )
-	{
-		strc->len++;
-		strc->buff[id][ERROR_BEGIN + strc->err[id][0]++] = err;
-	}
-	
-	return 0;
-}
-
-void errorClear( error_t *strc , uint8_t id )
-{
-	memset( strc->buff[id] , '\0' , ERROR_BUFFER_LENG );
-	
-	/*
-	*	Anzahl der Fehler auf 0 setzen
-	*/
-	strc->err[id][ERROR_ID] = 0xFF;
-	
-	/*
-	*	Anzahl des freien Speicherplatze(s) wieder korrigieren
-	*/
-	strc->len -= ERROR_BUFFER_LENG;
-	
-	/*
-	*	Letzte bekannte ID löschen
-	*/
-	strc->id = 0;
-	
-	/*
-	*	Letzten bekannten Fehler löschen
-	*/
-	strc->lastErr = 0;
-}
-
-uint8_t errorFreeSize( error_t *strc , uint8_t id )
-{
-	return ( ERROR_BUFFER_LENG - strc->err[id][0] );
-}
-
-char *errorGetExist( error_t *strc )
-{
-	uint8_t id = 0;
-	uint8_t err = 0;
-	
-	/*
-	*	Es müssen 5 Bytes reserviert werden!
-	*	z.B.: -213+'\0'
-	*/
-	char tmp[5] = "";
-	
-	static char out[ ( ( ERROR_BUFFER_ID_SIZE * ERROR_BUFFER_LENG ) * 2 ) + 3 ];	
-	/*
-	*	Die Ausgabe muss bei jedem Aufruf der Funktion gelöscht werden
-	*/
-	memset( out , 0 , sizeof( out ) / sizeof( out[0] ) );
-	strcpy( out , "Ok" );
-	
-	for( id = 0 ; id < ERROR_BUFFER_ID_SIZE ; id++ )
-	{
-		err = 0;
-		if( strc->buff[ id ][ ERROR_ID ] != 0xFF )
-		{
-			itoa	( id 	, tmp , 10 	);
-			strcat	( out	, "<"		);
-			strcat	( out 	, tmp 		);
-			strcat	( out 	, "#" 		);
-			
-			
-			while( err < strc->err[ id ][ ERROR_ENTRYS ] )
-			{
-				itoa	( strc->buff[ id ][ ERROR_BEGIN + err++ ] , tmp , 10 );
-				strcat	( out , tmp );
-				
-				if( ( strc->buff[ id ][ ERROR_BEGIN + ( err ) ] != '\0' ) && err < strc->err[ id ][ 0 ] )
-				{
-					strcat( out , "," );
-				}							
-			}
-			
-			strcat( out , ">" );
-		}
+	if( uiSlot > ERROR_SLOTS ){
+		return ERROR_RETURN_SLOTS_OVF;		
 	}
 
-	return out;
-}
-
-char *errorGetById( error_t * strc , uint8_t id )
-{
-	uint8_t err = 0;
-	
-	/*
-	*	Es müssen 5 Bytes reserviert werden!
-	*	z.B.: -213+'\0'
-	*/
-	char tmp[5] = "";
-	
-	static char out[ ( ERROR_BUFFER_LENG * 2 ) + 3 ] = "";
-	memset( out , 0 , sizeof( out ) / sizeof( out[0] ) );
-	strcpy( out , "Ok" );
-
-	if( strc->buff[id][ERROR_ID] != 0xFF )
-	{
-		itoa	( id 	, tmp , 10 	);
-		strcpy	( out	, "<"		);
-		strcat	( out 	, tmp 		);
-		strcat	( out 	, "#" 		);
-			
-		while( err < strc->err[ id ][ ERROR_ENTRYS ] )
-		{
-			itoa	( strc->buff[ id ][ ERROR_BEGIN + err++ ] , tmp , 10 );
-			strcat	( out , tmp );
-			
-			if( ( strc->buff[ id ][ ERROR_BEGIN + ( err ) ] != '\0' ) && err < strc->err[id][0] )
-			{
-				strcat( out , "," );
-			}							
-		}
-		strcat( out , ">" );
+  	if ( sError[uiSlot].uiRead == sError[uiSlot].uiWrite ){
+  		*pByte = 0;
+		return ERROR_RETURN_SLOTS_EMPTY;
 	}
+    
+  	*pByte = sError[uiSlot].pBuffer[ sError[uiSlot].uiRead ];
+
+	sError[uiSlot].uiRead = ( ( sError[uiSlot].uiRead + 1 ) & ERROR_BUFFER_MASK );
 	
-	return out;
+	return ERROR_RETURN_SLOTS_OK;
 }
+
 
