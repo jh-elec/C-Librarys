@@ -16,6 +16,13 @@ enum Cmd_Exitcodes_Enum
 {
 	CMD_EXIT_OK,
 	CMD_EXIT_FAIL,
+	CMD_EXIT_NOT_EXIST,
+	
+	/*
+	*	andere Projekt spezifische Codes
+	*/
+	
+	__CMD_EXIT_MAX_ENTRYS__
 };
 
 typedef struct

@@ -4,19 +4,19 @@
 * Version           -> 1.0.1.1124
 * Author            -> Hm @ Workstadion.: QP-01-02
 * Build Date        -> 20.09.2017 07:50:01
-* Description       -> 
+* Description       ->
 *
 *
-*	++ Telegramm Aufbau ++ 
-*	
+*	++ Telegramm Aufbau ++
+*
 *
 *	'-' | '+ ' | | 0x05 | | 0x01 | | 0x04 | | 0x00 | | 0x32 | | 0..n ( max. 255 Bytes) |
 *	+----------+ +------+ +------+ +------+ +------+ +------+ +------------------------+
 *		 ^			^		 ^		   ^		^		 ^				  ^
 *		 |			|		 |		   |		|		 |				  |
 *	Startzeichen    |	  Datentyp	   |	Exitcode	 |			  Nutzdaten
-*					|				   |				 |
-*			Länge des gesamten		   |			Checksumme
+*					|				   |				 |			  Anmerkung: Bei Datentypen > uint8_t
+*			Länge des gesamten		   |			Checksumme		  wird das LSB zuerst gesendet.
 *			Telegrammes				   |
 *							Telegramm Identifikation
 *
@@ -35,8 +35,8 @@
 #include "cmd_exit.h"
 #include "cmd_id.h"
 
-#ifndef _WIN64
-#include "uart.h"
+#ifndef _WIN32
+    #include "uart.h"
 #endif
 
 #ifndef NULL
@@ -44,21 +44,15 @@
 #endif
 
 
-/*	Frame Offset
-*	Specifies where the command package begins
-*/
-#define CMD_START_FRAME_OFFSET	0
-
-
 /*
 *	Callback Funktion zum senden von Frames..
 *	2 Parameter müssen übergeben werden ->
-*	
-*	1 = Zeiger auf Daten ( *uint8_t ) 
+*
+*	1 = Zeiger auf Daten ( *uint8_t )
 *	2 = Länge
 */
-#ifndef _WIN64
-#define _CMD_SEND_CB_FNC_PTR_		uartPutByteStr
+#ifndef _WIN32
+    #define _CMD_SEND_CB_FNC_PTR_		uartPutByteStr
 #endif
 
 
@@ -73,34 +67,32 @@ enum Cmd_Communication_Header_Enum
 	__CMD_HEADER_ENTRYS__
 };
 
-
-
 typedef struct
-{	
+{
 	/*
 	*	Welcher Datentyp wird gesendet?
 	*	siehe "Cmd_Data_Type_Enum"
 	*/
 	enum Cmd_Data_Type_Enum	eDataType;
-	
+
 	/*
 	*	Nachrichten Identifikation
-	*	Die Identifikations Codes sind in 
+	*	Die Identifikations Codes sind in
 	*	"Cmd_Ident_Enum" einzutragen
 	*/
 	enum Cmd_Ident_Enum	eMessageID;
-	
+
 	/*
-	*	Rückgabewerte aus letzten 
+	*	Rückgabewerte aus letzten
 	*	Funktionsaufrufen
 	*/
-	enum Cmd_Exitcodes_Enum	eExitcode;	
+	enum Cmd_Exitcodes_Enum	eExitcode;
 
 	/*
 	*	Zeiger auf Nutzdaten
 	*/
 	uint8_t *pData;
-	
+
 	/*
 	*	Länge der zu sendenen Nutzdaten
 	*/
@@ -115,59 +107,57 @@ typedef struct
 *	Die einfach den String "ping" zurückliefert.
 *	Dies sollte in jedem Projekt beachtet werden.
 */
-typedef struct 
+typedef struct
 {
-	uint8_t (*fnc)( cmd_t *);	
+	uint8_t (*fnc)( cmd_t *);
 }cmdFuncTab_t;
 
-
-
-enum Header_Exitcode_Enum
+typedef struct
 {
-	CMD_HEADER_EXITCODE_OVF = 1<<0,
-	CMD_HEADER_EXITCODE_NO_DATA = 1<<1,	
-};
+    /**< Zeiger auf den Anfang des Frames */
+	uint8_t *puiFrame;
 
-typedef struct  
+	/**< Länge des kompletten Frames */
+	uint8_t uiLength;
+
+    /**< Gesendete Datentyp */
+	enum Cmd_Data_Type_Enum	eDataType;
+
+}Frame_t;
+
+typedef struct
 {
-	uint8_t	*FramePtr;
-	enum Header_Exitcode_Enum Exitcode;
-}Header_t;
-	
-typedef struct  
-{
-	/*
-	*	generiert von dieser CPU
-	*/
+    /**< Intern berechnete Checksumme */
 	uint8_t uiInternal;
-	
-	/*
-	*	generiert von externer CPU
-	*/
+
+    /**< Extern berechnete Checksumme */
 	uint8_t uiExternal;
-	
+
 }Crc_t;
 
 
-void		cmdInit				( cmd_t *c );					
+void		FrameInit			( cmd_t *psFrame );
 
-int8_t		cmdGetStartIndex	( uint8_t *pReceive );					
+void		FrameClear			( cmd_t *psFrame );
 
-uint8_t		cmdGetEndIndex		( uint8_t *pReceive );					
+uint8_t		FrameParse			( uint8_t *pReceive , cmd_t *psFrame , uint16_t uiBufferLength );
 
-uint8_t		cmdParse			( uint8_t *pReceive , cmd_t *c , uint16_t uiBufferLength );		
+void		FrameBuild  		( cmd_t *psFrame ,
+								  enum Cmd_Ident_Enum eIdent ,
+								  enum Cmd_Data_Type_Enum eDataType ,
+								  enum Cmd_Exitcodes_Enum eExitcode ,
+								  uint8_t *pData,
+								  uint8_t DataLength
+                                );
 
-Header_t	cmdBuildHeader		( cmd_t *psAnswer );					
-
-void		cmdBuildAnswer		( cmd_t *psAnswer , 
-								  enum Cmd_Ident_Enum eIdent , 
-								  enum Cmd_Data_Type_Enum eDataType , 
-								  enum Cmd_Exitcodes_Enum eExitcode , 
-								  uint8_t DataLength , 
-								  uint8_t *pData );
-
-void		cmdSendAnswer		( cmd_t *psAnswer );					
+void		FrameSend   		( cmd_t *psFrame );
 
 
+
+/**< DEBUG */
+
+#ifdef _WIN32
+    void        FrameShow      ( cmd_t *psFrame );
+#endif
 
 #endif
