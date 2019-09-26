@@ -25,15 +25,15 @@
 *
 */
 
-#ifndef __CMD_H__
-#define __CMD_H__
+#ifndef __FRAME_H__
+#define __FRAME_H__
 
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "cmd_types.h"
-#include "cmd_exit.h"
-#include "cmd_id.h"
+#include "frame_types.h"
+#include "exitcodes.h"
+#include "frame_id.h"
 
 #ifndef _WIN32
     #include "uart.h"
@@ -58,59 +58,33 @@
 
 enum Cmd_Communication_Header_Enum
 {
-	CMD_HEADER_LENGTH_OF_FRAME, // Länge des gesamten Telegrammes
-	CMD_HEADER_DATA_TYP, 		// (u)char , (u)int8 , (u)int16 , (u)int32
-	CMD_HEADER_ID, 				// Telegramm Identifikation
-	CMD_HEADER_EXITCODE,		// Exitkode aus Funktionen
-	CMD_HEADER_CRC, 			// Checksumme von dem Telegramm
+	CMD_HEADER_LENGTH_OF_FRAME, /**< Länge des gesamten Frames */
+	CMD_HEADER_DATA_TYP, 		/**< Welcher Datentyp wird versendet */
+	CMD_HEADER_ID, 				/**< Frame Identifikation */
+	CMD_HEADER_EXITCODE,		/**< Rückgabewert von Funktion */
+	CMD_HEADER_CRC, 			/**< Checksumme von der ganzen Nachricht */
 
 	__CMD_HEADER_ENTRYS__
 };
 
 typedef struct
 {
-	/*
-	*	Welcher Datentyp wird gesendet?
-	*	siehe "Cmd_Data_Type_Enum"
-	*/
+    /**< Datentyp der Nutzdaten im Frame */
 	enum Cmd_Data_Type_Enum	eDataType;
 
-	/*
-	*	Nachrichten Identifikation
-	*	Die Identifikations Codes sind in
-	*	"Cmd_Ident_Enum" einzutragen
-	*/
+    /**< Gibt an um welche Art Frame es sich handelt */
 	enum Cmd_Ident_Enum	eMessageID;
 
-	/*
-	*	Rückgabewerte aus letzten
-	*	Funktionsaufrufen
-	*/
+    /**< Funktions Rückgabe Code */
 	enum Cmd_Exitcodes_Enum	eExitcode;
 
-	/*
-	*	Zeiger auf Nutzdaten
-	*/
+    /**< Nutzdaten */
 	uint8_t *pData;
 
-	/*
-	*	Länge der zu sendenen Nutzdaten
-	*/
+    /**< Laenge der Nutzdaten */
 	uint8_t uiDataLength;
 
-}cmd_t;
-
-
-
-/*	Hinweis
-*	Das erste Element ist IMMER eine "Ping" Funktion.
-*	Die einfach den String "ping" zurückliefert.
-*	Dies sollte in jedem Projekt beachtet werden.
-*/
-typedef struct
-{
-	uint8_t (*fnc)( cmd_t *);
-}cmdFuncTab_t;
+}sFrameDesc_t;
 
 typedef struct
 {
@@ -123,7 +97,7 @@ typedef struct
     /**< Gesendete Datentyp */
 	enum Cmd_Data_Type_Enum	eDataType;
 
-}Frame_t;
+}sFrame_t;
 
 typedef struct
 {
@@ -133,16 +107,16 @@ typedef struct
     /**< Extern berechnete Checksumme */
 	uint8_t uiExternal;
 
-}Crc_t;
+}sCrc_t;
 
 
-void		FrameInit			( cmd_t *psFrame );
+void		FrameInit			( sFrameDesc_t *psFrame );
 
-void		FrameClear			( cmd_t *psFrame );
+void		FrameClear			( sFrameDesc_t *psFrame );
 
-uint8_t		FrameParse			( uint8_t *pReceive , cmd_t *psFrame , uint16_t uiBufferLength );
+uint8_t		FrameParse			( uint8_t *pReceive , sFrameDesc_t *psFrame , uint16_t uiBufferLength );
 
-void		FrameBuild  		( cmd_t *psFrame ,
+void		FrameBuild  		( sFrameDesc_t *psFrame ,
 								  enum Cmd_Ident_Enum eIdent ,
 								  enum Cmd_Data_Type_Enum eDataType ,
 								  enum Cmd_Exitcodes_Enum eExitcode ,
@@ -150,14 +124,14 @@ void		FrameBuild  		( cmd_t *psFrame ,
 								  uint8_t DataLength
                                 );
 
-void		FrameSend   		( cmd_t *psFrame );
+void		FrameSend   		( sFrameDesc_t *psFrame );
 
 
 
 /**< DEBUG */
 
 #ifdef _WIN32
-    void        FrameShow      ( cmd_t *psFrame );
+    void        FrameShow      ( sFrameDesc_t *psFrame );
 #endif
 
-#endif
+#endif // __FRAME_H__

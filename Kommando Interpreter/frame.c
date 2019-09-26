@@ -18,21 +18,23 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "cmd.h"
+#include "frame.h"
 
 
-/**< Hier befindet sich der "Kommando-Kopf"
+/**< Hier befinden sich die ganzen Informationen über die gesendeten Daten!
  *   Dieser wird bei jedem neuen Senden eines Frames
  *   mit gesendet.
  */
-static uint8_t	FrameHeader[ __CMD_HEADER_ENTRYS__ ];
+static uint8_t	    FrameHeader[ __CMD_HEADER_ENTRYS__ ];
 
-static cmd_t _sInt;
+/**< Wird für die interne zwischen speicherung von Daten benötigt */
+static sFrameDesc_t _sFrameDescInt;
 
-static Crc_t sCrc;
+/**< Enthält die berechneten & empfangenen Checksummen */
+static sCrc_t       sCrc;
 
-/**< Status Variable, zum erkennen eines neuen Frames. */
-static int8_t FrameStart = 0;
+/**< Status Variable, zum erkennen eines neuen Frames */
+static int8_t       FrameStart = 0;
 
 
 /** \brief  CallBack Funktion zum senden des Kommandos
@@ -43,7 +45,7 @@ static int8_t FrameStart = 0;
  * \return  Es wird nichts zurück gegeben
  *
  */
-void ( *pCmdSendCallback )			    ( uint8_t *pData , uint8_t uiLength );
+void ( *pfncSendCallback )			    ( uint8_t *pData , uint8_t uiLength );
 
 
 
@@ -93,14 +95,14 @@ static int8_t       FrameSearch	        ( uint8_t *pReceive , uint8_t uiLength )
 	return -1;
 }
 
-static Frame_t		FrameGet			( void )
+static sFrame_t		FrameGet			( void )
 {
 	/*
 	*	Muss als "static" deklariert sein, sonst können wir uns die
 	*	reservierte Adresse von "puiFrame" bei einem erneuten aufruf nicht wieder freigeben.
 	*	Das könnte in Verbindung mit "malloc()" Probleme verursachen!
 	*/
-	static Frame_t sFrame;
+	static sFrame_t sFrame;
 	uint8_t ui = 0;
 
 	if ( sFrame.puiFrame != NULL )
@@ -108,7 +110,7 @@ static Frame_t		FrameGet			( void )
 		free( sFrame.puiFrame );
 	}
 
-	uint8_t	*puiFrame = malloc( __CMD_HEADER_ENTRYS__ + _sInt.uiDataLength );
+	uint8_t	*puiFrame = malloc( __CMD_HEADER_ENTRYS__ + _sFrameDescInt.uiDataLength );
 
 	if ( puiFrame == NULL )
     {
@@ -120,19 +122,19 @@ static Frame_t		FrameGet			( void )
 		puiFrame[ui] = FrameHeader[ui];
 	}
 
-	for ( uint8_t ux = 0 ; ux < _sInt.uiDataLength ; ux++ )
+	for ( uint8_t ux = 0 ; ux < _sFrameDescInt.uiDataLength ; ux++ )
     {
-		puiFrame[ui+ux] = _sInt.pData[ux];
+		puiFrame[ui+ux] = _sFrameDescInt.pData[ux];
 	}
 
 	sFrame.puiFrame     = puiFrame;
-	sFrame.uiLength     = __CMD_HEADER_ENTRYS__ + _sInt.uiDataLength;
-	sFrame.eDataType    = _sInt.uiDataLength;
+	sFrame.uiLength     = __CMD_HEADER_ENTRYS__ + _sFrameDescInt.uiDataLength;
+	sFrame.eDataType    = _sFrameDescInt.uiDataLength;
 
 	return sFrame;
 }
 
-static uint8_t	    _FrameBuild		    ( cmd_t *psFrame )
+static uint8_t	    _FrameBuild		    ( sFrameDesc_t *psFrame )
 {
 	uint8_t uiInfo = 0;
 
@@ -155,8 +157,8 @@ static uint8_t	    _FrameBuild		    ( cmd_t *psFrame )
 
 	FrameHeader[CMD_HEADER_CRC] = sCrc.uiInternal;
 
-    _sInt.pData         = psFrame->pData;
-	_sInt.uiDataLength  = psFrame->uiDataLength;
+    _sFrameDescInt.pData         = psFrame->pData;
+	_sFrameDescInt.uiDataLength  = psFrame->uiDataLength;
 
 	return uiInfo;
 }
@@ -164,7 +166,7 @@ static uint8_t	    _FrameBuild		    ( cmd_t *psFrame )
 
 
 
-void		FrameClear			( cmd_t *psFrame )
+void		FrameClear			( sFrameDesc_t *psFrame )
 {
 	psFrame->uiDataLength 	= 0;
 	psFrame->eDataType		= 0;
@@ -173,13 +175,13 @@ void		FrameClear			( cmd_t *psFrame )
 	psFrame->pData 		    = NULL;
 }
 
-void		FrameInit			( cmd_t *psFrame )
+void		FrameInit			( sFrameDesc_t *psFrame )
 {
     #ifndef _WIN32
         pCmdSendCallback = _CMD_SEND_CB_FNC_PTR_;
 	#endif
 
-	if ( pCmdSendCallback == NULL )
+	if ( pfncSendCallback == NULL )
     {
 		return;
 	}
@@ -191,7 +193,7 @@ void		FrameInit			( cmd_t *psFrame )
 	FrameStart			= 0;	// Index eines Frames
 }
 
-uint8_t		FrameParse			( uint8_t *pReceive , cmd_t *psParsed , uint16_t uiBufferLength )
+uint8_t		FrameParse			( uint8_t *pReceive , sFrameDesc_t *psParsed , uint16_t uiBufferLength )
 {
 	FrameStart = FrameSearch( pReceive , uiBufferLength );
 
@@ -225,7 +227,6 @@ uint8_t		FrameParse			( uint8_t *pReceive , cmd_t *psParsed , uint16_t uiBufferL
 	/**< Checksumme von Rohdaten bilden */
 	sCrc.uiInternal = Crc8Message( sCrc.uiInternal , &pReceive[FrameStart + __CMD_HEADER_ENTRYS__ ] , psParsed->uiDataLength );
 
-
 	/* Checksummen vergleichen */
 	if ( sCrc.uiInternal != sCrc.uiExternal )
     {
@@ -235,7 +236,7 @@ uint8_t		FrameParse			( uint8_t *pReceive , cmd_t *psParsed , uint16_t uiBufferL
 	return 0;
 }
 
-void		FrameBuild		    ( cmd_t *psFrame , enum Cmd_Ident_Enum eIdent , enum Cmd_Data_Type_Enum eDataType , enum Cmd_Exitcodes_Enum eExitcode , uint8_t *pData, uint8_t DataLength )
+void		FrameBuild		    ( sFrameDesc_t *psFrame , enum Cmd_Ident_Enum eIdent , enum Cmd_Data_Type_Enum eDataType , enum Cmd_Exitcodes_Enum eExitcode , uint8_t *pData, uint8_t DataLength )
 {
 	psFrame->eMessageID	    = eIdent;		// Beschreibt den Nachrichten Typ. Damit die gegenstelle die Nachrichten unterscheiden kann
 	psFrame->eDataType		= eDataType;	// Gibt an um welchen Daten Typ es sich handelt
@@ -246,17 +247,17 @@ void		FrameBuild		    ( cmd_t *psFrame , enum Cmd_Ident_Enum eIdent , enum Cmd_D
     _FrameBuild( psFrame );
 }
 
-void		FrameSend		    ( cmd_t *psFrame )
+void		FrameSend		    ( sFrameDesc_t *psFrame )
 {
-	Frame_t sFrame = FrameGet( );
+	sFrame_t sFrame = FrameGet( );
 
-    pCmdSendCallback( sFrame.puiFrame , sFrame.uiLength );
+    pfncSendCallback( sFrame.puiFrame , sFrame.uiLength );
 }
 
 #ifdef _WIN32
-void        FrameShow             ( cmd_t *psFrame )
+void        FrameShow             ( sFrameDesc_t *psFrame )
 {
-    Frame_t sFrame = FrameGet();
+    sFrame_t sFrame = FrameGet();
 
     printf("*[CMD_HEADER_LENGTH_OF_FRAME]: 0x%02X\r\n" , sFrame.puiFrame[CMD_HEADER_LENGTH_OF_FRAME]);
     printf("*[CMD_HEADER_DATA_TYP       ]: 0x%02X\r\n" , sFrame.puiFrame[CMD_HEADER_DATA_TYP]);
