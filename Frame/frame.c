@@ -25,10 +25,17 @@
  *   Dieser wird bei jedem neuen Senden eines Frames
  *   mit gesendet.
  */
-static uint8_t	    FrameHeader[ __FRAME_ENTRYS__ ];
+static uint8_t	    FrameHeader[ __FRAME_ENTRYS__ ] = "";
 
 /**< Wird für die interne zwischen speicherung von Daten benötigt */
-static sFrameDesc_t _sFrameDescInt;
+static sFrameDesc_t _sFrameDescInt =
+{
+    .eDataType    = 0,
+    .eMessageID   = 0,
+    .eExitcode    = 0,
+    .pData        = NULL,
+    .uiDataLength = 0
+};
 
 /**< Enthält die berechneten & empfangenen Checksummen */
 static sCrc_t       sCrc;
@@ -142,18 +149,21 @@ static uint8_t	    _FrameBuild		    ( sFrameDesc_t *psFrame )
     {
 		uiInfo = 1<<0; /**< Keine Nutzdaten vorhanden */
 	}
+	if ( psFrame == NULL )
+	{
+		uiInfo |= 1<<1; /**< Kein gültiger Zeiger */
+		return uiInfo;
+	}
 
-	FrameHeader[FRAME_LENGTH_OF_FRAME]	= (__FRAME_ENTRYS__ + psFrame->uiDataLength);	// LÃ¤nge der ganzen Antwort
+	FrameHeader[FRAME_LENGTH_OF_FRAME]	= (__FRAME_ENTRYS__ + psFrame->uiDataLength);	// Laenge der ganzen Antwort
 	FrameHeader[FRAME_DATA_TYP]		    = psFrame->eDataType;	// (u)char , (u)int8 , (u)int16 , (u)int32 usw.
 	FrameHeader[FRAME_ID]				= psFrame->eMessageID; // 0..255
 	FrameHeader[FRAME_EXITCODE]		    = psFrame->eExitcode;	// 0..255
 	FrameHeader[FRAME_CRC]	            = 0;
 
 	sCrc.uiInternal = 0;
-
-	sCrc.uiInternal = Crc8Message( sCrc.uiInternal , FrameHeader , __FRAME_ENTRYS__ );
-
-	sCrc.uiInternal = Crc8Message( sCrc.uiInternal , psFrame->pData , psFrame->uiDataLength );
+	sCrc.uiInternal = Crc8Message( sCrc.uiInternal , FrameHeader , __FRAME_ENTRYS__ ); /**< Header */
+	sCrc.uiInternal = Crc8Message( sCrc.uiInternal , psFrame->pData , psFrame->uiDataLength ); /**< Nutzdaten */
 
 	FrameHeader[FRAME_CRC] = sCrc.uiInternal;
 
@@ -186,7 +196,10 @@ void		FrameInit			( sFrameDesc_t *psFrame )
 		return;
 	}
 
-    FrameClear( psFrame );
+	if ( !psFrame )
+	{
+		FrameClear( psFrame );
+	}
 
 	sCrc.uiExternal		= 0;	// Extern resetten
 	sCrc.uiInternal		= 0;	// Intern resetten
