@@ -18,10 +18,25 @@
 *					|				   |				 |			  Anmerkung: Bei Datentypen > uint8_t
 *			Länge des gesamten		   |			Checksumme		  wird das LSB zuerst gesendet.
 *			Telegrammes				   |
-*							Telegramm Identifikation
+*			(ohne				Telegramm Identifikation
+*            Startzeichen!)
+*
+*   Berechnen der Checksumme.:
+*   [1] Fuer den Frame (ohne Nutzdaten) CRC8CCITT berechnen (dafür wird das Datenfeld für "FRAME_CRC" auf
+*       0 gesetzt.
+*
+*   [2] Danach geht die berechnete CRC8CCITT in die Bildung vom CRC8CCITT der Rohdaten mit ein (sozusagen als "Startwert")
+*
+*   [3] Das Ergebniss wird dann in das Datenfeld "FRAME_CRC" kopiert.
+*
+*   [4] Fertig"
 *
 *
 *	1.: Initalisierung der ganzen Struktur + Callback für die Sendefunktion
+*
+*
+*
+*
 *
 */
 
@@ -56,27 +71,27 @@
 #endif
 
 
-enum Cmd_Communication_Header_Enum
+enum FrameDesc_Enum
 {
-	CMD_HEADER_LENGTH_OF_FRAME, /**< Länge des gesamten Frames */
-	CMD_HEADER_DATA_TYP, 		/**< Welcher Datentyp wird versendet */
-	CMD_HEADER_ID, 				/**< Frame Identifikation */
-	CMD_HEADER_EXITCODE,		/**< Rückgabewert von Funktion */
-	CMD_HEADER_CRC, 			/**< Checksumme von der ganzen Nachricht */
+	FRAME_LENGTH_OF_FRAME,  /**< Länge des gesamten Frames */
+	FRAME_DATA_TYP, 		/**< Welcher Datentyp wird versendet */
+	FRAME_ID, 				/**< Frame Identifikation */
+	FRAME_EXITCODE,		    /**< Rückgabewert von Funktion */
+	FRAME_CRC, 			    /**< Checksumme von der ganzen Nachricht */
 
-	__CMD_HEADER_ENTRYS__
+	__FRAME_ENTRYS__
 };
 
 typedef struct
 {
     /**< Datentyp der Nutzdaten im Frame */
-	enum Cmd_Data_Type_Enum	eDataType;
+	enum eDataType	eDataType;
 
     /**< Gibt an um welche Art Frame es sich handelt */
-	enum Cmd_Ident_Enum	eMessageID;
+	enum eIdent	    eMessageID;
 
     /**< Funktions Rückgabe Code */
-	enum Cmd_Exitcodes_Enum	eExitcode;
+	enum eExitcodes	eExitcode;
 
     /**< Nutzdaten */
 	uint8_t *pData;
@@ -95,7 +110,7 @@ typedef struct
 	uint8_t uiLength;
 
     /**< Gesendete Datentyp */
-	enum Cmd_Data_Type_Enum	eDataType;
+	enum eDataType	eDataType;
 
 }sFrame_t;
 
@@ -117,9 +132,9 @@ void		FrameClear			( sFrameDesc_t *psFrame );
 uint8_t		FrameParse			( uint8_t *pReceive , sFrameDesc_t *psFrame , uint16_t uiBufferLength );
 
 void		FrameBuild  		( sFrameDesc_t *psFrame ,
-								  enum Cmd_Ident_Enum eIdent ,
-								  enum Cmd_Data_Type_Enum eDataType ,
-								  enum Cmd_Exitcodes_Enum eExitcode ,
+								  enum eIdent eIdent ,
+								  enum eDataType eDataType ,
+								  enum eExitcodes eExitcode ,
 								  uint8_t *pData,
 								  uint8_t DataLength
                                 );

@@ -25,7 +25,7 @@
  *   Dieser wird bei jedem neuen Senden eines Frames
  *   mit gesendet.
  */
-static uint8_t	    FrameHeader[ __CMD_HEADER_ENTRYS__ ];
+static uint8_t	    FrameHeader[ __FRAME_ENTRYS__ ];
 
 /**< Wird für die interne zwischen speicherung von Daten benötigt */
 static sFrameDesc_t _sFrameDescInt;
@@ -110,14 +110,14 @@ static sFrame_t		FrameGet			( void )
 		free( sFrame.puiFrame );
 	}
 
-	uint8_t	*puiFrame = malloc( __CMD_HEADER_ENTRYS__ + _sFrameDescInt.uiDataLength );
+	uint8_t	*puiFrame = malloc( __FRAME_ENTRYS__ + _sFrameDescInt.uiDataLength );
 
 	if ( puiFrame == NULL )
     {
 		return sFrame;
 	}
 
-	for ( ; ui < __CMD_HEADER_ENTRYS__ ; ui++ )
+	for ( ; ui < __FRAME_ENTRYS__ ; ui++ )
     {
 		puiFrame[ui] = FrameHeader[ui];
 	}
@@ -128,7 +128,7 @@ static sFrame_t		FrameGet			( void )
 	}
 
 	sFrame.puiFrame     = puiFrame;
-	sFrame.uiLength     = __CMD_HEADER_ENTRYS__ + _sFrameDescInt.uiDataLength;
+	sFrame.uiLength     = __FRAME_ENTRYS__ + _sFrameDescInt.uiDataLength;
 	sFrame.eDataType    = _sFrameDescInt.uiDataLength;
 
 	return sFrame;
@@ -143,19 +143,19 @@ static uint8_t	    _FrameBuild		    ( sFrameDesc_t *psFrame )
 		uiInfo = 1<<0; /**< Keine Nutzdaten vorhanden */
 	}
 
-	FrameHeader[CMD_HEADER_LENGTH_OF_FRAME]	= (__CMD_HEADER_ENTRYS__ + psFrame->uiDataLength);	// LÃ¤nge der ganzen Antwort
-	FrameHeader[CMD_HEADER_DATA_TYP]		= psFrame->eDataType;	// (u)char , (u)int8 , (u)int16 , (u)int32 usw.
-	FrameHeader[CMD_HEADER_ID]				= psFrame->eMessageID; // 0..255
-	FrameHeader[CMD_HEADER_EXITCODE]		= psFrame->eExitcode;	// 0..255
-	FrameHeader[CMD_HEADER_CRC]	            = 0;
+	FrameHeader[FRAME_LENGTH_OF_FRAME]	= (__FRAME_ENTRYS__ + psFrame->uiDataLength);	// LÃ¤nge der ganzen Antwort
+	FrameHeader[FRAME_DATA_TYP]		    = psFrame->eDataType;	// (u)char , (u)int8 , (u)int16 , (u)int32 usw.
+	FrameHeader[FRAME_ID]				= psFrame->eMessageID; // 0..255
+	FrameHeader[FRAME_EXITCODE]		    = psFrame->eExitcode;	// 0..255
+	FrameHeader[FRAME_CRC]	            = 0;
 
 	sCrc.uiInternal = 0;
 
-	sCrc.uiInternal = Crc8Message( sCrc.uiInternal , FrameHeader , __CMD_HEADER_ENTRYS__ );
+	sCrc.uiInternal = Crc8Message( sCrc.uiInternal , FrameHeader , __FRAME_ENTRYS__ );
 
 	sCrc.uiInternal = Crc8Message( sCrc.uiInternal , psFrame->pData , psFrame->uiDataLength );
 
-	FrameHeader[CMD_HEADER_CRC] = sCrc.uiInternal;
+	FrameHeader[FRAME_CRC] = sCrc.uiInternal;
 
     _sFrameDescInt.pData         = psFrame->pData;
 	_sFrameDescInt.uiDataLength  = psFrame->uiDataLength;
@@ -202,15 +202,15 @@ uint8_t		FrameParse			( uint8_t *pReceive , sFrameDesc_t *psParsed , uint16_t ui
 		return 1;
 	}
 
-	psParsed->uiDataLength 	= pReceive[ FrameStart + CMD_HEADER_LENGTH_OF_FRAME ] -__CMD_HEADER_ENTRYS__;
-	psParsed->eDataType		= pReceive[ FrameStart + CMD_HEADER_DATA_TYP		];
-	psParsed->eMessageID	= pReceive[ FrameStart + CMD_HEADER_ID				];
-	psParsed->eExitcode		= pReceive[ FrameStart + CMD_HEADER_EXITCODE		];
-	sCrc.uiExternal			= pReceive[ FrameStart + CMD_HEADER_CRC			 	];
+	psParsed->uiDataLength 	= pReceive[ FrameStart + FRAME_LENGTH_OF_FRAME  ] - __FRAME_ENTRYS__;
+	psParsed->eDataType		= pReceive[ FrameStart + FRAME_DATA_TYP		    ];
+	psParsed->eMessageID	= pReceive[ FrameStart + FRAME_ID				];
+	psParsed->eExitcode		= pReceive[ FrameStart + FRAME_EXITCODE		    ];
+	sCrc.uiExternal			= pReceive[ FrameStart + FRAME_CRC			 	];
 
 	if ( psParsed->uiDataLength )
     {
-		psParsed->pData = pReceive + ( FrameStart + __CMD_HEADER_ENTRYS__ );
+		psParsed->pData = pReceive + ( FrameStart + __FRAME_ENTRYS__     );
 	}
 	else
 	{
@@ -219,13 +219,13 @@ uint8_t		FrameParse			( uint8_t *pReceive , sFrameDesc_t *psParsed , uint16_t ui
 
 	sCrc.uiInternal = 0;
 
-	pReceive[ FrameStart + CMD_HEADER_CRC ] = 0;
+	pReceive[ FrameStart + FRAME_CRC ] = 0;
 
 	/**< Checksumme vom empfangenen Frame-Header bilden */
-	sCrc.uiInternal = Crc8Message( sCrc.uiInternal , &pReceive[FrameStart] , __CMD_HEADER_ENTRYS__ );
+	sCrc.uiInternal = Crc8Message( sCrc.uiInternal , &pReceive[FrameStart] , __FRAME_ENTRYS__ );
 
-	/**< Checksumme von Rohdaten bilden */
-	sCrc.uiInternal = Crc8Message( sCrc.uiInternal , &pReceive[FrameStart + __CMD_HEADER_ENTRYS__ ] , psParsed->uiDataLength );
+	/**< Checksumme von Nutzdaten bilden */
+	sCrc.uiInternal = Crc8Message( sCrc.uiInternal , &pReceive[FrameStart + __FRAME_ENTRYS__ ] , psParsed->uiDataLength );
 
 	/* Checksummen vergleichen */
 	if ( sCrc.uiInternal != sCrc.uiExternal )
@@ -236,7 +236,7 @@ uint8_t		FrameParse			( uint8_t *pReceive , sFrameDesc_t *psParsed , uint16_t ui
 	return 0;
 }
 
-void		FrameBuild		    ( sFrameDesc_t *psFrame , enum Cmd_Ident_Enum eIdent , enum Cmd_Data_Type_Enum eDataType , enum Cmd_Exitcodes_Enum eExitcode , uint8_t *pData, uint8_t DataLength )
+void		FrameBuild		    ( sFrameDesc_t *psFrame , enum eIdent eIdent , enum eDataType eDataType , enum eExitcodes eExitcode , uint8_t *pData, uint8_t DataLength )
 {
 	psFrame->eMessageID	    = eIdent;		// Beschreibt den Nachrichten Typ. Damit die gegenstelle die Nachrichten unterscheiden kann
 	psFrame->eDataType		= eDataType;	// Gibt an um welchen Daten Typ es sich handelt
@@ -259,15 +259,15 @@ void        FrameShow             ( sFrameDesc_t *psFrame )
 {
     sFrame_t sFrame = FrameGet();
 
-    printf("*[CMD_HEADER_LENGTH_OF_FRAME]: 0x%02X\r\n" , sFrame.puiFrame[CMD_HEADER_LENGTH_OF_FRAME]);
-    printf("*[CMD_HEADER_DATA_TYP       ]: 0x%02X\r\n" , sFrame.puiFrame[CMD_HEADER_DATA_TYP]);
-    printf("*[CMD_HEADER_ID             ]: 0x%02X\r\n" , sFrame.puiFrame[CMD_HEADER_ID]);
-    printf("*[CMD_HEADER_EXITCODE       ]: 0x%02X\r\n" , sFrame.puiFrame[CMD_HEADER_EXITCODE]);
-    printf("*[CMD_HEADER_CRC            ]: 0x%02X\r\n" , sFrame.puiFrame[CMD_HEADER_CRC]);
+    printf("*[CMD_HEADER_LENGTH_OF_FRAME]: 0x%02X\r\n" , sFrame.puiFrame[FRAME_LENGTH_OF_FRAME]);
+    printf("*[CMD_HEADER_DATA_TYP       ]: 0x%02X\r\n" , sFrame.puiFrame[FRAME_DATA_TYP]);
+    printf("*[CMD_HEADER_ID             ]: 0x%02X\r\n" , sFrame.puiFrame[FRAME_ID]);
+    printf("*[CMD_HEADER_EXITCODE       ]: 0x%02X\r\n" , sFrame.puiFrame[FRAME_EXITCODE]);
+    printf("*[CMD_HEADER_CRC            ]: 0x%02X\r\n" , sFrame.puiFrame[FRAME_CRC]);
 
-    for ( uint8_t ui = 0 ; ui < (sFrame.uiLength - __CMD_HEADER_ENTRYS__) ; ui++ )
+    for ( uint8_t ui = 0 ; ui < (sFrame.uiLength - __FRAME_ENTRYS__) ; ui++ )
     {
-         printf("*[Data                      ]: 0x%02X\r\n" , sFrame.puiFrame[__CMD_HEADER_ENTRYS__ + ui ]);
+         printf("*[Data                      ]: 0x%02X\r\n" , sFrame.puiFrame[__FRAME_ENTRYS__ + ui ]);
     }
 }
 #endif

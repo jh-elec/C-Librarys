@@ -4,36 +4,30 @@
 * Version           -> 1.0.1.1124
 * Author            -> Hm @ Workstadion.: QP-01-02
 * Build Date        -> 20.09.2017 07:50:01
-* Description       ->	Identifikations Codes   
+* Description       ->	Identifikations Codes
 *
 */
 
-#ifndef __CMD_ID_H__
-#define __CMD_ID_H__
+#ifndef __ID_H__
+#define __ID_H__
 
 
-enum Cmd_Ident_Enum
+enum eIdent
 {
 	ID_PING = 0, // Darauf sollte die Firmware ein Lebenszeichen melden
 	ID_VERSION,
-	
+
 	/*	Hier werden Projekt spezifische
 	*	Identifikations Codes eingetragen
 	*/
-	
+
 		/*...*/
-	
+
 	/*
 	*	Ende der Projekt spezifischen Identifikations Codes
 	*/
-	
+
 	ID_APPLICATION = 255 // Für irgendwelche System spezifischen Meldungen
 };
 
-typedef struct
-{
-	enum Cmd_Ident_Enum eIdents;
-	uint8_t uiCode;
-}CmdIdent_t;
-
-#endif 
+#endif
