@@ -71,7 +71,7 @@
 #endif
 
 
-enum FrameDesc_Enum
+enum eFrameDesc
 {
 	FRAME_LENGTH_OF_FRAME,  /**< Länge des gesamten Frames */
 	FRAME_DATA_TYP, 		/**< Welcher Datentyp wird versendet */

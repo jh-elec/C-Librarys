@@ -43,6 +43,25 @@ static sCrc_t       sCrc;
 /**< Status Variable, zum erkennen eines neuen Frames */
 static int8_t       FrameStart = 0;
 
+enum eAckState
+{
+    FRAME_ACK_NO_ACK,
+    FRAME_ACK_ACK,
+
+    __FRAME_ACK_ENTRYS__
+};
+
+typedef struct
+{
+    enum eAckState eState;
+    uint8_t uiAckValue;
+}sFrameAck_t;
+
+ static sFrameAck_t _sFrameAck =
+{
+    .eState = FRAME_ACK_NO_ACK,
+    .uiAckValue = 0xAC,
+};
 
 /** \brief  CallBack Funktion zum senden des Kommandos
  *          wird in "frame.h" hinterlegt (z.B uart_put).
@@ -284,3 +303,21 @@ void        FrameShow             ( sFrameDesc_t *psFrame )
     }
 }
 #endif
+
+
+
+/** \brief  Sucht das "Ack." im Empfangspuffer
+ *
+ * \param   pBuffer uint8_t*        -> Empfangspuffer
+ * \param   uiBufferLength uint8_t  -> Länge des Empfangspuffers
+ * \param   uiWaitForX uint8_t      -> Auf welches Zeichen soll gewartet werden
+ * \return  sFrameAck_t             -> Informationen
+ *
+ */
+sFrameAck_t FrameSearchAck( uint8_t *pBuffer , uint8_t uiBufferLength , uint8_t uiWaitForX )
+{
+    for ( uint8_t ui = 0 ; ui < uiBufferLength ; ui++ )
+    {
+
+    }
+}
