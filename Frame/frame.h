@@ -7,11 +7,11 @@
 * Description       ->
 *
 *
-*	++ Telegramm Aufbau ++
+*	<!-- ++ Frame Header Aufbau ++-->
 *
-*
-*	'-' | '+ ' | | 0x05 | | 0x01 | | 0x04 | | 0x00 | | 0x32 | | 0..n ( max. 255 Bytes) |
-*	+----------+ +------+ +------+ +------+ +------+ +------+ +------------------------+
+*	+----------+ +------+ +------+ +------+ +------+ +------+ 		+----------------------------------------------+
+*	|'-' | '+ '|-| 0x05 |-| 0x01 |-| 0x04 |-| 0x00 |-| 0x32 |	-	| 0..n ( max. 255 - __FRAME_ENTRYS__ )  Bytes) |
+*	+----------+ +------+ +------+ +------+ +------+ +------+ 		+----------------------------------------------+
 *		 ^			^		 ^		   ^		^		 ^				  ^
 *		 |			|		 |		   |		|		 |				  |
 *	Startzeichen    |	  Datentyp	   |	Exitcode	 |			  Nutzdaten
@@ -21,23 +21,29 @@
 *			(ohne				Telegramm Identifikation
 *            Startzeichen!)
 *
-*   Berechnen der Checksumme.:
-*   [1] Fuer den Frame (ohne Nutzdaten) CRC8CCITT berechnen (dafür wird das Datenfeld für "FRAME_CRC" auf
-*       0 gesetzt.
+*	-!> Startzeichen: Wird zur Erkennung eines eingehenden Telegrammes benutzt. Je nachdem wie man es auf der Empfangsseite
+*		implementiert können die "Startzeichen" auch weggelassen werden.
 *
-*   [2] Danach geht die berechnete CRC8CCITT in die Bildung vom CRC8CCITT der Rohdaten mit ein (sozusagen als "Startwert")
+*	-!> Länge: Setzt sich aus der Anzahl von Bytes des "Frame Headers" und der "Nutzdaten" zusammen.
+*	   > Bsp.: Frame Header Bytes = 5 + Nutzdaten Bytes = 10. Also ist die Länge des ganzen Telegrammes "15" Bytes groß.
 *
-*   [3] Das Ergebniss wird dann in das Datenfeld "FRAME_CRC" kopiert.
+*	-!> Datentyp: Siehe "frame_types.h".
 *
-*   [4] Fertig"
+*	-!> Telegramm Identifikation: Dient zum auseinander halten der einzelnen Nachrichten oder um dem Telegramm eine Priorität
+*		zu verpassen. Die Identifikationen können in "frame_id.h" hinterlegt werden.
 *
+*	-!> Exitcode: Wird das Telegramm z.B ohne Nutzdaten gesendet und führt dazu das "nur" eine Funktion ausgeführt werden soll,
+*		so kann hier (wenn vorhanden) der Rückgabecode der Funktion eingefügt werden.
 *
-*	1.: Initalisierung der ganzen Struktur + Callback für die Sendefunktion
+*	-!> Checksumme: Hier sind einige Sachen zu beachten. Die Checksumme wird erst von dem "Frame Header" gebildet!
+*		Die "Checksumme" beträgt während der bildung den Wert Dez. '0'. Danach wird mit der zuvor berechneten Checksumme
+*		der Rest berechnet, die Nutzdaten! Nach erfolgreicher Berechnung wird die "Checksumme" in das dafür vorgesehene 
+*		Datenfeld kopiert. Auf der Empfangsseite wird genau das gleiche gemacht.
 *
-*
-*
-*
-*
+*	-!> Nutzdaten: Sollte es um einen Datentyp gehen der > 1 Byte ist, wird das LSB zuerst gesendet.
+*		Die Länge der Nutzdaten ist eingeschränkt! Da der Parameter "Länge" (vom Frame Header) bis jetzt nur Werte von 0-255 
+*		aufnehmen kann, sprich 1 Byte groß ist muss von der Länge der Nutzdaten noch die Anzahl der "__FRAME_ENTRYS__" 
+*		abgezogen werden. Aktuell würden es dann nur max. 250 Bytes sein die als Nutzdaten verschickt werden können.
 */
 
 #ifndef __FRAME_H__
@@ -82,6 +88,11 @@ enum eFrameDesc
 	__FRAME_ENTRYS__
 };
 
+enum eFrameError
+{
+	FRAME_ERROR_NO_DATA_PTR = 1<<0,	
+};
+
 typedef struct
 {
     /**< Datentyp der Nutzdaten im Frame */
@@ -98,6 +109,9 @@ typedef struct
 
     /**< Laenge der Nutzdaten */
 	uint8_t uiDataLength;
+
+	/**< Auftretene Fehler */
+	enum eFrameError eFrameError;
 
 }sFrameDesc_t;
 
@@ -125,28 +139,22 @@ typedef struct
 }sCrc_t;
 
 
-void		FrameInit			( sFrameDesc_t *psFrame );
+void				FrameInit			( void );
 
-void		FrameClear			( sFrameDesc_t *psFrame );
+void				FrameClear			( void );
 
-uint8_t		FrameParse			( uint8_t *pReceive , sFrameDesc_t *psFrame , uint16_t uiBufferLength );
+uint8_t				FrameParse			( uint8_t *pReceive , sFrameDesc_t *psFrame , uint16_t uiBufferLength );
 
-void		FrameBuild  		( sFrameDesc_t *psFrame ,
-								  enum eIdent eIdent ,
-								  enum eDataType eDataType ,
-								  enum eExitcodes eExitcode ,
-								  uint8_t *pData,
-								  uint8_t DataLength
-                                );
+sFrameDesc_t		FrameBuild		    ( enum eIdent eIdent , enum eDataType eDataType , enum eExitcodes eExitcode , uint8_t *pData, uint8_t uiDataLength );
 
-void		FrameSend   		( sFrameDesc_t *psFrame );
+void				FrameSend   		( sFrameDesc_t *psFrame );
 
 
 
 /**< DEBUG */
 
 #ifdef _WIN32
-    void        FrameShow      ( sFrameDesc_t *psFrame );
+    void			FrameShow      ( sFrameDesc_t *psFrame );
 #endif
 
 #endif // __FRAME_H__

@@ -17,6 +17,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "frame.h"
 
@@ -25,7 +26,17 @@
  *   Dieser wird bei jedem neuen Senden eines Frames
  *   mit gesendet.
  */
-static uint8_t	    FrameHeader[ __FRAME_ENTRYS__ ] = "";
+static uint8_t FrameHeader[ __FRAME_ENTRYS__ ] = "";
+// {
+// 	{
+// 		.FRAME_LENGTH_OF_FRAME = 0,
+// 		.FRAME_DATA_TYP = 0,
+// 		.FRAME_ID = 0,
+// 		.FRAME_EXITCODE = 0,
+// 		.FRAME_CRC = 0,	
+// 	}
+// 
+// };
 
 /**< Wird für die interne zwischen speicherung von Daten benötigt */
 static sFrameDesc_t _sFrameDescInt =
@@ -38,30 +49,15 @@ static sFrameDesc_t _sFrameDescInt =
 };
 
 /**< Enthält die berechneten & empfangenen Checksummen */
-static sCrc_t       sCrc;
+static sCrc_t       sCrc = 
+{
+	.uiExternal = 0,
+	.uiInternal = 0,	
+};
 
 /**< Status Variable, zum erkennen eines neuen Frames */
-static int8_t       FrameStart = 0;
+static int8_t       FrameStart = -1;
 
-enum eAckState
-{
-    FRAME_ACK_NO_ACK,
-    FRAME_ACK_ACK,
-
-    __FRAME_ACK_ENTRYS__
-};
-
-typedef struct
-{
-    enum eAckState eState;
-    uint8_t uiAckValue;
-}sFrameAck_t;
-
- static sFrameAck_t _sFrameAck =
-{
-    .eState = FRAME_ACK_NO_ACK,
-    .uiAckValue = 0xAC,
-};
 
 /** \brief  CallBack Funktion zum senden des Kommandos
  *          wird in "frame.h" hinterlegt (z.B uart_put).
@@ -160,54 +156,23 @@ static sFrame_t		FrameGet			( void )
 	return sFrame;
 }
 
-static uint8_t	    _FrameBuild		    ( sFrameDesc_t *psFrame )
+
+
+
+
+void				FrameClear			( void )
 {
-	uint8_t uiInfo = 0;
-
-	if ( psFrame->pData == NULL )
-    {
-		uiInfo = 1<<0; /**< Keine Nutzdaten vorhanden */
-	}
-	if ( psFrame == NULL )
-	{
-		uiInfo |= 1<<1; /**< Kein gültiger Zeiger */
-		return uiInfo;
-	}
-
-	FrameHeader[FRAME_LENGTH_OF_FRAME]	= (__FRAME_ENTRYS__ + psFrame->uiDataLength);	// Laenge der ganzen Antwort
-	FrameHeader[FRAME_DATA_TYP]		    = psFrame->eDataType;	// (u)char , (u)int8 , (u)int16 , (u)int32 usw.
-	FrameHeader[FRAME_ID]				= psFrame->eMessageID; // 0..255
-	FrameHeader[FRAME_EXITCODE]		    = psFrame->eExitcode;	// 0..255
-	FrameHeader[FRAME_CRC]	            = 0;
-
-	sCrc.uiInternal = 0;
-	sCrc.uiInternal = Crc8Message( sCrc.uiInternal , FrameHeader , __FRAME_ENTRYS__ ); /**< Header */
-	sCrc.uiInternal = Crc8Message( sCrc.uiInternal , psFrame->pData , psFrame->uiDataLength ); /**< Nutzdaten */
-
-	FrameHeader[FRAME_CRC] = sCrc.uiInternal;
-
-    _sFrameDescInt.pData         = psFrame->pData;
-	_sFrameDescInt.uiDataLength  = psFrame->uiDataLength;
-
-	return uiInfo;
+	_sFrameDescInt.eDataType		= DATA_TYPE_UCHAR;
+	_sFrameDescInt.eMessageID 		= ID_PING;
+	_sFrameDescInt.eExitcode 	    = EXITCODE_OK;
+	_sFrameDescInt.uiDataLength 	= 0;
+	_sFrameDescInt.pData 		    = NULL;
 }
 
-
-
-
-void		FrameClear			( sFrameDesc_t *psFrame )
-{
-	psFrame->uiDataLength 	= 0;
-	psFrame->eDataType		= 0;
-	psFrame->eMessageID 	= 0;
-	psFrame->eExitcode 	    = 0;
-	psFrame->pData 		    = NULL;
-}
-
-void		FrameInit			( sFrameDesc_t *psFrame )
+void				FrameInit			( void )
 {
     #ifndef _WIN32
-        pCmdSendCallback = _CMD_SEND_CB_FNC_PTR_;
+        pfncSendCallback = _CMD_SEND_CB_FNC_PTR_;
 	#endif
 
 	if ( pfncSendCallback == NULL )
@@ -215,17 +180,20 @@ void		FrameInit			( sFrameDesc_t *psFrame )
 		return;
 	}
 
-	if ( !psFrame )
-	{
-		FrameClear( psFrame );
-	}
+	_sFrameDescInt.eDataType	= DATA_TYPE_UCHAR;
+	_sFrameDescInt.eExitcode	= EXITCODE_OK;
+	_sFrameDescInt.eFrameError	= FRAME_ERROR_NO_DATA_PTR;
+	_sFrameDescInt.eMessageID	= ID_PING;
+	
+	_sFrameDescInt.pData		= NULL;
+	_sFrameDescInt.uiDataLength = 0;
 
 	sCrc.uiExternal		= 0;	// Extern resetten
 	sCrc.uiInternal		= 0;	// Intern resetten
-	FrameStart			= 0;	// Index eines Frames
+	FrameStart			= -1;	// Index eines Frames
 }
 
-uint8_t		FrameParse			( uint8_t *pReceive , sFrameDesc_t *psParsed , uint16_t uiBufferLength )
+uint8_t				FrameParse			( uint8_t *pReceive , sFrameDesc_t *psParsed , uint16_t uiBufferLength )
 {
 	FrameStart = FrameSearch( pReceive , uiBufferLength );
 
@@ -268,18 +236,40 @@ uint8_t		FrameParse			( uint8_t *pReceive , sFrameDesc_t *psParsed , uint16_t ui
 	return 0;
 }
 
-void		FrameBuild		    ( sFrameDesc_t *psFrame , enum eIdent eIdent , enum eDataType eDataType , enum eExitcodes eExitcode , uint8_t *pData, uint8_t DataLength )
+sFrameDesc_t		FrameBuild		    ( enum eIdent eIdent , enum eDataType eDataType , enum eExitcodes eExitcode , uint8_t *pData, uint8_t uiDataLength )
 {
-	psFrame->eMessageID	    = eIdent;		// Beschreibt den Nachrichten Typ. Damit die gegenstelle die Nachrichten unterscheiden kann
-	psFrame->eDataType		= eDataType;	// Gibt an um welchen Daten Typ es sich handelt
-	psFrame->eExitcode		= eExitcode;	// Ruekgabewert einer Funktion
-	psFrame->pData			= pData;		// Zeiger auf die Daten die gesendet werden sollen
-	psFrame->uiDataLength	= DataLength;	// Anzahl der Bytes
+	sFrameDesc_t sFrameDesc;
+	
+	sFrameDesc.eMessageID	    = eIdent;		// Beschreibt den Nachrichten Typ. Damit die gegenstelle die Nachrichten unterscheiden kann
+	sFrameDesc.eDataType		= eDataType;	// Gibt an um welchen Daten Typ es sich handelt
+	sFrameDesc.eExitcode		= eExitcode;	// Ruekgabewert einer Funktion
+	sFrameDesc.pData			= pData;		// Zeiger auf die Daten die gesendet werden sollen
+	sFrameDesc.uiDataLength		= uiDataLength;	// Anzahl der Bytes
 
-    _FrameBuild( psFrame );
+	if ( pData == NULL )
+	{
+		sFrameDesc.eFrameError |= FRAME_ERROR_NO_DATA_PTR; /**< Keine Nutzdaten vorhanden */
+	}
+
+	FrameHeader[FRAME_LENGTH_OF_FRAME]	= (__FRAME_ENTRYS__ + uiDataLength);	// Laenge der ganzen Antwort
+	FrameHeader[FRAME_DATA_TYP]		    = eDataType;	// (u)char , (u)int8 , (u)int16 , (u)int32 usw.
+	FrameHeader[FRAME_ID]				= eIdent;		// 0..255
+	FrameHeader[FRAME_EXITCODE]		    = eExitcode;	// 0..255
+	FrameHeader[FRAME_CRC]	            = 0;
+
+	sCrc.uiInternal = 0;
+	sCrc.uiInternal = Crc8Message( sCrc.uiInternal , FrameHeader , __FRAME_ENTRYS__ ); /**< Header */
+	sCrc.uiInternal = Crc8Message( sCrc.uiInternal , pData , uiDataLength ); /**< Nutzdaten */
+
+	FrameHeader[FRAME_CRC] = sCrc.uiInternal;
+
+	_sFrameDescInt.pData         = pData;
+	_sFrameDescInt.uiDataLength  = uiDataLength;
+	
+	return sFrameDesc;
 }
 
-void		FrameSend		    ( sFrameDesc_t *psFrame )
+void				FrameSend		    ( sFrameDesc_t *psFrame )
 {
 	sFrame_t sFrame = FrameGet( );
 
@@ -314,10 +304,15 @@ void        FrameShow             ( sFrameDesc_t *psFrame )
  * \return  sFrameAck_t             -> Informationen
  *
  */
-sFrameAck_t FrameSearchAck( uint8_t *pBuffer , uint8_t uiBufferLength , uint8_t uiWaitForX )
+bool FrameSearchAck( uint8_t *pBuffer , uint8_t uiBufferLength , uint8_t uiWaitForX )
 {
     for ( uint8_t ui = 0 ; ui < uiBufferLength ; ui++ )
     {
-
+		if ( pBuffer[ui] == uiWaitForX )
+		{
+			return true;
+		}
     }
+	
+	return false;
 }
