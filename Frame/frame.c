@@ -300,17 +300,19 @@ void        FrameShow             ( sFrameDesc_t *psFrame )
  *
  * \param   pBuffer uint8_t*        -> Empfangspuffer
  * \param   uiBufferLength uint8_t  -> Länge des Empfangspuffers
- * \param   uiWaitForX uint8_t      -> Auf welches Zeichen soll gewartet werden
- * \return  sFrameAck_t             -> Informationen
+ * \return  bool             		-> true = ACK , false = NACK
  *
  */
-bool FrameSearchAck( uint8_t *pBuffer , uint8_t uiBufferLength , uint8_t uiWaitForX )
+bool FrameSearchAck( uint8_t *pBuffer , uint8_t uiBufferLength )
 {
     for ( uint8_t ui = 0 ; ui < uiBufferLength ; ui++ )
     {
-		if ( pBuffer[ui] == uiWaitForX )
+		if ( pBuffer[ui] == '#' )
 		{
-			return true;
+			if ( pBuffer[ui+1] == sCrc.uiInternal )
+			{
+				return true;
+			}			
 		}
     }
 	
