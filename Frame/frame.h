@@ -52,7 +52,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "frame_types.h"
+#include "types.h"
 #include "exitcodes.h"
 #include "frame_id.h"
 

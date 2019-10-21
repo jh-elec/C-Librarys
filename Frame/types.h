@@ -8,12 +8,14 @@
 *
 */
 
-#ifndef __FRAME_TYPES_H__
-#define __FRAME_TYPES_H__
+#ifndef __TYPES_H__
+#define __TYPES_H__
 
 
 enum eDataType
 {
+    DATA_TYPE_INVALID, /**< Ungültig! 0 = Kein gültiger Datentyp */
+
 	DATA_TYPE_UCHAR,
     DATA_TYPE_UINT8,
     DATA_TYPE_UINT16,
@@ -26,6 +28,8 @@ enum eDataType
     DATA_TYPE_INT8,
     DATA_TYPE_INT16,
     DATA_TYPE_INT32,
+
+    DATA_TYPE_FUNCTION,
 
     __DATA_TYPE_MAX_INDEX__
 };
