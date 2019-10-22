@@ -105,8 +105,8 @@ const sTimer0CompConfig_t sTimer0CompSettings[] =
 const sTimer0OvfConfig_t sTimer0OvfSettings[] =
 {
 		/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-		+ Overflow			 |	Divisor der F_CPU        | Waveform	Generating	      +
-		+ Schwellenwert		 |  (Prescaler)              | Modus ( CTC! )		      +
+		+ Overflow			 |	Divisor der F_CPU        | Waveform	Generating	  +
+		+ Schwellenwert		 |  (Prescaler)              | Modus ( CTC! )		  +
 		++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 	#if (F_CPU == 1000000)
 		{ .uiTCNT0 = 246	 , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR0_MODE0 }, // 10µS  @1MHz
