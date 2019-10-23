@@ -35,41 +35,67 @@
 #endif
 
 /**< Waveform Generation Mode Bits */
-#define _WGM00_bp           1<<6
-#define _WGM01_bp           1<<3
+#define _TMR0_MODE0					( ! ( 1 << WGM00 | 1 << WGM01 ) ) // Normal
+#define _TMR0_MODE2					( 1 << WGM01 ) // CTC
 
-#define _TMR0_MODE0         ( ! ( _WGM00_bp | _WGM01_bp ) ) // Normal
-#define _TMR0_MODE1         ( _WGM00_bp ) // PWM, Phase Correct
-#define _TMR0_MODE2         ( _WGM01_bp ) // CTC
-#define _TMR0_MODE3         ( _WGM00_bp | _WGM01_bp ) // Fast PWM
+#define _TMR1_MODE0					( ! ( 1 << WGM13 | 1 << WGM12 | 1 << WGM11 | 1 << WGM10 ) ) // Normal
+#define _TMR1_MODE4					( 1 << WGM12 ) // CTC
+
+#define _TMR2_MODE0					( ! ( 1 << WGM21 | 1 << WGM20 ) ) // Normal
+#define _TMR2_MODE2					( 1 << WGM21 ) // CTC
 
 /**< Prescaler Mode Group Position */
-#define _PRESCALER_0       ( 0b001 << 0 )
-#define _PRESCALER_8       ( 0b010 << 0 )
-#define _PRESCALER_64      ( 0b011 << 0 )
-#define _PRESCALER_256     ( 0b100 << 0 )
-#define _PRESCALER_1024    ( 0b101 << 0 )
+#define _PRESCALER_0				( 0b001 << 0 )
+#define _PRESCALER_8				( 0b010 << 0 )
+#define _PRESCALER_64				( 0b011 << 0 )
+#define _PRESCALER_256				( 0b100 << 0 )
+#define _PRESCALER_1024				( 0b101 << 0 ) // Sind für alle Timer (0..2) gleich
 
 /**< TIMSK Interrupt Configuration */
-#define _ENABLE_COMP_INT	TIMSK |= ( 1 << OCIE0 )
-#define _ENABLE_OVF_INT		TIMSK |= ( 1 << TOIE0 )
+#define _ENABLE_TOIE0				TIMSK |= ( 1 << OCIE0  )
+#define _ENABLE_OCIE0				TIMSK |= ( 1 << TOIE0  )
+#define _ENABLE_TOIE1				TIMSK |= ( 1 << TOIE1  )
+#define _ENABLE_OCIE1B				TIMSK |= ( 1 << OCIE1B )
+#define _ENABLE_OCIE1A				TIMSK |= ( 1 << OCIE1A )
+#define _ENABLE_TOIE2				TIMSK |= ( 1 << TOIE2  )
+#define _ENABLE_OCIE2				TIMSK |= ( 1 << OCIE2  )
 
 typedef struct
 {
-    uint8_t uiOCR0;
+    uint8_t uiCnt;
     uint8_t uiCSxx;
     uint8_t uiWGMxx;
-}sTimer0CompConfig_t;// Compare Match Interrupt Einstellungen
+}sTimer8Config_t;// 8 Bit Timer Einstellungen
 
 typedef struct
 {
-	uint8_t uiTCNT0;
+	uint16_t uiCnt;
 	uint8_t uiCSxx;
 	uint8_t uiWGMxx;
-}sTimer0OvfConfig_t;// Overflow Interrupt Einstellungen
+}sTimer16Config_t;// 16 Bit Timer Einstellungen
 
-void (*Timer0CompCallback)(void) = NULL;
-void (*Timer0OvfCallback)(void) = NULL;
+enum eTimerCallback
+{
+	CALLBACK_TIMER0_OVF,
+	CALLBACK_TIMER0_COMP,
+	CALLBACK_TIMER1_OVF,
+	CALLBACK_TIMER1_COMPB,
+	CALLBACK_TIMER1_COMPA,
+	CALLBACK_TIMER2_OVF,
+	CALLBACK_TIMER2_COMP,
+	
+	__CALLBACK_TIMER_MEMBERS__
+};
+
+
+void (*pvTimerCallback[__CALLBACK_TIMER_MEMBERS__])(void) =
+{
+		// Callback Adressen
+	/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	+ TIMER0_OVF | TIMER0_COMP | TIMER1_OVF | TIMER1_COMPB | TIMER1_COMPA | TIMER2_OVF | TIMER2_COMP  +
+	+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+      NULL       , NULL       , NULL        , NULL         , NULL         , NULL       , NULL 
+};
 
 /*****************************************************************/
 
@@ -77,55 +103,108 @@ void (*Timer0OvfCallback)(void) = NULL;
 /*!<-- global variables -- >*/
 /*****************************************************************/
 
-const sTimer0CompConfig_t sTimer0CompSettings[] =
+const sTimer8Config_t  sTimer0OcieSettings[] =
 {
 		/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 		+ Compare Match		 |	Divisor der F_CPU        | Waveform	Generating    +
 		+ Vergleichswert     |  (Prescaler)              | Modus ( CTC! )		  +
 		++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 	#if (F_CPU == 1000000)
-		{ .uiOCR0 = 9		 , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR0_MODE2 }, // 10µS  @1MHz
-		{ .uiOCR0 = 99		 , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR0_MODE2 }, // 100µS @1MHz
-		{ .uiOCR0 = 124		 , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR0_MODE2 }, // 1ms   @1MHz
-	#endif
+		{ .uiCnt = 9		 , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR0_MODE2 }, // 10µS  @1MHz
+		{ .uiCnt = 99		 , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR0_MODE2 }, // 100µS @1MHz
+		{ .uiCnt = 124		 , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR0_MODE2 }, // 1ms   @1MHz
+	
+	#elif (F_CPU == 8000000)
+		{ .uiCnt = 79		 , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR0_MODE2 }, // 10µS  @8MHz
+		{ .uiCnt = 99		 , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR0_MODE2 }, // 100µS @8MHz
+		{ .uiCnt = 124		 , .uiCSxx = _PRESCALER_64   , .uiWGMxx = _TMR0_MODE2 }, // 1ms   @8MHz
 
-	#if (F_CPU == 8000000)
-		{ .uiOCR0 = 79		 , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR0_MODE2 }, // 10µS  @8MHz
-		{ .uiOCR0 = 99		 , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR0_MODE2 }, // 100µS @8MHz
-		{ .uiOCR0 = 124		 , .uiCSxx = _PRESCALER_64   , .uiWGMxx = _TMR0_MODE2 }, // 1ms   @8MHz
-	#endif
-
-	#if (F_CPU == 16000000)
-		{ .uiOCR0 = 159		 , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR0_MODE2 }, // 10µS  @16MHz
-		{ .uiOCR0 = 199		 , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR0_MODE2 }, // 100µS @16MHz
-		{ .uiOCR0 = 249		 , .uiCSxx = _PRESCALER_64   , .uiWGMxx = _TMR0_MODE2 }, // 1ms   @16MHz
+	#elif (F_CPU == 16000000)
+		{ .uiCnt = 159		 , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR0_MODE2 }, // 10µS  @16MHz
+		{ .uiCnt = 199		 , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR0_MODE2 }, // 100µS @16MHz
+		{ .uiCnt = 249		 , .uiCSxx = _PRESCALER_64   , .uiWGMxx = _TMR0_MODE2 }, // 1ms   @16MHz
+	#else
+		#warning F_CPU not declared!
 	#endif
 };
 
-const sTimer0OvfConfig_t sTimer0OvfSettings[] =
+const sTimer8Config_t  sTimer0TovSettings[]  =
 {
 		/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 		+ Overflow			 |	Divisor der F_CPU        | Waveform	Generating	  +
 		+ Schwellenwert		 |  (Prescaler)              | Modus ( CTC! )		  +
 		++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 	#if (F_CPU == 1000000)
-		{ .uiTCNT0 = 246	 , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR0_MODE0 }, // 10µS  @1MHz
-		{ .uiTCNT0 = 156	 , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR0_MODE0 }, // 100µS @1MHz
-		{ .uiTCNT0 = 131	 , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR0_MODE0 }, // 1ms   @1MHz
+		{ .uiCnt = 246     , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR0_MODE0 }, // 10µS  @1MHz
+		{ .uiCnt = 156     , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR0_MODE0 }, // 100µS @1MHz
+		{ .uiCnt = 131     , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR0_MODE0 }, // 1ms   @1MHz
 	#endif
 
 	#if (F_CPU == 8000000)
-		{ .uiTCNT0 = 176	 , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR0_MODE0 }, // 10µS  @8MHz
-		{ .uiTCNT0 = 156	 , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR0_MODE0 }, // 100µS @8MHz
-		{ .uiTCNT0 = 131	 , .uiCSxx = _PRESCALER_64   , .uiWGMxx = _TMR0_MODE0 }, // 1ms   @8MHz
+		{ .uiCnt = 176     , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR0_MODE0 }, // 10µS  @8MHz
+		{ .uiCnt = 156     , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR0_MODE0 }, // 100µS @8MHz
+		{ .uiCnt = 131     , .uiCSxx = _PRESCALER_64   , .uiWGMxx = _TMR0_MODE0 }, // 1ms   @8MHz
 	#endif
 
 	#if (F_CPU == 16000000)
-		{ .uiTCNT0 = 96		 , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR0_MODE0 }, // 10µS  @16MHz
-		{ .uiTCNT0 = 56		 , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR0_MODE0 }, // 100µS @16MHz
-		{ .uiTCNT0 = 6		 , .uiCSxx = _PRESCALER_64   , .uiWGMxx = _TMR0_MODE0 }, // 1ms   @16MHz
+		{ .uiCnt = 96      , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR0_MODE0 }, // 10µS  @16MHz
+		{ .uiCnt = 56      , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR0_MODE0 }, // 100µS @16MHz
+		{ .uiCnt = 6       , .uiCSxx = _PRESCALER_64   , .uiWGMxx = _TMR0_MODE0 }, // 1ms   @16MHz
 	#endif
 };
+
+
+
+const sTimer16Config_t sTimer1OcieSettings[] = 
+{
+		/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+		+ Overflow			 |	Divisor der F_CPU        | Waveform	Generating	  +
+		+ Schwellenwert		 |  (Prescaler)              | Modus ( CTC! )		  +
+		++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+	#if (F_CPU == 1000000)
+		{ .uiCnt = 246     , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR2_MODE0 }, // 10µS  @1MHz
+		{ .uiCnt = 156     , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR2_MODE0 }, // 100µS @1MHz
+		{ .uiCnt = 131     , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR2_MODE0 }, // 1ms   @1MHz
+	#endif
+
+	#if (F_CPU == 8000000)
+		{ .uiCnt = 176     , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR2_MODE0 }, // 10µS  @8MHz
+		{ .uiCnt = 156     , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR2_MODE0 }, // 100µS @8MHz
+		{ .uiCnt = 131     , .uiCSxx = _PRESCALER_64   , .uiWGMxx = _TMR2_MODE0 }, // 1ms   @8MHz
+	#endif
+
+	#if (F_CPU == 16000000)
+		{ .uiCnt = 96      , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR2_MODE0 }, // 10µS  @16MHz
+		{ .uiCnt = 56      , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR2_MODE0 }, // 100µS @16MHz
+		{ .uiCnt = 6       , .uiCSxx = _PRESCALER_64   , .uiWGMxx = _TMR2_MODE0 }, // 1ms   @16MHz
+	#endif	
+};
+
+const sTimer16Config_t sTimer1TovSettings[] = 
+{
+		/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+		+ Overflow			 |	Divisor der F_CPU        | Waveform	Generating	  +
+		+ Schwellenwert		 |  (Prescaler)              | Modus ( CTC! )		  +
+		++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+	#if (F_CPU == 1000000)
+		{ .uiCnt = 246     , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR2_MODE0 }, // 10µS  @1MHz
+		{ .uiCnt = 156     , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR2_MODE0 }, // 100µS @1MHz
+		{ .uiCnt = 131     , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR2_MODE0 }, // 1ms   @1MHz
+	#endif
+
+	#if (F_CPU == 8000000)
+		{ .uiCnt = 176     , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR2_MODE0 }, // 10µS  @8MHz
+		{ .uiCnt = 156     , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR2_MODE0 }, // 100µS @8MHz
+		{ .uiCnt = 131     , .uiCSxx = _PRESCALER_64   , .uiWGMxx = _TMR2_MODE0 }, // 1ms   @8MHz
+	#endif
+
+	#if (F_CPU == 16000000)
+		{ .uiCnt = 96      , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR2_MODE0 }, // 10µS  @16MHz
+		{ .uiCnt = 56      , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR2_MODE0 }, // 100µS @16MHz
+		{ .uiCnt = 6       , .uiCSxx = _PRESCALER_64   , .uiWGMxx = _TMR2_MODE0 }, // 1ms   @16MHz
+	#endif	
+};
+
 
 /*****************************************************************/
 
@@ -133,58 +212,70 @@ const sTimer0OvfConfig_t sTimer0OvfSettings[] =
 /*!<-- functions -- >*/
 /*****************************************************************/
 
-extern inline uint8_t Timer0CompInit( const sTimer0CompConfig_t *psTimer0CnfgTab , void (*pFnc)(void) )
+extern inline uint8_t Timer0CompInit( const sTimer8Config_t *psTimer0CnfgTab , void (*pFnc)(void) )
 {
 	cli(); /**< Vorsichtshalber Interrupts global sperren */
 
 	TCCR0	= ( psTimer0CnfgTab->uiCSxx | psTimer0CnfgTab->uiWGMxx );
-	OCR0	= psTimer0CnfgTab->uiOCR0;
+	OCR0	= psTimer0CnfgTab->uiCnt;
 	
 	if ( pFnc == NULL )
 	{
-		return 1; // Falsche oder keine "Callback Adresse"
+		return 1; // keine gültige "Callback Adresse"
 	}else
 	{
-		Timer0CompCallback = pFnc;
+		pvTimerCallback[CALLBACK_TIMER0_COMP] = pFnc;
 	}
 	
-	_ENABLE_COMP_INT;
+	_ENABLE_OCIE0;
 
 	sei();
 	
 	return 0;
 }
 
-extern inline uint8_t Timer0OvfInit( const sTimer0OvfConfig_t *psTimer0CnfgTab , void (*pFnc)(void) )
+extern inline uint8_t Timer0OvfInit( const sTimer8Config_t *psTimer0CnfgTab , void (*pFnc)(void) )
 {
 	cli(); /**< Vorsichtshalber Interrupts global sperren */
 
 	TCCR0	= ( psTimer0CnfgTab->uiCSxx | psTimer0CnfgTab->uiWGMxx );
-	TCNT0	= psTimer0CnfgTab->uiTCNT0;
+	TCNT0	= psTimer0CnfgTab->uiCnt;
 	
 	if ( pFnc == NULL )
 	{
-		return 1; // Falsche oder keine "Callback Adresse"
+		return 1; // keine gültige "Callback Adresse"
 	}else
 	{
-		Timer0OvfCallback = pFnc;
+		pvTimerCallback[CALLBACK_TIMER0_OVF] = pFnc;
 	}
 	
-	_ENABLE_OVF_INT;
+	_ENABLE_TOIE0;
 
 	sei();
 	
 	return 0;
 }
+
+
 
 ISR ( TIMER0_COMP_vect )
 {
-	Timer0CompCallback();
+	pvTimerCallback[CALLBACK_TIMER0_COMP]();
 }
 
 ISR ( TIMER0_OVF_vect )
 {
-	Timer0OvfCallback();
+	pvTimerCallback[CALLBACK_TIMER0_OVF]();
+}
+
+ISR ( TIMER1_COMPA_vect )
+{
+	pvTimerCallback[CALLBACK_TIMER1_COMPA]();
+}
+
+ISR ( TIMER1_COMPB_vect )
+{
+	pvTimerCallback[CALLBACK_TIMER1_COMPB]();
 }
 
 /*****************************************************************/
