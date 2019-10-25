@@ -21,8 +21,8 @@
 #define __JOB_H__
 
 #include <stdio.h>
-//#include <avr.io>
-#include "C:\Users\Hm\Desktop\C-Librarys\trunk\Frame\types.h"
+#include <avr/io.h>
+
 
 
 /*!<-- defines -- >*/
