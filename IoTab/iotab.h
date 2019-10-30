@@ -29,10 +29,10 @@
 
 #define IO_CALC_PORT_ADDR( ADDRx )		( __SFR_OFFSET + ADDRx ) // Es geht bei den I/O´s erst ab einer bestimmten Adresse los!
 
+#define IOTAB_DDR( DDRx )               ( DDRx  - 1 )
+#define IOTAB_PIN( PINx )               ( PINx  + 1 )
+#define IOTAB_PORT( PORTx )             ( PORTx + 0 ) 
 
-#define IOTAB_GET_PORT(ADDRx)			( * ( &ADDRx     ) )
-#define IOTAB_GET_PIN(PORTx)			( * ( &PORTx + 1 ) )
-#define IOTAB_GET_DDR(PORTx)            ( * ( &PORTx - 1 ) )
 
 typedef enum
 {
@@ -66,7 +66,8 @@ typedef struct
 *->*/
 sIO_t IoTable[] =
 {
-	{ IO_CALC_PORT_ADDR(0x12) , 0 , _FUNCTION_INPUT },
+	{ IO_CALC_PORT_ADDR(0x12) , 2 , _FUNCTION_OUTPUT },
+	{ IO_CALC_PORT_ADDR(0x12) , 3 , _FUNCTION_OUTPUT },
 };
 
 static const uint8_t uiTabSize = sizeof( IoTable ) / sizeof( *IoTable );
@@ -78,20 +79,26 @@ static const uint8_t uiTabSize = sizeof( IoTable ) / sizeof( *IoTable );
 /*****************************************************************/
 
 extern inline void IoTabInit( sIO_t *sTab , uint8_t uiMembers )
-{
+{	
+	uint8_t *pDDR , *pPORT , *pPIN  = NULL;	
+	
 	for ( uint8_t x = 0 ; x < uiMembers ; x++ )
 	{
+		pDDR  = (uint8_t*)((sTab[x].uiPort)-1);
+		pPORT = (uint8_t*)((sTab[x].uiPort)+0);
+		pPIN  = (uint8_t*)((sTab[x].uiPort)+1);
+	
 		switch ( sTab[x].eFunction )
 		{
 			case _FUNCTION_INPUT:
 			{
-				IOTAB_GET_DDR( sTab[x].uiPort ) &= ~( 1 << sTab[x].uiBitPos ); 
+				*pDDR &= ~( 1 << sTab[x].uiBitPos );
 			}break;
 			
 			case _FUNCTION_INPUT_PULLUP:
 			{
-				IOTAB_GET_DDR( sTab[x].uiPort ) &= ~( 1 << sTab[x].uiBitPos ); 
-				IOTAB_GET_PIN( sTab[x].uiPort ) |= ( 1 << sTab[x].uiBitPos ); 
+				*pDDR &= ~( 1 << sTab[x].uiBitPos );
+				*pPIN |= ( 1 << sTab[x].uiBitPos );
 			}break;
 			
 			case _FUNCTION_INPUT_PULLDOWN:
@@ -101,9 +108,10 @@ extern inline void IoTabInit( sIO_t *sTab , uint8_t uiMembers )
 			}break;
 			
 			case _FUNCTION_OUTPUT:
-			{
-				IOTAB_GET_DDR ( sTab[x].uiPort ) &= ~( 1 << sTab[x].uiBitPos ); 
-				IOTAB_GET_PORT( sTab[x].uiPort ) |= ( 1 << sTab[x].uiBitPos ); 
+			{					
+				*pDDR  |= ( 1 << sTab[x].uiBitPos );
+				*pPORT |= ( 1 << sTab[x].uiBitPos );
+				
 			}break;
 			
 			case __MAX_FUNCTION_ENTRYS__:{}				
