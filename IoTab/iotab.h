@@ -30,23 +30,26 @@
 
 #define __PACK_IT__	                    __attribute__ ( ( packed ) )
 
-enum __PACK_IT__ ePinFunc
-{
-    _FUNCTION_INPUT              = 0x01,
-	_FUNCTION_INPUT_PULLUP       = 0x02,
-	_FUNCTION_INPUT_PULLDOWN     = 0x04,	
-    _FUNCTION_OUTPUT             = 0x08,
-};
 
-/*!<-- High Byte( 0xF0 ) = Funktion des Pins , Low Byte( 0x0F ) = Pin Position -- >*/
-#define IO_TAB_PINFUNC( PINx , FUNCx )	( ( FUNCx << 4 ) | ( PINx & 0x0F ) )
+#define _FUNCTION_INPUT                 0x10
+#define _FUNCTION_INPUT_PULLUP          0x20
+#define _FUNCTION_OUTPUT                0x40
+#define HIGH							0x80
+
+#define IO_TAB_DEFAULT_MASK		        0x80
+#define IO_TAB_PIN_FUNC_MASK	        0x70
+#define IO_TAB_PIN_MASK			        0x0F
+
+
+
+#define IO_TAB_PINFUNC( PINx , DEFAULT_STATE , FUNCx )	( ( PINx ) | ( DEFAULT_STATE ) | ( FUNCx ) )
 
 
 typedef volatile uint8_t* pRegister_t;
 
 typedef struct
 {
-    pRegister_t		   uiPort;
+    pRegister_t		   pPort;
     const uint8_t      uiFuncBitPos; // High Byte = Pin Funktion , Low Byte = Pin Nummer
 }sIO_t;
 
