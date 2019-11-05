@@ -24,81 +24,31 @@
 #include <avr/io.h>
 
 
+
 /*!<-- defines -- >*/
 /*****************************************************************/
 
 #define __PACK_IT__	                    __attribute__ ( ( packed ) )
 
-#define IO_CALC_PORT_ADDR( ADDRx )		( __SFR_OFFSET + ADDRx ) // Es geht bei den I/O´s erst ab einer bestimmten Adresse los!
-
-#define IOTAB_PORT( ADDRx )             (*((volatile uint8_t*) (uintptr_t)(ADDRx)))
-#define IOTAB_DDR( ADDRx )              (*((volatile uint8_t*) (uintptr_t)(ADDRx-1)))
-#define IOTAB_PIN( ADDRx )              (*((volatile uint8_t*) (uintptr_t)(ADDRx+1)))
-
- 
-enum ePinFunc
+enum __PACK_IT__ ePinFunc
 {
-    _FUNCTION_INPUT,
-	_FUNCTION_INPUT_PULLUP,
-	_FUNCTION_INPUT_PULLDOWN,	
-	
-    _FUNCTION_OUTPUT,
-	
-	__MAX_FUNCTION_ENTRYS__
-	
-}__PACK_IT__;
+    _FUNCTION_INPUT              = 0x01,
+	_FUNCTION_INPUT_PULLUP       = 0x02,
+	_FUNCTION_INPUT_PULLDOWN     = 0x04,	
+    _FUNCTION_OUTPUT             = 0x08,
+};
 
+/*!<-- High Byte( 0xF0 ) = Funktion des Pins , Low Byte( 0x0F ) = Pin Position -- >*/
+#define IO_TAB_PINFUNC( PINx , FUNCx )	( ( FUNCx << 4 ) | ( PINx & 0x0F ) )
 
-typedef struct
-{
-    volatile uint8_t   *uiPort;
-    const uint8_t      uiBitPos;
-    const uint8_t      uiPinFunc :3;
-}sIO_t;
-
-
-enum ePorts  
-{
-	ePORTA = 0,
-	ePORTB,
-	ePORTC,
-	ePORTD,
-	__PORTS_MAX_ENTRYS__
-}__PACK_IT__;
-
-enum eDDRs
-{
-	eDDRA = 0,
-	eDDRB,
-	eDDRC,
-	eDDRD,
-	__DDRx_MAX_ENTRYS__
-}__PACK_IT__;
-
-
-enum eIoTabPos
-{
-	IOTAB_POS_LED1,
-	IOTAB_POS_K1,
-	IOTAB_POS_BEEPER,
-}__PACK_IT__;
 
 typedef volatile uint8_t* pRegister_t;
 
-/*****************************************************************/
-
-
-/*!<-- global variables -- >*/
-/*****************************************************************/
-
-sIO_t IoTable[]=
+typedef struct
 {
-	[IOTAB_POS_LED1]   = { &PORTA , 2 , _FUNCTION_OUTPUT },	
-	[IOTAB_POS_K1]     = { &PORTB , 3 , _FUNCTION_OUTPUT },
-	[IOTAB_POS_BEEPER] = { &PORTC , 4 , _FUNCTION_OUTPUT },	
-};
-
-uint8_t uiTabSize = sizeof( IoTable ) / sizeof( *IoTable );
+    pRegister_t		   uiPort;
+    const uint8_t      uiFuncBitPos; // High Byte = Pin Funktion , Low Byte = Pin Nummer
+}sIO_t;
 
 /*****************************************************************/
 
@@ -106,71 +56,15 @@ uint8_t uiTabSize = sizeof( IoTable ) / sizeof( *IoTable );
 /*!<-- functions -- >*/
 /*****************************************************************/
 
-void            IoTabInit( sIO_t *sTab , uint8_t uiMembers )
-{
-	for ( uint8_t x = 0 ; x < uiMembers ; x++ )
-	{
-		switch ( sTab[x].uiPinFunc )
-		{
-			case _FUNCTION_INPUT:
-			{
-				*( sTab[x].uiPort - 1 ) &= ~( 1 << sTab[x].uiBitPos ); // - 1 für das DDR Register
-			}break;
-			
-			case _FUNCTION_INPUT_PULLUP:
-			{
-				*( sTab[x].uiPort - 1 ) &= ~( 1 << sTab[x].uiBitPos ); // - 1 für das DDR Register
-				*( sTab[x].uiPort ) |=  ( 1 << sTab[x].uiBitPos );
-			}break;
-			
-			case _FUNCTION_OUTPUT:
-			{
-				*( sTab[x].uiPort - 1 ) |= ( 1 << sTab[x].uiBitPos ); // - 1 für das DDR Register
-				*( sTab[x].uiPort ) |= ( 1 << sTab[x].uiBitPos );
-			}break;
-			
-			
-			case _FUNCTION_INPUT_PULLDOWN:{}
-			case __MAX_FUNCTION_ENTRYS__:{}
-		}
-	}
-}
+void IoTabInit( const sIO_t *sTab );
 
-pRegister_t     IoTabGetPort( enum ePorts ePort )
-{
-	if ( ePort > __PORTS_MAX_ENTRYS__ )
-	{
-		return NULL; // Ungültig!
-	}
-	
-	static const pRegister_t pPortLookup[ __PORTS_MAX_ENTRYS__ ] =
-	{
-		[ePORTA] = &PORTA,
-		[ePORTB] = &PORTB,
-		[ePORTC] = &PORTC,
-		[ePORTD] = &PORTD,
-	};
+void IoTabSetLow( const sIO_t *sTab );
 
-	return pPortLookup[ ePort ];
-}
+void IoTabSetHigh( const sIO_t *sTab );
 
-pRegister_t     IoTabGetDDRx( enum eDDRs eDDR )
-{
-	if ( eDDR > __DDRx_MAX_ENTRYS__ )
-	{
-		return NULL; // Ungültig!
-	}
-	
-	static const pRegister_t pDDRxLookup[ __DDRx_MAX_ENTRYS__ ] =
-	{
-		[eDDRA] = &DDRA,
-		[eDDRB] = &DDRB,
-		[eDDRC] = &DDRC,
-		[eDDRD] = &DDRD,
-	};
-	
-	return pDDRxLookup[ eDDR ];
-}
+void IoTabxHigh( const sIO_t *sTab , uint8_t uiMember );
+
+void IoTabxLow( const sIO_t *sTab , uint8_t uiMember );
 
 /*****************************************************************/
 
