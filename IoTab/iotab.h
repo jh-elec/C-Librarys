@@ -34,15 +34,17 @@
 #define _FUNCTION_INPUT                 0x10
 #define _FUNCTION_INPUT_PULLUP          0x20
 #define _FUNCTION_OUTPUT                0x40
+
 #define HIGH							0x80
+#define LOW                             !HIGH					
 
 #define IO_TAB_DEFAULT_MASK		        0x80
 #define IO_TAB_PIN_FUNC_MASK	        0x70
-#define IO_TAB_PIN_MASK			        0x0F
+#define IO_TAB_PIN_MASK			        0x07
 
 
 
-#define IO_TAB_PINFUNC( PINx , DEFAULT_STATE , FUNCx )	( ( PINx ) | ( DEFAULT_STATE ) | ( FUNCx ) )
+#define IO_TAB_CNFG( PINx , DEFAULT_STATE , FUNCx )	( ( PINx ) | ( DEFAULT_STATE ) | ( FUNCx ) )
 
 
 typedef volatile uint8_t* pRegister_t;
@@ -50,7 +52,7 @@ typedef volatile uint8_t* pRegister_t;
 typedef struct
 {
     pRegister_t		   pPort;
-    const uint8_t      uiFuncBitPos; // High Byte = Pin Funktion , Low Byte = Pin Nummer
+    volatile uint8_t      uiFuncBitPos; // High Byte = Pin Funktion , Low Byte = Pin Nummer
 }sIO_t;
 
 /*****************************************************************/
@@ -68,6 +70,8 @@ void IoTabSetHigh( const sIO_t *sTab );
 void IoTabxHigh( const sIO_t *sTab , uint8_t uiMember );
 
 void IoTabxLow( const sIO_t *sTab , uint8_t uiMember );
+
+void IoTabxToggle( const sIO_t *sTab , uint8_t uiMember );
 
 /*****************************************************************/
 
