@@ -4,12 +4,17 @@
 *|	\@brief 	-
 *|	\@author 	J.H - Elec(C)
 *|
-*|	\@project	Atmega Timer konfigurieren
+*|	\@project	Atmega Timer Treiber
 *|
 *|	\@date		22/10/2019 - first implementation
 *|
-*|	\@todo 		nothing
-*|	\@test		not tested
+*|	\@todo 		Timer 1 : Es müssen noch die Overflow Interrupts behandelt werden!
+*|              Timer 0 : Der Overflow Interrupt benötigt noch einen Reload Wert?
+*|		
+*|	\@test		Timer 0 : Es wurde erfolgreich der Compare Match Interrupt in betrieb genommen.
+*|				Timer 1 : Es wurde erfolgreich der Compare Match A + B Interrupt in betrieb genommen. 
+*|
+*|
 *|	\@bug		no bug known
 *|
 *|
@@ -60,6 +65,8 @@
 #define _ENABLE_TOIE2				TIMSK |= ( 1 << TOIE2  )
 #define _ENABLE_OCIE2				TIMSK |= ( 1 << OCIE2  )
 
+enum __attribute__( ( packed ) ) eTimer { TIMER0 , TIMER1 , TIMER2 };
+
 typedef struct
 {
     uint8_t uiCnt;
@@ -76,9 +83,11 @@ typedef struct
 
 typedef struct  
 {
-	uint8_t uiReload8;
-	uint16_t
+	uint8_t uiLoad8;
+	uint16_t uiLoad16;
 }sTimerReload_t;
+
+sTimerReload_t sReload;
 
 enum eTimerCallback
 {
@@ -93,7 +102,7 @@ enum eTimerCallback
 	__CALLBACK_TIMER_MEMBERS__
 };
 
-uint8_t uiTimerTabIndex = 0;
+
 
 void (*pvTimerCallback[__CALLBACK_TIMER_MEMBERS__])(void) =
 {
@@ -237,8 +246,6 @@ extern inline uint8_t Timer0OvfInit( const sTimer8Config_t *psTab , void (*pFnc)
 	TCCR0	= ( psTab->uiCSxx | psTab->uiWGMxx );
 	TCNT0	= psTab->uiCnt;
 	
-	
-	
 	if ( pFnc == NULL )
 	{
 		return 1; // keine gültige "Callback Adresse"
@@ -246,6 +253,8 @@ extern inline uint8_t Timer0OvfInit( const sTimer8Config_t *psTab , void (*pFnc)
 	{
 		pvTimerCallback[CALLBACK_TIMER0_OVF] = pFnc;
 	}
+	
+	sReload.uiLoad8 = TCNT0;
 	
 	_ENABLE_TOIE0;
 
@@ -310,7 +319,7 @@ ISR ( TIMER0_COMP_vect )
 ISR ( TIMER0_OVF_vect )		
 {
 	pvTimerCallback[CALLBACK_TIMER0_OVF]();
-	TCNT0 = 
+	TCNT0 = sReload.uiLoad8;
 }
 
 ISR ( TIMER1_COMPA_vect )	
