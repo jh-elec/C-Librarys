@@ -8,8 +8,8 @@
 *|
 *|	\@date		22/10/2019 - first implementation
 *|
-*|	\@todo 		Timer 1 : Es müssen noch die Overflow Interrupts behandelt werden!
-*|              Timer 0 : Der Overflow Interrupt benötigt noch einen Reload Wert?
+*|	\@todo 		Timer 1 : Es müssen noch die Overflow Interrupts behandelt werden! [x] Erledigt!
+*|              Timer 0 : Der Overflow Interrupt benötigt noch einen Reload Wert?  [x] Erledigt!
 *|		
 *|	\@test		Timer 0 : Es wurde erfolgreich der Compare Match Interrupt in betrieb genommen.
 *|				Timer 1 : Es wurde erfolgreich der Compare Match A + B Interrupt in betrieb genommen. 
@@ -176,12 +176,14 @@ const sTimer16Config_t sTimer1OcieSettings[] =
 	#endif
 
 	#if (F_CPU == 8000000)
+		{ .uiCnt = 7	   , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR1_MODE4 }, // 1µS   @8MHz
 		{ .uiCnt = 79	   , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR1_MODE4 }, // 10µS  @8MHz
 		{ .uiCnt = 99	   , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR1_MODE4 }, // 100µS @8MHz
 		{ .uiCnt = 124     , .uiCSxx = _PRESCALER_64   , .uiWGMxx = _TMR1_MODE4 }, // 1ms   @8MHz
 	#endif
 
 	#if (F_CPU == 16000000)
+		{ .uiCnt = 15      , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR1_MODE4 }, // 1µS   @16MHz	
 		{ .uiCnt = 159      , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR1_MODE4 }, // 10µS  @16MHz
 		{ .uiCnt = 199      , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR1_MODE4 }, // 100µS @16MHz
 		{ .uiCnt = 249      , .uiCSxx = _PRESCALER_64   , .uiWGMxx = _TMR1_MODE4 }, // 1ms   @16MHz
@@ -192,21 +194,24 @@ const sTimer16Config_t sTimer1OcieSettings[] =
 const sTimer16Config_t sTimer1TovSettings[] = 
 {
 	#if (F_CPU == 1000000)
-		{ .uiCnt = 246     , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR1_MODE0 }, // 10µS  @1MHz
-		{ .uiCnt = 156     , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR1_MODE0 }, // 100µS @1MHz
-		{ .uiCnt = 131     , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR1_MODE0 }, // 1ms   @1MHz
+		{ .uiCnt = 65535   , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR1_MODE0 }, // 1µS   @1MHz	
+		{ .uiCnt = 65526   , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR1_MODE0 }, // 10µS  @1MHz
+		{ .uiCnt = 65436   , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR1_MODE0 }, // 100µS @1MHz
+		{ .uiCnt = 65411   , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR1_MODE0 }, // 1ms   @1MHz
 	#endif
 
 	#if (F_CPU == 8000000)
-		{ .uiCnt = 176     , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR1_MODE0 }, // 10µS  @8MHz
-		{ .uiCnt = 156     , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR1_MODE0 }, // 100µS @8MHz
-		{ .uiCnt = 131     , .uiCSxx = _PRESCALER_64   , .uiWGMxx = _TMR1_MODE0 }, // 1ms   @8MHz
+		{ .uiCnt = 65528   , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR1_MODE0 }, // 1µS   @8MHz
+		{ .uiCnt = 65456   , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR1_MODE0 }, // 10µS  @8MHz
+		{ .uiCnt = 65436   , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR1_MODE0 }, // 100µS @8MHz
+		{ .uiCnt = 65411   , .uiCSxx = _PRESCALER_64   , .uiWGMxx = _TMR1_MODE0 }, // 1ms   @8MHz
 	#endif
 
 	#if (F_CPU == 16000000)
-		{ .uiCnt = 96      , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR1_MODE0 }, // 10µS  @16MHz
-		{ .uiCnt = 56      , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR1_MODE0 }, // 100µS @16MHz
-		{ .uiCnt = 6       , .uiCSxx = _PRESCALER_64   , .uiWGMxx = _TMR1_MODE0 }, // 1ms   @16MHz
+		{ .uiCnt = 65520  , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR1_MODE0 }, // 1µS   @16MHz
+		{ .uiCnt = 65376  , .uiCSxx = _PRESCALER_0    , .uiWGMxx = _TMR1_MODE0 }, // 10µS  @16MHz
+		{ .uiCnt = 65336  , .uiCSxx = _PRESCALER_8    , .uiWGMxx = _TMR1_MODE0 }, // 100µS @16MHz
+		{ .uiCnt = 65286  , .uiCSxx = _PRESCALER_64   , .uiWGMxx = _TMR1_MODE0 }, // 1ms   @16MHz
 	#endif	
 };
 
@@ -311,6 +316,32 @@ extern inline uint8_t Timer1CompBInit( const sTimer16Config_t *psTab , void (*pF
 	return 0;
 }
 
+extern inline uint8_t Timer1OvfInit( const sTimer16Config_t *psTab , void (*pFnc)(void) )
+{
+	cli(); /**< Vorsichtshalber Interrupts global sperren */
+
+	//TCCR1A	= psTab->uiWGMxx & 0x03;
+	TCCR1B  = ( /*( psTab->uiWGMxx & 0x18 ) |*/ psTab->uiCSxx );
+	TCNT1	= psTab->uiCnt;
+	
+	if ( pFnc == NULL )
+	{
+		return 1; // keine gültige "Callback Adresse"
+	}else
+	{
+		pvTimerCallback[CALLBACK_TIMER1_OVF] = pFnc;
+	}
+	
+	sReload.uiLoad16 = TCNT1;
+	
+	_ENABLE_TOIE1;
+
+	sei();
+	
+	return 0;	
+}
+
+
 ISR ( TIMER0_COMP_vect )	
 {
 	pvTimerCallback[CALLBACK_TIMER0_COMP]();
@@ -331,6 +362,12 @@ ISR ( TIMER1_COMPB_vect )
 {
 	pvTimerCallback[CALLBACK_TIMER1_COMPB]();
 }
+
+ISR ( TIMER1_OVF_vect )
+{
+	pvTimerCallback[CALLBACK_TIMER1_OVF]();
+	TCNT1 = sReload.uiLoad16;	
+};
 
 /*****************************************************************/
 
