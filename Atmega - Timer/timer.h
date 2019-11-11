@@ -8,8 +8,8 @@
 *|
 *|	\@date		22/10/2019 - first implementation
 *|
-*|	\@todo 		Timer 1 : Es müssen noch die Overflow Interrupts behandelt werden! [x] Erledigt!
-*|              Timer 0 : Der Overflow Interrupt benötigt noch einen Reload Wert?  [x] Erledigt!
+*|	\@todo 		Timer 1 : Es müssen noch die Overflow Interrupts behandelt werden!
+*|              Timer 0 : Der Overflow Interrupt benötigt noch einen Reload Wert?
 *|		
 *|	\@test		Timer 0 : Es wurde erfolgreich der Compare Match Interrupt in betrieb genommen.
 *|				Timer 1 : Es wurde erfolgreich der Compare Match A + B Interrupt in betrieb genommen. 
@@ -67,6 +67,26 @@
 
 enum __attribute__( ( packed ) ) eTimer { TIMER0 , TIMER1 , TIMER2 };
 
+enum __attribute__( ( packed ) ) eTimerCallback
+{
+	CALLBACK_TIMER0_OVF,
+	CALLBACK_TIMER0_COMP,
+	CALLBACK_TIMER1_OVF,
+	CALLBACK_TIMER1_COMPB,
+	CALLBACK_TIMER1_COMPA,
+	CALLBACK_TIMER2_OVF,
+	CALLBACK_TIMER2_COMP,
+	
+	__CALLBACK_TIMER_MEMBERS__
+};
+
+enum __attribute__( ( packed ) ) eTimerError
+{
+	ERROR_TIMER_OK,
+	ERROR_TIMER_NO_ADDRESS,
+};
+
+
 typedef struct
 {
     uint8_t uiCnt;
@@ -89,24 +109,11 @@ typedef struct
 
 sTimerReload_t sReload;
 
-enum eTimerCallback
-{
-	CALLBACK_TIMER0_OVF,
-	CALLBACK_TIMER0_COMP,
-	CALLBACK_TIMER1_OVF,
-	CALLBACK_TIMER1_COMPB,
-	CALLBACK_TIMER1_COMPA,
-	CALLBACK_TIMER2_OVF,
-	CALLBACK_TIMER2_COMP,
-	
-	__CALLBACK_TIMER_MEMBERS__
-};
 
-
-
+// pv = PointerVector
 void (*pvTimerCallback[__CALLBACK_TIMER_MEMBERS__])(void) =
 {
-		// Callback Adressen
+		// Callback Adressen! Werden in den entsprechenden Initalisierungen zugewiesen.
 	/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	+ TIMER0_OVF | TIMER0_COMP | TIMER1_OVF | TIMER1_COMPB | TIMER1_COMPA | TIMER2_OVF | TIMER2_COMP  +
 	+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
@@ -222,41 +229,41 @@ const sTimer16Config_t sTimer1TovSettings[] =
 /*!<-- functions -- >*/
 /*****************************************************************/
 
-extern inline uint8_t Timer0CompInit( const sTimer8Config_t *psTab , void (*pFnc)(void) )
+extern inline enum eTimerError Timer0CompInit( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )
 {
 	cli(); /**< Vorsichtshalber Interrupts global sperren */
 
 	TCCR0	= ( psTab->uiCSxx | psTab->uiWGMxx );
 	OCR0	= psTab->uiCnt;
 	
-	if ( pFnc == NULL )
+	if ( pFncCallback == NULL )
 	{
-		return 1; // keine gültige "Callback Adresse"
+		return ERROR_TIMER_NO_ADDRESS;
 	}else
 	{
-		pvTimerCallback[CALLBACK_TIMER0_COMP] = pFnc;
+		pvTimerCallback[CALLBACK_TIMER0_COMP] = pFncCallback;
 	}
 	
 	_ENABLE_OCIE0;
 
 	sei();
 	
-	return 0;
+	return ERROR_TIMER_OK;
 }
 
-extern inline uint8_t Timer0OvfInit( const sTimer8Config_t *psTab , void (*pFnc)(void) )
+extern inline enum eTimerError Timer0OvfInit( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )
 {
 	cli(); /**< Vorsichtshalber Interrupts global sperren */
 
 	TCCR0	= ( psTab->uiCSxx | psTab->uiWGMxx );
 	TCNT0	= psTab->uiCnt;
 	
-	if ( pFnc == NULL )
+	if ( pFncCallback == NULL )
 	{
-		return 1; // keine gültige "Callback Adresse"
+		return ERROR_TIMER_NO_ADDRESS;
 	}else
 	{
-		pvTimerCallback[CALLBACK_TIMER0_OVF] = pFnc;
+		pvTimerCallback[CALLBACK_TIMER0_OVF] = pFncCallback;
 	}
 	
 	sReload.uiLoad8 = TCNT0;
@@ -265,10 +272,10 @@ extern inline uint8_t Timer0OvfInit( const sTimer8Config_t *psTab , void (*pFnc)
 
 	sei();
 	
-	return 0;
+	return ERROR_TIMER_OK;
 }
 
-extern inline uint8_t Timer1CompAInit( const sTimer16Config_t *psTab , void (*pFnc)(void) )
+extern inline enum eTimerError Timer1CompAInit( const sTimer16Config_t *psTab , void (*pFncCallback)(void) )
 {
 	cli(); /**< Vorsichtshalber Interrupts global sperren */
 
@@ -277,22 +284,22 @@ extern inline uint8_t Timer1CompAInit( const sTimer16Config_t *psTab , void (*pF
 	TCCR1B  |= psTab->uiCSxx;
 	OCR1A	= psTab->uiCnt;
 	
-	if ( pFnc == NULL )
+	if ( pFncCallback == NULL )
 	{
-		return 1; // keine gültige "Callback Adresse"
+		return ERROR_TIMER_NO_ADDRESS;
 	}else
 	{
-		pvTimerCallback[CALLBACK_TIMER1_COMPA] = pFnc;
+		pvTimerCallback[CALLBACK_TIMER1_COMPA] = pFncCallback;
 	}
 	
 	_ENABLE_OCIE1A;
 
 	sei();
 	
-	return 0;
+	return ERROR_TIMER_OK;
 }
 
-extern inline uint8_t Timer1CompBInit( const sTimer16Config_t *psTab , void (*pFnc)(void) )
+extern inline enum eTimerError Timer1CompBInit( const sTimer16Config_t *psTab , void (*pFncCallback)(void) )
 {
 	cli(); /**< Vorsichtshalber Interrupts global sperren */
 
@@ -301,22 +308,22 @@ extern inline uint8_t Timer1CompBInit( const sTimer16Config_t *psTab , void (*pF
 	TCCR1B  |= psTab->uiCSxx;
 	OCR1B	= psTab->uiCnt;
 	
-	if ( pFnc == NULL )
+	if ( pFncCallback == NULL )
 	{
-		return 1; // keine gültige "Callback Adresse"
+		return ERROR_TIMER_NO_ADDRESS;
 	}else
 	{
-		pvTimerCallback[CALLBACK_TIMER1_COMPB] = pFnc;
+		pvTimerCallback[CALLBACK_TIMER1_COMPB] = pFncCallback;
 	}
 	
 	_ENABLE_OCIE1B;
 
 	sei();
 	
-	return 0;
+	return ERROR_TIMER_OK;
 }
 
-extern inline uint8_t Timer1OvfInit( const sTimer16Config_t *psTab , void (*pFnc)(void) )
+extern inline enum eTimerError Timer1OvfInit( const sTimer16Config_t *psTab , void (*pFncCallback)(void) )
 {
 	cli(); /**< Vorsichtshalber Interrupts global sperren */
 
@@ -324,12 +331,12 @@ extern inline uint8_t Timer1OvfInit( const sTimer16Config_t *psTab , void (*pFnc
 	TCCR1B  = ( /*( psTab->uiWGMxx & 0x18 ) |*/ psTab->uiCSxx );
 	TCNT1	= psTab->uiCnt;
 	
-	if ( pFnc == NULL )
+	if ( pFncCallback == NULL )
 	{
-		return 1; // keine gültige "Callback Adresse"
+		return ERROR_TIMER_NO_ADDRESS;
 	}else
 	{
-		pvTimerCallback[CALLBACK_TIMER1_OVF] = pFnc;
+		pvTimerCallback[CALLBACK_TIMER1_OVF] = pFncCallback;
 	}
 	
 	sReload.uiLoad16 = TCNT1;
@@ -338,7 +345,7 @@ extern inline uint8_t Timer1OvfInit( const sTimer16Config_t *psTab , void (*pFnc
 
 	sei();
 	
-	return 0;	
+	return ERROR_TIMER_OK;	
 }
 
 
