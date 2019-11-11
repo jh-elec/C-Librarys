@@ -22,37 +22,57 @@
 
 /* Prototypen */
 
-void SwitchInit( Switch_t *Switch )
+enum eSwitchError SwitchInit( sSwitch_t *psSwitch , pRegister_t pPort , uint8_t uiSwitchMask )
 {
-	if ( Switch->pPort != NULL )
+	if ( pPort != NULL )
 	{
-		PORT_DDR_ADDR( Switch->pPort ) &= ~( Switch->Mask );
+		PORT_DDR_ADDR( pPort ) &= ~( uiSwitchMask );
+	}
+	else
+	{
+		return ERROR_SWITCH_NO_PORT;
 	}
 
-	Switch->Old = 0;
-	Switch->New = 0;
-	Switch->Info = 0;
+	psSwitch->pPort = pPort;
+	psSwitch->Mask = uiSwitchMask;
+	psSwitch->Old = 0;
+	psSwitch->New = 0;
+	psSwitch->Info = 0;
+	
+	return ERROR_SWITCH_OK;
 }
 
-uint8_t SwitchRead( Switch_t *Switch )
+static uint8_t SwitchRead( sSwitch_t *psSwitch )
 {
-	Switch->New = ( ( PORT_PIN_ADDR( Switch->pPort ) & Switch->Mask ) ^ Switch->Mask );
+	psSwitch->New = ( ( PORT_PIN_ADDR( psSwitch->pPort ) & psSwitch->Mask ) ^ psSwitch->Mask );
 	
-	if (Switch->New != Switch->Old) // Eingang geaendert
+	if ( psSwitch->New != psSwitch->Old ) // Eingang geaendert
 	{
-		Switch->Info = ( Switch->Info | ( Switch->New & ( Switch->Old ^ Switch->New ) ) );
+		psSwitch->Info = ( psSwitch->Info | ( psSwitch->New & ( psSwitch->Old ^ psSwitch->New ) ) );
 	}
 	
-	Switch->Old = Switch->New;
+	psSwitch->Old = psSwitch->New;
 	
-	return Switch->Info;
+	return psSwitch->Info;
 }
 
-void SwitchClear( Switch_t *Switch )
+uint8_t SwitchGet( sSwitch_t *psSwitch , uint8_t uiMask )
 {
-	Switch->Old = 0;
-	Switch->New = 0;
-	Switch->Info = 0;
+	uint8_t uiInfo;
+	
+	SwitchRead( psSwitch );
+	
+	uiInfo = psSwitch->Info;
+	psSwitch->Info &= ~uiMask;
+	
+	return ( uiInfo & uiMask );
+}
+
+void SwitchClear( sSwitch_t *psSwitch )
+{
+	psSwitch->Old = 0;
+	psSwitch->New = 0;
+	psSwitch->Info = 0;
 }
 
 /* Ende Prototypen */

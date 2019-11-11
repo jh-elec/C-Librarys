@@ -238,6 +238,7 @@ extern inline enum eTimerError Timer0CompInit( const sTimer8Config_t *psTab , vo
 	
 	if ( pFncCallback == NULL )
 	{
+		sei();
 		return ERROR_TIMER_NO_ADDRESS;
 	}else
 	{
@@ -260,6 +261,7 @@ extern inline enum eTimerError Timer0OvfInit( const sTimer8Config_t *psTab , voi
 	
 	if ( pFncCallback == NULL )
 	{
+		sei();
 		return ERROR_TIMER_NO_ADDRESS;
 	}else
 	{
@@ -286,6 +288,7 @@ extern inline enum eTimerError Timer1CompAInit( const sTimer16Config_t *psTab , 
 	
 	if ( pFncCallback == NULL )
 	{
+		sei();
 		return ERROR_TIMER_NO_ADDRESS;
 	}else
 	{
@@ -310,6 +313,7 @@ extern inline enum eTimerError Timer1CompBInit( const sTimer16Config_t *psTab , 
 	
 	if ( pFncCallback == NULL )
 	{
+		sei();
 		return ERROR_TIMER_NO_ADDRESS;
 	}else
 	{
@@ -333,6 +337,7 @@ extern inline enum eTimerError Timer1OvfInit( const sTimer16Config_t *psTab , vo
 	
 	if ( pFncCallback == NULL )
 	{
+		sei();
 		return ERROR_TIMER_NO_ADDRESS;
 	}else
 	{

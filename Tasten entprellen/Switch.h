@@ -36,6 +36,11 @@
 */
 #define PORT_PIN_ADDR( PORT )		(*( (PORT-2) ))
 
+enum __attribute__((packed)) eSwitchError
+{
+	ERROR_SWITCH_OK,
+	ERROR_SWITCH_NO_PORT,	
+};
 
 typedef volatile uint8_t			*pRegister_t;
 
@@ -46,13 +51,13 @@ typedef struct
 	uint8_t     Old;
 	uint8_t     Info;
 	uint8_t     Mask;
-}Switch_t;
+}sSwitch_t;
 
 
-void SwitchInit( Switch_t *Switch );
+enum eSwitchError SwitchInit( sSwitch_t *Switch , pRegister_t pPort , uint8_t uiSwitchMask );
 
-uint8_t SwitchRead( Switch_t *Switch );
+uint8_t SwitchGet( sSwitch_t *psSwitch , uint8_t uiMask );
 
-void SwitchClear( Switch_t *Switch );
+void SwitchClear( sSwitch_t *Switch );
 
 #endif
