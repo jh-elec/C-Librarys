@@ -32,17 +32,17 @@
 #define STEPPER_RESET_PORT		PORTD
 #define STEPPER_RESET_BP		PD6
 
-#define STEPPER_DIR_PORT		PORTD
-#define STEPPER_DIR_BP			PD5
+#define STEPPER_DIR_PORT		PORTC
+#define STEPPER_DIR_BP			PC3
 
 #define STEPPER_MS_PORT			PORTD
 #define STEPPER_MS1_BP			PD2
 #define STEPPER_MS2_BP			PD3
 #define STEPPER_MS3_BP			PD4
 
-enum eMSx        { MS1 , MS2 , MS3 , __MSx_MAX_ENTRYS__ };
+enum __attribute__((packed)) eMSx        { MS1 , MS2 , MS3 , __MSx_MAX_ENTRYS__ };
 
-enum eStep
+enum __attribute__((packed)) eStep
 {
 	STEP_FULL,
 	STEP_HALF,		
@@ -53,6 +53,7 @@ enum eStep
 	__STEP_MAX_ENTRYS__
 };
 
+
 /*****************************************************************/
 
 
@@ -60,7 +61,7 @@ enum eStep
 /*****************************************************************/
 typedef volatile uint8_t *pPort_t;
 
-typedef struct  
+typedef struct		
 {
 	struct
 	{
@@ -90,7 +91,7 @@ typedef struct
 
 }sA4988_t;
 
-sA4988_t sStepper =
+sA4988_t sStepper =	
 {
 	.sMsx =
 	{
@@ -114,7 +115,7 @@ sA4988_t sStepper =
 
 };
 
-typedef struct
+typedef struct		
 {
 	pPort_t pPort;
 	uint8_t uiBp;
@@ -173,6 +174,11 @@ static inline uint8_t StepperSetMode( sA4988_t *sObj , enum eStep Step )
 	
 	return 0;
 }
+
+static inline void StepperChangeRotation( sA4988_t *sObj )
+{
+	*( sObj->sDir.pPort ) ^= 1 << sObj->sDir.uiBp;	
+};
 
 static inline void StepperPulse( void )
 {
