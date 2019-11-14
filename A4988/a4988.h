@@ -26,19 +26,19 @@
 
 /*!<-- defines -- >*/
 /*****************************************************************/
-#define STEPPER_STEP_PORT		PORTA
-#define STEPPER_STEP_BP			PA0
+#define STEPPER_STEP_PORT		PORTD
+#define STEPPER_STEP_BP			PD7
 
-#define STEPPER_RESET_PORT		PORTA
-#define STEPPER_RESET_BP		PA0
+#define STEPPER_RESET_PORT		PORTD
+#define STEPPER_RESET_BP		PD6
 
-#define STEPPER_DIR_PORT		PORTA
-#define STEPPER_DIR_BP			PA0
+#define STEPPER_DIR_PORT		PORTD
+#define STEPPER_DIR_BP			PD5
 
-#define STEPPER_MS_PORT			PORTA
-#define STEPPER_MS1_BP			PA0
-#define STEPPER_MS2_BP			PA1
-#define STEPPER_MS3_BP			PA2
+#define STEPPER_MS_PORT			PORTD
+#define STEPPER_MS1_BP			PD2
+#define STEPPER_MS2_BP			PD3
+#define STEPPER_MS3_BP			PD4
 
 enum eMSx        { MS1 , MS2 , MS3 , __MSx_MAX_ENTRYS__ };
 
@@ -94,21 +94,23 @@ sA4988_t sStepper =
 {
 	.sMsx =
 	{
-			// PORT | MSx Bitpositionen
-			&STEPPER_MS_PORT  , ( (1 << STEPPER_MS1_BP) | (1 << STEPPER_MS2_BP) | (1 << STEPPER_MS3_BP) )
+		&STEPPER_MS_PORT  , ( (1 << STEPPER_MS1_BP) | (1 << STEPPER_MS2_BP) | (1 << STEPPER_MS3_BP) )
 	},
 	
 	.sDir =
 	{
-		// PORT | Direction Bitposition
 		&STEPPER_DIR_PORT  , STEPPER_DIR_BP
 	},
 	
 	.sRst =
 	{
-		// PORT | Reset Bitposition
 		&STEPPER_RESET_PORT  , STEPPER_RESET_BP
 	},
+	
+	.sStep =
+	{
+		&STEPPER_STEP_PORT , STEPPER_STEP_BP
+	}
 
 };
 
@@ -168,12 +170,14 @@ static inline uint8_t StepperSetMode( sA4988_t *sObj , enum eStep Step )
 	}
 	
 	*sObj->sMsx.pPort = ( *sObj->sMsx.pPort & 0x00 ) ^ sObj->uiMode[Step];
+	
+	return 0;
 }
 
 static inline void StepperPulse( void )
 {
-	*( sStepperDrive.pPort ) &= ~( 1 << sStepperDrive.uiBp );
-	*( sStepperDrive.pPort ) |= ( 1 << sStepperDrive.uiBp );
+ 	*( sStepperDrive.pPort ) &= ~( 1 << sStepperDrive.uiBp );
+ 	*( sStepperDrive.pPort ) |= ( 1 << sStepperDrive.uiBp );
 }
 
 /*****************************************************************/
