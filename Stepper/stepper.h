@@ -1,6 +1,6 @@
 /*************************************************************
 *|
-*|	\@file  	a4988.h
+*|	\@file  	stepper.h
 *|	\@brief 	-
 *|	\@author 	J.H - Elec(C)
 *|
@@ -173,23 +173,24 @@ static volatile sStepperDrive_t sStepperDrive;
 static inline void StepperInit( sStepper_t *sObj )
 {
 	/*!<-- Daten Richtungs Register konfiguieren <--*/
-	*( sObj->sMsx.pPort - 1  ) |= sObj->sMsx.uiMsxGp; // Step Bits
-	*( sObj->sDir.pPort - 1  ) |= ( 1 << sObj->sDir.uiBp ); // Richtungs Ausgang
-	*( sObj->sRst.pPort - 1  ) |= ( 1 << sObj->sRst.uiBp ); // Reset Ausgang
-	*( sObj->sStep.pPort - 1 ) |= ( 1 << sObj->sStep.uiBp ); // Pulse Ausgang
-	*( sObj->sEn.pPort - 1   ) |= ( 1 << sObj->sEn.uiBp ); // Enable Ausgang
-	*( sObj->sSlp.pPort - 1  ) |= ( 1 << sObj->sSlp.uiBp ); // Sleep Ausgang	
+	*( sObj->sMsx.pPort - 1  ) |= ( sObj->sMsx.uiMsxGp    );
+	*( sObj->sDir.pPort - 1  ) |= ( 1 << sObj->sDir.uiBp  );
+	*( sObj->sRst.pPort - 1  ) |= ( 1 << sObj->sRst.uiBp  );
+	*( sObj->sStep.pPort - 1 ) |= ( 1 << sObj->sStep.uiBp );
+	*( sObj->sEn.pPort - 1   ) |= ( 1 << sObj->sEn.uiBp   );
+	*( sObj->sSlp.pPort - 1  ) |= ( 1 << sObj->sSlp.uiBp  );
 	
 	/*!<-- Default Zustände setzen <--*/
-	*( sObj->sDir.pPort  ) |=  ( 1 << sObj->sDir.uiBp ); // Richtungs Ausgang
-	*( sObj->sRst.pPort  ) |=  ( 1 << sObj->sRst.uiBp ); // Reset Ausgang
-	*( sObj->sStep.pPort ) &= ~( 1 << sObj->sStep.uiBp ); // Pulse Ausgang
-	*( sObj->sEn.pPort   ) &= ~( 1 << sObj->sEn.uiBp ); // Enable Ausgang
-	*( sObj->sSlp.pPort  ) |=  ( 1 << sObj->sSlp.uiBp ); // Sleep Ausgang
+	*( sObj->sDir.pPort  ) |=  ( 1 << sObj->sDir.uiBp  );
+	*( sObj->sRst.pPort  ) |=  ( 1 << sObj->sRst.uiBp  );
+	*( sObj->sSlp.pPort  ) |=  ( 1 << sObj->sSlp.uiBp  );
+	*( sObj->sStep.pPort ) &= ~( 1 << sObj->sStep.uiBp );
+	*( sObj->sEn.pPort   ) &= ~( 1 << sObj->sEn.uiBp   );
 
-	sObj->uiMode[STEP_FULL]			= 0x00;
-	sObj->uiMode[STEP_HALF]			= 1 << STEPPER_MS1_BP;
-	sObj->uiMode[STEP_QUARTER]		= 1 << STEPPER_MS2_BP;
+	/*!<-- Schrittmodis aus den angeschlossenen MSx Bits zusammen bauen <--*/
+	sObj->uiMode[STEP_FULL]			= ( 0x00 );
+	sObj->uiMode[STEP_HALF]			= ( 1 << STEPPER_MS1_BP );
+	sObj->uiMode[STEP_QUARTER]		= ( 1 << STEPPER_MS2_BP );
 	sObj->uiMode[STEP_EIGHTH]		= ( (1 << STEPPER_MS1_BP) | (1 << STEPPER_MS2_BP) );
 	sObj->uiMode[STEP_SIXTEENTH]	= ( (1 << STEPPER_MS1_BP) | (1 << STEPPER_MS2_BP) | (1 << STEPPER_MS3_BP) );
 	
@@ -260,4 +261,4 @@ static inline void StepperPulse( void )
 
 
 
-#endif // __A4988_H__
+#endif // __STEPPER_H__

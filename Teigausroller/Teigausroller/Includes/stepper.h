@@ -17,8 +17,8 @@
 *|
 *|**************************************************************/
 
-#ifndef __A4988_H__
-#define __A4988_H__
+#ifndef __STEPPER_H__
+#define __STEPPER_H__
 
 #include <stdio.h>
 #include <avr/io.h>
@@ -27,8 +27,8 @@
 /*++++++++++++++++++++++++++++++++++++++
 +	Treiber | ATmega328
 +
-+	DIR     = A7 (PC.7)
-+	STP     = A6 (PC.6)
++	DIR     = D3 (PD.3)
++	STP     = D2 (PD.2)
 +	SLP     = A5 (PC.5)
 +	RST     = A4 (PC.4)
 +	M2      = A3 (PC.3)
@@ -39,14 +39,14 @@
 
 /*!<-- defines -- >*/
 /*****************************************************************/
-#define STEPPER_STEP_PORT		PORTC
-#define STEPPER_STEP_BP			6
+#define STEPPER_STEP_PORT		PORTD
+#define STEPPER_STEP_BP			2
 
 #define STEPPER_RESET_PORT		PORTC
 #define STEPPER_RESET_BP		4
 
-#define STEPPER_DIR_PORT		PORTC
-#define STEPPER_DIR_BP			7
+#define STEPPER_DIR_PORT		PORTD
+#define STEPPER_DIR_BP			3
 
 #define STEPPER_MS_PORT			PORTC
 #define STEPPER_MS1_BP			1
@@ -153,7 +153,6 @@ sStepper_t sStepper =
 	{
 		&STEPPER_SLP_PORT , STEPPER_SLP_BP
 	}
-
 };
 
 typedef struct		
@@ -187,7 +186,7 @@ static inline void StepperInit( sStepper_t *sObj )
 	*( sObj->sEn.pPort   ) &= ~( 1 << sObj->sEn.uiBp ); // Enable Ausgang
 	*( sObj->sSlp.pPort  ) |=  ( 1 << sObj->sSlp.uiBp ); // Sleep Ausgang
 
-	/*!<-- Verschiedene Schrittweiten konfigurieren <--*/
+	/*!<-- Schrittweiten konfigurieren <--*/
 	sObj->uiMode[STEP_FULL]			= 0x00;
 	sObj->uiMode[STEP_HALF]			= 1 << STEPPER_MS1_BP;
 	sObj->uiMode[STEP_QUARTER]		= 1 << STEPPER_MS2_BP;
@@ -218,14 +217,14 @@ static inline uint8_t StepperSetMode( sStepper_t *sObj , enum eStep Step )
 		return 2; // kein gültiger Port
 	}
 	
-	*sObj->sMsx.pPort = ( *sObj->sMsx.pPort & 0x00 ) ^ sObj->uiMode[Step];
+	*( sObj->sMsx.pPort ) = ( *sObj->sMsx.pPort & 0xFF ) ^ sObj->uiMode[Step];
 	
 	return 0;
 }
 
 static inline void StepperChangeRotation( sStepper_t *sObj )
 {
-	*( sObj->sDir.pPort ) ^= 1 << sObj->sDir.uiBp;	
+	*( sObj->sDir.pPort ) ^= ( 1 << sObj->sDir.uiBp );	
 };
 
 static inline void StepperEnable( sStepper_t *sObj )
@@ -261,4 +260,4 @@ static inline void StepperPulse( void )
 
 
 
-#endif // __A4988_H__
+#endif // __STEPPER_H__
