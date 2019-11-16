@@ -34,11 +34,6 @@
 /*!<-- defines -- >*/
 /*****************************************************************/
 
-/**< CPU Takt */
-#ifndef F_CPU
-    #define F_CPU   16000000 // Hz
-#endif
-
 /**< Waveform Generation Mode Bits */
 #define _TMR0_MODE0					( ! ( 1 << WGM00 | 1 << WGM01 ) ) // Normal
 #define _TMR0_MODE2					( 1 << WGM01 ) // CTC
@@ -57,13 +52,13 @@
 #define _PRESCALER_1024				( 0b101 << 0 ) // Sind für alle Timer (0..2) gleich
 
 /**< TIMSK Interrupt Configuration */
-#define _ENABLE_TOIE0				TIMSK |= ( 1 << TOIE0  )
-#define _ENABLE_OCIE0				TIMSK |= ( 1 << OCIE0  )
-#define _ENABLE_TOIE1				TIMSK |= ( 1 << TOIE1  )
-#define _ENABLE_OCIE1B				TIMSK |= ( 1 << OCIE1B )
-#define _ENABLE_OCIE1A				TIMSK |= ( 1 << OCIE1A )
-#define _ENABLE_TOIE2				TIMSK |= ( 1 << TOIE2  )
-#define _ENABLE_OCIE2				TIMSK |= ( 1 << OCIE2  )
+#define _ENABLE_TOIE0				TIMSK0 |= ( 1 << TOIE0  )
+#define _ENABLE_OCIE0				TIMSK0 |= ( 1 << OCIE0A  )
+#define _ENABLE_TOIE1				TIMSK0 |= ( 1 << TOIE1  )
+#define _ENABLE_OCIE1B				TIMSK0 |= ( 1 << OCIE1B )
+#define _ENABLE_OCIE1A				TIMSK1 |= ( 1 << OCIE1A )
+#define _ENABLE_TOIE2				TIMSK0 |= ( 1 << TOIE2  )
+#define _ENABLE_OCIE2				TIMSK0 |= ( 1 << OCIE2A  )
 
 enum __attribute__( ( packed ) ) eTimer { TIMER0 , TIMER1 , TIMER2 };
 
@@ -233,8 +228,8 @@ extern inline enum eTimerError Timer0CompInit( const sTimer8Config_t *psTab , vo
 {
 	cli(); /**< Vorsichtshalber Interrupts global sperren */
 
-	TCCR0	= ( psTab->uiCSxx | psTab->uiWGMxx );
-	OCR0	= psTab->uiCnt;
+	TCCR0A	= ( psTab->uiCSxx | psTab->uiWGMxx );
+	OCR0A	= psTab->uiCnt;
 	
 	if ( pFncCallback == NULL )
 	{
@@ -256,7 +251,7 @@ extern inline enum eTimerError Timer0OvfInit( const sTimer8Config_t *psTab , voi
 {
 	cli(); /**< Vorsichtshalber Interrupts global sperren */
 
-	TCCR0	= ( psTab->uiCSxx | psTab->uiWGMxx );
+	TCCR0A	= ( psTab->uiCSxx | psTab->uiWGMxx );
 	TCNT0	= psTab->uiCnt;
 	
 	if ( pFncCallback == NULL )
@@ -354,7 +349,7 @@ extern inline enum eTimerError Timer1OvfInit( const sTimer16Config_t *psTab , vo
 }
 
 
-ISR ( TIMER0_COMP_vect )	
+ISR ( TIMER0_COMPA_vect )	
 {
 	pvTimerCallback[CALLBACK_TIMER0_COMP]();
 }

@@ -1,6 +1,6 @@
 /*************************************************************
 *|
-*|	\@file  	stepper.h
+*|	\@file  	a4988.h
 *|	\@brief 	-
 *|	\@author 	J.H - Elec(C)
 *|
@@ -17,18 +17,19 @@
 *|
 *|**************************************************************/
 
-#ifndef __A4988_H__
-#define __A4988_H__
+#ifndef __STEPPER_H__
+#define __STEPPER_H__
 
 #include <stdio.h>
 #include <avr/io.h>
+#include <util/delay.h>
 
 
 /*++++++++++++++++++++++++++++++++++++++
 +	Treiber | ATmega328
 +
-+	DIR     = A7 (PC.7)
-+	STP     = A6 (PC.6)
++	DIR     = D3 (PD.3)
++	STP     = D2 (PD.2)
 +	SLP     = A5 (PC.5)
 +	RST     = A4 (PC.4)
 +	M2      = A3 (PC.3)
@@ -39,14 +40,14 @@
 
 /*!<-- defines -- >*/
 /*****************************************************************/
-#define STEPPER_STEP_PORT		PORTC
-#define STEPPER_STEP_BP			6
+#define STEPPER_STEP_PORT		PORTD
+#define STEPPER_STEP_BP			2
 
 #define STEPPER_RESET_PORT		PORTC
 #define STEPPER_RESET_BP		4
 
-#define STEPPER_DIR_PORT		PORTC
-#define STEPPER_DIR_BP			7
+#define STEPPER_DIR_PORT		PORTD
+#define STEPPER_DIR_BP			3
 
 #define STEPPER_MS_PORT			PORTC
 #define STEPPER_MS1_BP			1
@@ -72,6 +73,19 @@ enum __attribute__((packed)) eStep
 	__STEP_MAX_ENTRYS__
 };
 
+enum __attribute__((packed)) eStepper
+{
+	STEPPER_1,
+	STEPPER_2,
+	
+	__STEPPER_MAX_ENTRYS__
+};
+
+enum __attribute__((packed)) eRotation
+{
+	ROTATION_RIGHT,
+	ROTATION_LEFT	
+};
 
 /*****************************************************************/
 
@@ -86,6 +100,7 @@ typedef struct
 	{
 		pPort_t pPort;
 		uint8_t uiBp;	
+		enum eRotation eDefault;
 	}sDir;
 	
 	struct
@@ -122,47 +137,76 @@ typedef struct
 
 }sStepper_t;
 
-sStepper_t sStepper =	
+sStepper_t sStepper[__STEPPER_MAX_ENTRYS__] =	
 {
-	.sMsx =
-	{
-		&STEPPER_MS_PORT  , ( (1 << STEPPER_MS1_BP) | (1 << STEPPER_MS2_BP) | (1 << STEPPER_MS3_BP) )
-	},
-	
-	.sDir =
-	{
-		&STEPPER_DIR_PORT  , STEPPER_DIR_BP
-	},
-	
-	.sRst =
-	{
-		&STEPPER_RESET_PORT  , STEPPER_RESET_BP
-	},
-	
-	.sStep =
-	{
-		&STEPPER_STEP_PORT , STEPPER_STEP_BP
-	},
-	
-	.sEn =
-	{
-		&STEPPER_EN_PORT , STEPPER_EN_BP
-	},
-	
-	.sSlp =
-	{
-		&STEPPER_SLP_PORT , STEPPER_SLP_BP
-	}
 
+	[STEPPER_1] = 
+	{
+		.sMsx =
+		{
+			&STEPPER_MS_PORT  , ( (1 << STEPPER_MS1_BP) | (1 << STEPPER_MS2_BP) | (1 << STEPPER_MS3_BP) )
+		},
+	
+		.sDir =
+		{
+			&STEPPER_DIR_PORT  , STEPPER_DIR_BP , ROTATION_LEFT
+		},
+	
+		.sRst =
+		{
+			&STEPPER_RESET_PORT  , STEPPER_RESET_BP
+		},
+	
+		.sStep =
+		{
+			&STEPPER_STEP_PORT , STEPPER_STEP_BP
+		},
+	
+		.sEn =
+		{
+			&STEPPER_EN_PORT , STEPPER_EN_BP
+		},
+	
+		.sSlp =
+		{
+			&STEPPER_SLP_PORT , STEPPER_SLP_BP
+		}	
+	},
+	
+	[STEPPER_2] = 
+	{
+		.sMsx =
+		{
+			&STEPPER_MS_PORT  , ( (1 << STEPPER_MS1_BP) | (1 << STEPPER_MS2_BP) | (1 << STEPPER_MS3_BP) )
+		},
+		
+		.sDir =
+		{
+			&STEPPER_DIR_PORT  , STEPPER_DIR_BP , ROTATION_RIGHT
+		},
+		
+		.sRst =
+		{
+			&STEPPER_RESET_PORT  , STEPPER_RESET_BP
+		},
+		
+		.sStep =
+		{
+			&STEPPER_STEP_PORT , STEPPER_STEP_BP
+		},
+		
+		.sEn =
+		{
+			&STEPPER_EN_PORT , STEPPER_EN_BP
+		},
+		
+		.sSlp =
+		{
+			&STEPPER_SLP_PORT , STEPPER_SLP_BP
+		}		
+	}
 };
 
-typedef struct		
-{
-	pPort_t pPort;
-	uint8_t uiBp;
-}sStepperDrive_t;
-
-static volatile sStepperDrive_t sStepperDrive;
 
 /*****************************************************************/
 
@@ -170,40 +214,14 @@ static volatile sStepperDrive_t sStepperDrive;
 /*!<-- functions -- >*/
 /*****************************************************************/
 
-static inline void StepperInit( sStepper_t *sObj )
+static inline void StepperResetHigh( sStepper_t *sObj )
 {
-	/*!<-- Daten Richtungs Register konfiguieren <--*/
-	*( sObj->sMsx.pPort - 1  ) |= ( sObj->sMsx.uiMsxGp    );
-	*( sObj->sDir.pPort - 1  ) |= ( 1 << sObj->sDir.uiBp  );
-	*( sObj->sRst.pPort - 1  ) |= ( 1 << sObj->sRst.uiBp  );
-	*( sObj->sStep.pPort - 1 ) |= ( 1 << sObj->sStep.uiBp );
-	*( sObj->sEn.pPort - 1   ) |= ( 1 << sObj->sEn.uiBp   );
-	*( sObj->sSlp.pPort - 1  ) |= ( 1 << sObj->sSlp.uiBp  );
-	
-	/*!<-- Default Zustände setzen <--*/
-	*( sObj->sDir.pPort  ) |=  ( 1 << sObj->sDir.uiBp  );
-	*( sObj->sRst.pPort  ) |=  ( 1 << sObj->sRst.uiBp  );
-	*( sObj->sSlp.pPort  ) |=  ( 1 << sObj->sSlp.uiBp  );
-	*( sObj->sStep.pPort ) &= ~( 1 << sObj->sStep.uiBp );
-	*( sObj->sEn.pPort   ) &= ~( 1 << sObj->sEn.uiBp   );
-
-	/*!<-- Schrittmodis aus den angeschlossenen MSx Bits zusammen bauen <--*/
-	sObj->uiMode[STEP_FULL]			= ( 0x00 );
-	sObj->uiMode[STEP_HALF]			= ( 1 << STEPPER_MS1_BP );
-	sObj->uiMode[STEP_QUARTER]		= ( 1 << STEPPER_MS2_BP );
-	sObj->uiMode[STEP_EIGHTH]		= ( (1 << STEPPER_MS1_BP) | (1 << STEPPER_MS2_BP) );
-	sObj->uiMode[STEP_SIXTEENTH]	= ( (1 << STEPPER_MS1_BP) | (1 << STEPPER_MS2_BP) | (1 << STEPPER_MS3_BP) );
-	
-	/*!<-- Nur für den internen gebrauch gedacht! <--*/
- 	sStepperDrive.pPort = sObj->sStep.pPort;
- 	sStepperDrive.uiBp = sObj->sStep.uiBp;
+	*( sObj->sRst.pPort ) |= ( 1 << sObj->sRst.uiBp );		
 }
 
-static inline void StepperReset( sStepper_t *sObj )
+static inline void StepperResetLow( sStepper_t *sObj )
 {
 	*( sObj->sRst.pPort ) &= ~( 1 << sObj->sRst.uiBp );
-	for ( uint8_t x = 0 ; x < 10 ; x++){};
-	*( sObj->sRst.pPort ) |= ( 1 << sObj->sRst.uiBp );	
 }
 
 static inline uint8_t StepperSetMode( sStepper_t *sObj , enum eStep Step )
@@ -218,14 +236,28 @@ static inline uint8_t StepperSetMode( sStepper_t *sObj , enum eStep Step )
 		return 2; // kein gültiger Port
 	}
 	
-	*sObj->sMsx.pPort = ( *sObj->sMsx.pPort & 0x00 ) ^ sObj->uiMode[Step];
+	*( sObj->sMsx.pPort ) = ( *sObj->sMsx.pPort & 0xFF ) ^ sObj->uiMode[Step];
 	
 	return 0;
 }
 
-static inline void StepperChangeRotation( sStepper_t *sObj )
+static inline void StepperChangeRotation( sStepper_t *sObj , enum eRotation eRotation )
 {
-	*( sObj->sDir.pPort ) ^= 1 << sObj->sDir.uiBp;	
+	switch ( eRotation )
+	{
+		default:
+		
+		case ROTATION_LEFT:
+		{
+			*( sObj->sDir.pPort ) |= ~( 1 << sObj->sDir.uiBp );
+		}break;
+		
+		case ROTATION_RIGHT:
+		{
+			*( sObj->sDir.pPort ) &= ~( 1 << sObj->sDir.uiBp );
+		}break;
+
+	}	
 };
 
 static inline void StepperEnable( sStepper_t *sObj )
@@ -238,20 +270,60 @@ static inline void StepperDisable( sStepper_t *sObj )
 	*( sObj->sEn.pPort ) |= ( 1 << sObj->sEn.uiBp );
 }
 
-static inline void StepperSleep( sStepper_t *sObj )
+static inline void StepperSleepOn( sStepper_t *sObj )
 {
 	*( sObj->sSlp.pPort ) &= ~( 1 << sObj->sSlp.uiBp );
 }
 
-static inline void StepperActivate( sStepper_t *sObj )
+static inline void StepperSleepOff( sStepper_t *sObj )
 {
 	*( sObj->sSlp.pPort ) |= ( 1 << sObj->sSlp.uiBp );
 }
 
-static inline void StepperPulse( void )
+static inline void StepperPulse( sStepper_t *sObj )
 {
- 	*( sStepperDrive.pPort ) ^= ( 1 << sStepperDrive.uiBp );
+  	*( sObj->sStep.pPort ) &= ~( 1 << sObj->sStep.uiBp );
+   	*( sObj->sStep.pPort ) |= ( 1 << sObj->sStep.uiBp );
 }
+
+static inline void StepperInit( sStepper_t *sObj )
+{
+	/*!<-- Daten Richtungs Register konfiguieren <--*/
+	*( sObj->sMsx.pPort - 1  ) |= sObj->sMsx.uiMsxGp; // Step Bits
+	*( sObj->sDir.pPort - 1  ) |= ( 1 << sObj->sDir.uiBp ); // Richtungs Ausgang
+	*( sObj->sRst.pPort - 1  ) |= ( 1 << sObj->sRst.uiBp ); // Reset Ausgang
+	*( sObj->sStep.pPort - 1 ) |= ( 1 << sObj->sStep.uiBp ); // Pulse Ausgang
+	*( sObj->sEn.pPort - 1   ) |= ( 1 << sObj->sEn.uiBp ); // Enable Ausgang
+	*( sObj->sSlp.pPort - 1  ) |= ( 1 << sObj->sSlp.uiBp ); // Sleep Ausgang
+	
+	switch ( sObj->sDir.eDefault )
+	{
+		default:
+		
+		case ROTATION_LEFT:
+		{
+			*( sObj->sDir.pPort ) |= ( 1 << sObj->sDir.uiBp );
+		}break;
+		
+		case ROTATION_RIGHT:
+		{
+			*( sObj->sDir.pPort ) &= ~( 1 << sObj->sDir.uiBp );
+		}break;
+	}
+	
+	/*!<-- Default Zustände setzen <--*/
+	StepperEnable( sObj );
+	StepperSleepOff( sObj );
+	StepperResetHigh( sObj );
+	
+	/*!<-- Schrittweiten konfigurieren <--*/
+	sObj->uiMode[STEP_FULL]			= 0x00;
+	sObj->uiMode[STEP_HALF]			= 1 << STEPPER_MS1_BP;
+	sObj->uiMode[STEP_QUARTER]		= 1 << STEPPER_MS2_BP;
+	sObj->uiMode[STEP_EIGHTH]		= ( (1 << STEPPER_MS1_BP) | (1 << STEPPER_MS2_BP) );
+	sObj->uiMode[STEP_SIXTEENTH]	= ( (1 << STEPPER_MS1_BP) | (1 << STEPPER_MS2_BP) | (1 << STEPPER_MS3_BP) );
+}
+
 
 /*****************************************************************/
 
