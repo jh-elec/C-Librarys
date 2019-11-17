@@ -47,7 +47,7 @@
 #define STEPPER_RESET_BP		4
 
 #define STEPPER_DIR_PORT		PORTD
-#define STEPPER_DIR_BP			3
+#define STEPPER_DIR_BP			4
 
 #define STEPPER_MS_PORT			PORTC
 #define STEPPER_MS1_BP			1
@@ -100,7 +100,7 @@ typedef struct
 	{
 		pPort_t pPort;
 		uint8_t uiBp;	
-		enum eRotation eDefault;
+		uint8_t uiRotation;
 	}sDir;
 	
 	struct
@@ -182,7 +182,7 @@ sStepper_t sStepper[__STEPPER_MAX_ENTRYS__] =
 		
 		.sDir =
 		{
-			&STEPPER_DIR_PORT  , STEPPER_DIR_BP , ROTATION_RIGHT
+			&PORTD  , PD0 , ROTATION_RIGHT
 		},
 		
 		.sRst =
@@ -241,23 +241,19 @@ static inline uint8_t StepperSetMode( sStepper_t *sObj , enum eStep Step )
 	return 0;
 }
 
-static inline void StepperChangeRotation( sStepper_t *sObj , enum eRotation eRotation )
+static inline void StepperChangeRotation( sStepper_t *sObj , enum eRotation eValue )
 {
-	switch ( eRotation )
+	if ( sObj->sDir.uiRotation == ROTATION_LEFT )
 	{
-		default:
-		
-		case ROTATION_LEFT:
-		{
-			*( sObj->sDir.pPort ) |= ~( 1 << sObj->sDir.uiBp );
-		}break;
-		
-		case ROTATION_RIGHT:
-		{
-			*( sObj->sDir.pPort ) &= ~( 1 << sObj->sDir.uiBp );
-		}break;
-
-	}	
+		*( sObj->sDir.pPort ) &= ~( 1 << sObj->sDir.uiBp );
+		sObj->sDir.uiRotation = ROTATION_RIGHT;
+	}
+	else if ( sObj->sDir.uiRotation == ROTATION_RIGHT )
+	{
+		*( sObj->sDir.pPort ) |= ( 1 << sObj->sDir.uiBp );
+		sObj->sDir.uiRotation = ROTATION_LEFT;
+	}
+	
 };
 
 static inline void StepperEnable( sStepper_t *sObj )
@@ -283,7 +279,7 @@ static inline void StepperSleepOff( sStepper_t *sObj )
 static inline void StepperPulse( sStepper_t *sObj )
 {
   	*( sObj->sStep.pPort ) &= ~( 1 << sObj->sStep.uiBp );
-   	*( sObj->sStep.pPort ) |= ( 1 << sObj->sStep.uiBp );
+   	*( sObj->sStep.pPort ) |= ( 1 << sObj->sStep.uiBp );   
 }
 
 static inline void StepperInit( sStepper_t *sObj )
@@ -296,10 +292,8 @@ static inline void StepperInit( sStepper_t *sObj )
 	*( sObj->sEn.pPort - 1   ) |= ( 1 << sObj->sEn.uiBp ); // Enable Ausgang
 	*( sObj->sSlp.pPort - 1  ) |= ( 1 << sObj->sSlp.uiBp ); // Sleep Ausgang
 	
-	switch ( sObj->sDir.eDefault )
+	switch ( sObj->sDir.uiRotation )
 	{
-		default:
-		
 		case ROTATION_LEFT:
 		{
 			*( sObj->sDir.pPort ) |= ( 1 << sObj->sDir.uiBp );
@@ -312,8 +306,8 @@ static inline void StepperInit( sStepper_t *sObj )
 	}
 	
 	/*!<-- Default Zustände setzen <--*/
-	StepperEnable( sObj );
-	StepperSleepOff( sObj );
+	StepperDisable( sObj );
+	StepperSleepOn( sObj );
 	StepperResetHigh( sObj );
 	
 	/*!<-- Schrittweiten konfigurieren <--*/
