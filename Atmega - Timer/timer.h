@@ -31,10 +31,10 @@
 
 
 
-/*!<-- defines -- >*/
+/*!<-- Definierungen <--*/
 /*****************************************************************/
 
-/**< Waveform Generation Mode Bits */
+/*!<-- Waveform Generation Mode Bits <--*/
 #define _TMR0_MODE0					( ! ( 1 << WGM00 | 1 << WGM01 ) ) // Normal
 #define _TMR0_MODE2					( 1 << WGM01 ) // CTC
 
@@ -43,31 +43,33 @@
 
 #define _TMR2_MODE0					( ! ( 1 << WGM21 | 1 << WGM20 ) ) // Normal
 #define _TMR2_MODE2					( 1 << WGM21 ) // CTC
+/*!<-- Waveform Generation Mode Bits // Ende <--*/
 
+/*!<-- Prescaler Mode Group Position <--*/
+#define _TMR_PRE_OFFSET				( << 0 )
 
-/**< Prescaler Mode Group Position */
-#define _TMR0_PRE_1					( 0b001 << 0 )
-#define _TMR0_PRE_8					( 0b010 << 0 )
-#define _TMR0_PRE_64				( 0b011 << 0 )
-#define _TMR0_PRE_256				( 0b100 << 0 )
-#define _TMR0_PRE_1024				( 0b101 << 0 )
+#define _TMR0_PRE_1					( 0b001 << _TMR_PRE_OFFSET )
+#define _TMR0_PRE_8					( 0b010 << _TMR_PRE_OFFSET )
+#define _TMR0_PRE_64				( 0b011 << _TMR_PRE_OFFSET )
+#define _TMR0_PRE_256				( 0b100 << _TMR_PRE_OFFSET )
+#define _TMR0_PRE_1024				( 0b101 << _TMR_PRE_OFFSET )
 
-#define _TMR1_PRE_1					( 0b001 << 0 )
-#define _TMR1_PRE_8					( 0b010 << 0 )
-#define _TMR1_PRE_64				( 0b011 << 0 )
-#define _TMR1_PRE_256				( 0b100 << 0 )
-#define _TMR1_PRE_1024				( 0b101 << 0 )
+#define _TMR1_PRE_1					( 0b001 << _TMR_PRE_OFFSET )
+#define _TMR1_PRE_8					( 0b010 << _TMR_PRE_OFFSET )
+#define _TMR1_PRE_64				( 0b011 << _TMR_PRE_OFFSET )
+#define _TMR1_PRE_256				( 0b100 << _TMR_PRE_OFFSET )
+#define _TMR1_PRE_1024				( 0b101 << _TMR_PRE_OFFSET )
 
-#define _TMR2_PRE_1					( 0b001 << 0 )
-#define _TMR2_PRE_8					( 0b010 << 0 )
-#define _TMR2_PRE_32				( 0b011 << 0 )
-#define _TMR2_PRE_64				( 0b100 << 0 )
-#define _TMR2_PRE_128				( 0b101 << 0 )
-#define _TMR2_PRE_256				( 0b110 << 0 )
-#define _TMR2_PRE_1024				( 0b111 << 0 )
+#define _TMR2_PRE_1					( 0b001 << _TMR_PRE_OFFSET )
+#define _TMR2_PRE_8					( 0b010 << _TMR_PRE_OFFSET )
+#define _TMR2_PRE_32				( 0b011 << _TMR_PRE_OFFSET )
+#define _TMR2_PRE_64				( 0b100 << _TMR_PRE_OFFSET )
+#define _TMR2_PRE_128				( 0b101 << _TMR_PRE_OFFSET )
+#define _TMR2_PRE_256				( 0b110 << _TMR_PRE_OFFSET )
+#define _TMR2_PRE_1024				( 0b111 << _TMR_PRE_OFFSET )
 	
 
-/**< TIMSK Interrupt Configuration */
+/*!<-- TIMSK Interrupt Configuration <--*/
 #if defined( __AVR_ATmega328P__ )
   
 	 /*!<-- ATmega328P <--*/
@@ -257,7 +259,7 @@ void (*pvTimerCallback[__CALLBACK_TIMER_MEMBERS__])(void) =
 /*****************************************************************/
 
 
-/*!<-- global variables -- >*/
+/*!<-- Globale Variablen <--*/
 /*****************************************************************/
 
 /*!<-- Timer 0 Konfiguration <--*/
@@ -409,7 +411,7 @@ const sTimer8Config_t sTimer2OvfSettings[]		=
 /*****************************************************************/
 
 
-/*!<-- functions -- >*/
+/*!<-- Funktionen <--*/
 /*****************************************************************/
 
 extern inline enum eTimerError Timer0CompInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
