@@ -13,11 +13,12 @@
 #define __RX8564_H__
 
 #include <avr/io.h>
+#include "i2cmaster.h"
 
 /* Slave Address */
 #define RX8564_ADDR 0xA2 
 
-/* rtcSetClkOut Frequency */
+/* RtcSetClkOut Frequency */
 #define F_32768Hz 0x80
 #define F_1024Hz  0x81
 #define F_32Hz	  0x82
@@ -26,109 +27,116 @@
 
 
 /* register addresses */
-#define control_1_register			0x00
-#define control_2_register			0x01
-#define seconds_register			0x02
-#define minutes_register			0x03
-#define hours_register				0x04
-#define day_register				0x05
-#define day_name_register			0x06
-#define month_Register				0x07
-#define year_Register				0x08
-#define minute_alert_register		0x09
-#define hour_alert_register			0x0A
-#define day_alert_register			0x0B
-#define day_Name_alert_register		0x0C
-#define	clkout_frequency_register	0x0D
-#define timer_control_register		0x0E
-#define timer_register				0x0F
-
-
+enum eRtcRegister
+{
+	eRTC_REG_CTRL1,
+	eRTC_REG_CTRL2,
+	eRTC_REG_SEC,
+	eRTC_REG_MIN,
+	eRTC_REG_HOUR,
+	eRTC_REG_DAY,
+	eRTC_REG_DAY_NAME,
+	eRTC_REG_MONTH,
+	eRTC_REG_YEAR,
+	eRTC_REG_ALERT_MIN,
+	eRTC_REG_ALERT_HOUR,
+	eRTC_REG_ALERT_DAY,
+	eRTC_REG_ALERT_DAY_NAME,
+	eRTC_REG_CLKOUT,
+	eRTC_REG_TIMER_CTRL,
+	eRTC_REG_TIMER,
+};
 
  typedef struct
  {
-	 uint8_t	second;
-	 uint8_t	minute;
-	 uint8_t	hour;
-	 uint8_t	month;
-	 uint8_t	day;
-	 uint8_t	dayName;
-	 uint16_t	year;
+	 struct  
+	 {
+		uint8_t	uiSecond;
+		uint8_t	uiMinute;
+		uint8_t	uiHour;
+	 }sTime;
 	 
-	 uint8_t	alrt_minute;
-	 uint8_t	alrt_hour;
-	 uint8_t	alrt_day;
-	 uint8_t	alrt_dayName;
-	 
- }rx8564_t;
+	 struct  
+	 {
+		 uint8_t	uiMonth;
+		 uint8_t	uiDay;
+		 uint8_t	uiDayName;
+		 uint16_t	uiYear;		 
+	 }sDate;
+
+	struct  
+	{
+		uint8_t	uiMinute;
+		uint8_t	uiHour;
+		uint8_t	uiDay;
+		uint8_t	uiDayName;
+	}sAlert;
+	
+ }sRtc_t;
 
 
-/* rtcInit
+/* RtcInit
 * @para             -> init the rtc
 * @return           -> -none
 * @description      -> starts all timer
 */
-void rtcInit(void);
+void RtcInit( void );
 
-/* rtcSetTime
+/* RtcSetTime
 * @para             -> hour, minutes, seconds
 * @return           -> -none
 * @description      -> all parameters in dec
 */
-void rtcSetTime(uint8_t hour, uint8_t minutes, uint8_t seconds);
+void RtcSetTime( uint8_t uiHour , uint8_t uiMinute , uint8_t uiSecond );
 
-/* rtcSetDate
+/* RtcSetDate
 * @para             -> day, week_day, month, year
 * @return           -> -none
 * @description      -> all parameters in dec
 */
-void rtcSetDate(uint8_t day,uint8_t week_day, uint8_t month, uint16_t year);
+void RtcSetDate( uint8_t uiDay , uint8_t uiWeekDay , uint8_t uiMonth , uint16_t uiYear );
 
 /* rtcSetAlrt
 * @para             -> day, week_day, hour, minutes
 * @return           -> -none
 * @description      -> all parameters in dec
 */
-void rtcSetAlrt(uint8_t day, uint8_t week_day, uint8_t hour, uint8_t minutes);
+void rtcSetAlrt( uint8_t uiDay , uint8_t uiWeekDay , uint8_t uiHour , uint8_t uiMinute );
 
-/* rtcSetClkOut
+/* RtcSetClkOut
 * @para             -> frequency
 * @return           -> -none
 * @description      -> set the speed of clkout pin
 */
-void rtcSetClkOut(uint8_t frequency);
+void RtcSetClkOut( uint8_t uiFreq );
 
-/* rtcGetData
+/* RtcGetData
 * @para             -> struct of rx8564_t
 * @return           -> -none
-* @description      -> save all read outs in the buffer
+* @description      -> save all read outs in the uiBuffer
 */
-void rtcGetData(rx8564_t *buffer);
+void RtcGetData( sRtc_t *psRtc );
 
-/* rtcSetTimCtrl
+/* RtcSetTimerCtrl1
 * @para             -> config of timer mask
 * @return           -> -none
 * @description      -> for more details see datasheet
 */
-void rtcSetTimCtrl(uint8_t mask);
+void RtcSetTimerCtrl1( uint8_t uiMask );
 
-/* rtcSetCtrl2
+/* RtcSetTimerCtrl2
 * @para             -> config of rtc
 * @return           -> -none
 * @description      -> for more details see datasheet
 */
-void rtcSetCtrl2(uint8_t mask);
+void RtcSetTimerCtrl2( uint8_t uiMask );
 
-/* rtcReadTim
+/* RtcReadTim
 * @para             -> -none
 * @return           -> register value
 * @description      -> for more details see datasheet
 */
-uint8_t rtcReadTim(void);
-
-
-uint8_t bcdToDec(uint8_t val);
-uint8_t decToBcd(uint8_t val);
+uint8_t RtcReadTim( void );
 
 
 #endif

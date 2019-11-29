@@ -13,102 +13,55 @@
 
 
 #include <stdbool.h>
-#include "rx8564.h"
+#include "../Includes/rx8564.h"
 
 
 
- 
- static uint8_t buff[11] = "";
+static uint8_t uiBuff[11] = "";
 
 
-inline uint8_t			rtcBcdToDec				( uint8_t val )						
+inline uint8_t			RtcBcdToDec				( uint8_t uiValue )					
 {
-	return ( ( ( val & 0xF0 ) >> 4 ) * 10 ) + ( val & 0x0F );
+	return ( ( ( uiValue & 0xF0 ) >> 4 ) * 10 ) + ( uiValue & 0x0F );
 }
 
-inline uint8_t			rtcDecToBcd				( uint8_t val )						
+inline uint8_t			RtcDecToBcd				( uint8_t uiValue )					
 {	
-	return ( ( ( val / 10 ) << 4 ) | ( val % 10 ) );
+	return ( ( ( uiValue / 10 ) << 4 ) | ( uiValue % 10 ) );
 }
 
-#ifdef __AVR__
-static inline uint8_t	rtcRead					( uint8_t *buff , uint8_t leng )	
+
+static inline uint8_t	RtcRead					( uint8_t *pBuff , uint8_t uiLeng )	
 {
+	uint8_t x = 0;
 	
-	if( i2c_start( RX8564_ADDR + I2C_WRITE ) )
-	{
-		
-		#ifdef _WITH_ERROR_REPORT_
-			errorWriteCircular( &err , _ERROR_RTC_I2C_ , ERROR_I2C_NO_ACK );
-		#endif
-	}
-	
-	if ( i2c_write( buff[0] ) )// Register Adresse
-	{
-		#ifdef _WITH_ERROR_REPORT_
-			errorWriteCircular( &err , _ERROR_RTC_I2C_ , ERROR_I2C_ADDRESS_TX );
-		#endif
-	}
-	
+	i2c_start( RX8564_ADDR + I2C_WRITE );
+	i2c_write( pBuff[0] );// Register Adresse
+
 	if ( i2c_rep_start( RX8564_ADDR + I2C_READ ) )
-	{
-		#ifdef _WITH_ERROR_REPORT_
-			errorWriteCircular( &err , _ERROR_RTC_I2C_ , ERROR_I2C_NO_ACK );
-		#endif
-		
-		i2c_stop();
-		
+	{	
+		i2c_stop();	
 		return 1;
 	}
 	
-	for ( uint8_t i = 0 ; i < leng ; i++ )
+	for ( x = 0 ; x < ( uiLeng - 1 ) ; x++ )
 	{
-		if ( leng == 1 )
-		{
-			*buff = i2c_readNak();
-			return 0;
-		}
-		else
-		{
-			*buff++ = i2c_readAck();
-		}
+		pBuff[x] = i2c_readAck();
 	}
-	
-	*buff = i2c_readNak();
+	pBuff[x+1] = i2c_readNak();
 	
 	i2c_stop();
 	
 	return 0;
 }
 
-static inline uint8_t	rtcWrite				( uint8_t *buff , uint8_t leng )	
+static inline uint8_t	RtcWrite				( uint8_t *pBuff , uint8_t uiLeng )	
 {
 	i2c_start_wait( RX8564_ADDR + I2C_WRITE );
 
-	for ( uint8_t i = 0 ; i < leng ; i++ )
+	for ( uint8_t i = 0 ; i < uiLeng ; i++ )
 	{
-		if ( leng == 1 )
-		{
-			if ( i2c_write( *buff ) )
-			{
-				#ifdef _WITH_ERROR_REPORT_
-					errorWriteCircular( &err , _ERROR_RTC_I2C_ , ERROR_I2C_BYTE_TX );	
-				#endif
-			}
-			
-			i2c_stop();
-			
-			return 0;
-		}
-		else
-		{
-			if ( i2c_write( *buff++ ) )
-			{
-				#ifdef _WITH_ERROR_REPORT_
-					errorWriteCircular( &err , _ERROR_RTC_I2C_ , ERROR_I2C_BYTE_TX );
-				#endif
-			}
-		}
+		i2c_write( pBuff[i] );
 	}
 	
 	i2c_stop();
@@ -117,106 +70,96 @@ static inline uint8_t	rtcWrite				( uint8_t *buff , uint8_t leng )
 }
 
 
-void					rtcInit					( void )															
+void					RtcInit					( void )																	
 {
-	buff[0] = RX8564_CONTROL_1;
-	buff[1] = 0x00;
-	rtcWrite( buff , 2 );
+	i2c_init();
+	
+	uiBuff[0] = eRTC_REG_CTRL1;
+	uiBuff[1] = 0x00;
+	RtcWrite( uiBuff , 2 );
 }
 
-void					rtcSetTime				( uint8_t hour , uint8_t minutes , uint8_t seconds )				
+void					RtcSetTime				( uint8_t uiHour , uint8_t uiMinute , uint8_t uiSecond )					
 {
-	buff[0] = RX8564_SECONDS;
-	buff[1] = rtcDecToBcd( seconds );
-	buff[2] = rtcDecToBcd( minutes );
-	buff[3] = rtcDecToBcd( hour );
-	rtcWrite( buff , 4 );
+	uiBuff[0] = eRTC_REG_SEC;
+	uiBuff[1] = RtcDecToBcd( uiSecond );
+	uiBuff[2] = RtcDecToBcd( uiMinute );
+	uiBuff[3] = RtcDecToBcd( uiHour );
+	RtcWrite( uiBuff , 4 );
 } 
    
-void					rtcSetDate				( uint8_t day , uint8_t weekDay , uint8_t month, uint16_t year )	
+void					RtcSetDate				( uint8_t uiDay , uint8_t uiWeekDay , uint8_t uiMonth , uint16_t uiYear )	
 {
-	buff[0] = RX8564_DAYS;
-	buff[1] = rtcDecToBcd( day );
-	buff[2] = rtcDecToBcd( weekDay );
-	buff[3] = rtcDecToBcd( month );
-	buff[4] = rtcDecToBcd( year - 2000 );
-	rtcWrite( buff , 5 );    
+	uiBuff[0] = eRTC_REG_DAY;
+	uiBuff[1] = RtcDecToBcd( uiDay );
+	uiBuff[2] = RtcDecToBcd( uiWeekDay );
+	uiBuff[3] = RtcDecToBcd( uiMonth );
+	uiBuff[4] = RtcDecToBcd( uiYear - 2000 );
+	RtcWrite( uiBuff , 5 );    
 }
   
-void					rtcSetAlert				( uint8_t day , uint8_t weekDay , uint8_t hour, uint8_t minutes )	
+void					RtcSetAlert				( uint8_t uiDay , uint8_t uiWeekDay , uint8_t uiHour , uint8_t uiMinute )	
 {
-	buff[0] = RX8564_MINUTE_ALERT;
-	buff[1] = rtcDecToBcd( minutes );
-	buff[2] = rtcDecToBcd( hour );
-	buff[3] = rtcDecToBcd( day );
-	buff[4] = rtcDecToBcd( weekDay );
-	rtcWrite( buff , 5 );
+	uiBuff[0] = eRTC_REG_ALERT_MIN;
+	uiBuff[1] = RtcDecToBcd( uiMinute );
+	uiBuff[2] = RtcDecToBcd( uiHour );
+	uiBuff[3] = RtcDecToBcd( uiDay );
+	uiBuff[4] = RtcDecToBcd( uiWeekDay );
+	RtcWrite( uiBuff , 5 );
  }
   
-void					rtcSetClkOut			( uint8_t frequency )	
+void					RtcSetClkOut			( uint8_t uiFreq )	
 {    
-	buff[0] = RX8564_CLKOUT_FREQUENCY;
-	buff[1] = frequency;
-	rtcWrite( buff , 2 );	
+	uiBuff[0] = eRTC_REG_CLKOUT;
+	uiBuff[1] = uiFreq;
+	RtcWrite( uiBuff , 2 );	
 }
  
-void					rtcGetData				( rx8564_t *buffer )	
+void					RtcGetData				( sRtc_t *psRtc )	
 {   
-	buff[0] = RX8564_SECONDS;
-	rtcRead( buff , sizeof( buff ) );
-			
-    buffer->second			= buff[0];
-    buffer->minute			= buff[1];  
-    buffer->hour			= buff[2];
-    buffer->day				= buff[3];
-    buffer->dayName			= buff[4];
-    buffer->month			= buff[5];
-    buffer->year			= buff[6];
-    buffer->alrt_minute		= buff[7];
-    buffer->alrt_hour		= buff[8];
-    buffer->alrt_day		= buff[9];
-    buffer->alrt_dayName	= buff[10];
+	uiBuff[0] = eRTC_REG_SEC;
+	RtcRead( uiBuff , sizeof( uiBuff ) );
 
- 
-    buffer->second			&= 0x7F;
-    buffer->minute			&= 0x7F;
-    buffer->hour			&= 0x3F;
-          
-    buffer->day				&= 0x3F;
-    buffer->month			&= 0x1F;
-    buffer->dayName			&= 0x07;
-     
-    buffer->alrt_minute		&= 0x7F;
-    buffer->alrt_hour		&= 0x7F;
-    buffer->alrt_day		&= 0x7F;
-    buffer->alrt_dayName	&= 0x7F;
-}
-  
-void					rtcSetCtrl2				( uint8_t mask )		
-{
-	buff[0] = RX8564_CONTROL_2;
-	buff[1] = mask;
-	rtcWrite( buff , 2 );
-}
- 
-void					rtcSetTimerControl		( uint8_t mask )		
-{
-	buff[0] = RX8564_TIMER_CONTROL;
-	buff[1] = mask;
-	rtcWrite( buff , 2 );
+	psRtc->sTime.uiSecond	=	RtcBcdToDec( uiBuff[0] & 0x7F );
+	psRtc->sTime.uiMinute	=	RtcBcdToDec( uiBuff[1] & 0x7F );
+	psRtc->sTime.uiHour		=	RtcBcdToDec( uiBuff[2] & 0x3F );	
+	
+	psRtc->sDate.uiDay		=	RtcBcdToDec( uiBuff[3] & 0x3F );
+	psRtc->sDate.uiDayName	=	RtcBcdToDec( uiBuff[4] & 0x07 );
+	psRtc->sDate.uiMonth	=	RtcBcdToDec( uiBuff[5] & 0x1F );
+	psRtc->sDate.uiYear		=	RtcBcdToDec( uiBuff[6] );
+	
+	psRtc->sAlert.uiMinute	=	RtcBcdToDec( uiBuff[7] & 0x7F );
+	psRtc->sAlert.uiHour	=	RtcBcdToDec( uiBuff[8] & 0x7F );
+	psRtc->sAlert.uiDay		=	RtcBcdToDec( uiBuff[9] & 0x7F );
+	psRtc->sAlert.uiDayName	=	RtcBcdToDec( uiBuff[10] & 0x7F);
+
 }
 
-uint8_t					rtcReadTimer			( void )				
+void					RtcSetTimerCtrl2		( uint8_t uiMask )	
+{
+	uiBuff[0] = eRTC_REG_CTRL2;
+	uiBuff[1] = uiMask;
+	RtcWrite( uiBuff , 2 );
+}
+ 
+void					RtcSetTimerControl		( uint8_t uiMask )	
+{
+	uiBuff[0] = eRTC_REG_TIMER_CTRL;
+	uiBuff[1] = uiMask;
+	RtcWrite( uiBuff , 2 );
+}
+
+uint8_t					RtcReadTimer			( void )			
 {	
-	buff[0] = RX8564_TIMER;
-	rtcRead( buff , 1 );
+	uiBuff[0] = eRTC_REG_TIMER;
+	RtcRead( uiBuff , 1 );
 
-	return buff[0];
+	return uiBuff[0];
 }
 
-#endif
 
-bool					rtcIsLeapYear			( const uint16_t year )							
+bool					RtcIsLearYear			( const uint16_t year )							
 {
   // Die Regel lautet: Alles, was durch 4 teilbar ist, ist ein Schaltjahr.
   // Es sei denn, das Jahr ist durch 100 teilbar, dann ist es keins.
@@ -238,7 +181,7 @@ bool					rtcIsLeapYear			( const uint16_t year )
   return false;
 }                   
 
-uint16_t				rtcGetNumOfDaysAtMonth	( const uint8_t month , const uint16_t year )	
+uint16_t				RtcGetNumOfDays			( const uint8_t month , const uint16_t year )	
 {
   //                     ungueltig,Jan,Feb,Mrz,Apr,Mai,Jun,Jul,Aug,Sep,Okt,Nov,Dez
   uint8_t daysPerMonth[] = {  0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
@@ -246,7 +189,7 @@ uint16_t				rtcGetNumOfDaysAtMonth	( const uint8_t month , const uint16_t year )
   if ( month == 2 )
   {
     // Februar: Schaltjahr unterscheiden
-    if ( rtcIsLeapYear( year ) )
+    if ( RtcIsLearYear( year ) )
     {
     	return 29;
 	}
@@ -267,12 +210,12 @@ uint16_t				rtcGetNumOfDaysAtMonth	( const uint8_t month , const uint16_t year )
   
 }                   
 
-uint16_t				rtcGetDays				( const uint16_t year )							
+uint16_t				RtcGetDays				( const uint16_t year )							
 {
-  return ( rtcIsLeapYear( year ) ) ? 366 : 365;
+  return ( RtcIsLearYear( year ) ) ? 366 : 365;
 }                   
 
-uint16_t				rtcGetWeekDay			( const uint8_t day , const uint8_t month , const uint16_t year )	
+uint16_t				RtcGetWeekDay			( const uint8_t day , const uint8_t month , const uint16_t year )	
 {
 	//                       ungueltig Jan Feb Mrz Apr Mai Jun Jul Aug Sep Okt Nov Dez 
 	uint8_t monthOffset[13] = {  0 ,  0 ,  3 ,  3 ,  6 ,  1 ,  4 ,  6 ,  2 ,  5 ,  0 ,  3 ,  5 };
@@ -291,7 +234,7 @@ uint16_t				rtcGetWeekDay			( const uint8_t day , const uint8_t month , const ui
 	uint8_t centuryDigit 	= ( 3 - ( ( year / 100 ) % 4 ) ) * 2;
 	
 	// Schaltjahreskorrektur:
-	if ( ( month <= 2 ) && ( rtcIsLeapYear( year ) ) )
+	if ( ( month <= 2 ) && ( RtcIsLearYear( year ) ) )
 	{
 		dayDigit = dayDigit + 6;
 	}
@@ -309,7 +252,7 @@ uint16_t				rtcGetWeekDay			( const uint8_t day , const uint8_t month , const ui
 	return result;
 }   
 
-uint16_t				rtcGetDayofYear			( const uint8_t day , const uint8_t month , const uint16_t year )	
+uint16_t				RtcGetDayOfYear			( const uint8_t day , const uint8_t month , const uint16_t year )	
 {
   // Der wievielte Tag des Jahres ist dieser Tag
   if ( ( month == 0 ) || ( month > 12 ) )
@@ -323,22 +266,22 @@ uint16_t				rtcGetDayofYear			( const uint8_t day , const uint8_t month , const 
   while ( localMonth > 1 )
   {
     localMonth--;
-    localDay += rtcGetNumOfDaysAtMonth( localMonth , year );
+    localDay += RtcGetNumOfDays( localMonth , year );
   }
 
   return localDay;
 }                   
 
-uint16_t				rtcGetWeek				( uint16_t day , uint16_t month , uint16_t year )					
+uint16_t				RtcGetWeek				( uint16_t day , uint16_t month , uint16_t year )					
 {
   // Berechnung erfolgt analog DIN 1355, welche besagt:
   // Der erste Donnerstag im neuen Jahr liegt immer in der KW 1.
   // "Woche" ist dabei definiert als [Mo, ..., So].
 
-  uint16_t dayOfYear = rtcGetDayofYear( day , month , year );
+  uint16_t dayOfYear = RtcGetDayOfYear( day , month , year );
 
   // Berechnen des Wochentags des 1. Januar:
-  uint16_t weekDay1Jan = rtcGetWeekDay( 1 , 1 , year );
+  uint16_t weekDay1Jan = RtcGetWeekDay( 1 , 1 , year );
 
   // Sonderfaelle Freitag und Samstag
   if (weekDay1Jan >= 5) 
@@ -349,7 +292,7 @@ uint16_t				rtcGetWeek				( uint16_t day , uint16_t month , uint16_t year )
   // Sonderfaelle "Jahresanfang mit KW - Nummer aus dem Vorjahr"
   if ( ( dayOfYear + weekDay1Jan ) <= 1 )
   {
-    return rtcGetWeek( 31 , 12 , year - 1 );
+    return RtcGetWeek( 31 , 12 , year - 1 );
   }
 
   uint16_t week = ( ( dayOfYear + weekDay1Jan + 5 ) / 7 );
@@ -360,7 +303,7 @@ uint16_t				rtcGetWeek				( uint16_t day , uint16_t month , uint16_t year )
   // Andernfalls ist diese KW schon die KW1 des Folgejahres.
   if ( week == 53 )
   {
-    bool leapYear = rtcIsLeapYear( year );
+    bool leapYear = RtcIsLearYear( year );
 
     if ( ( weekDay1Jan  ==  4 ) ||  ( weekDay1Jan  == -3 ) ||  ( ( weekDay1Jan ==  3 ) && leapYear ) || ( ( weekDay1Jan == -4 ) && leapYear ) )
     {
