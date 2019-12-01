@@ -30,19 +30,21 @@
 
 void IoTabInit( const sIO_t *sTab )
 {	
+	uint8_t uiPinDefault = 0;
 	uint8_t uiPinAction = 0;
 	uint8_t uiPinPos = 0;
 	
 	for ( uint8_t uiTabPos = 0 ; sTab[uiTabPos].pPort != NULL ; uiTabPos++ )
 	{
-		uiPinAction = sTab[uiTabPos].uiFuncBitPos & IO_TAB_PIN_FUNC_MASK;
-		uiPinPos    = sTab[uiTabPos].uiFuncBitPos & IO_TAB_PIN_MASK;
+		uiPinDefault = sTab[uiTabPos].uiFuncBitPos & _DEFAULT_MASK;
+		uiPinAction = sTab[uiTabPos].uiFuncBitPos & _FUNCTION_MASK;
+		uiPinPos    = sTab[uiTabPos].uiFuncBitPos & _PIN_MASK;
 		
 		if ( uiPinAction & _FUNCTION_OUTPUT )
 		{
 			*( sTab[uiTabPos].pPort - 1 ) |= ( 1 << uiPinPos ); // - 1 für das DDR Register
 					
-			if ( uiPinAction & IO_TAB_DEFAULT_MASK ) // Default Zustand
+			if ( uiPinDefault & _DEFAULT_MASK ) // Default Zustand
 			{
 				*( sTab[uiTabPos].pPort ) |= ( 1 << uiPinPos );
 			}else
@@ -66,7 +68,7 @@ void IoTabSetLow( const sIO_t *sTab )
 {
 	for ( uint8_t x = 0 ; sTab[x].pPort != NULL ; x++ )
 	{
-		if ( ( sTab[x].uiFuncBitPos & IO_TAB_PIN_FUNC_MASK ) == _FUNCTION_OUTPUT )
+		if ( ( sTab[x].uiFuncBitPos & _FUNCTION_MASK ) == _FUNCTION_OUTPUT )
 		{
 			*( sTab[x].pPort ) &= ~( 1 << ( sTab[x].uiFuncBitPos & 0x0F ) );
 		}
@@ -77,7 +79,7 @@ void IoTabSetHigh( const sIO_t *sTab )
 {
 	for ( uint8_t x = 0 ; sTab[x].pPort != NULL  ; x++ )
 	{
-		if ( ( sTab[x].uiFuncBitPos & IO_TAB_PIN_FUNC_MASK ) == _FUNCTION_OUTPUT )
+		if ( ( sTab[x].uiFuncBitPos & _FUNCTION_MASK ) == _FUNCTION_OUTPUT )
 		{
 			*( sTab[x].pPort ) |= ( 1 << ( sTab[x].uiFuncBitPos & 0x0F ) );
 		}

@@ -35,16 +35,13 @@
 #define _FUNCTION_INPUT_PULLUP          0x20
 #define _FUNCTION_OUTPUT                0x40
 
-#define HIGH							0x80
-#define LOW                             !HIGH					
-
-#define IO_TAB_DEFAULT_MASK		        0x80
-#define IO_TAB_PIN_FUNC_MASK	        0x70
-#define IO_TAB_PIN_MASK			        0x07
+#define _FUNCTION_MASK					( _FUNCTION_INPUT | _FUNCTION_INPUT_PULLUP | _FUNCTION_OUTPUT )
+#define _DEFAULT_MASK					0x80
+#define _PIN_MASK						0x07
 
 
 
-#define IO_TAB_CNFG( PINx , DEFAULT_STATE , FUNCx )	( ( PINx ) | ( DEFAULT_STATE ) | ( FUNCx ) )
+#define IO_TAB_CNFG( PINx , DEFAULT_STATE , FUNCx )			( ( PINx & _PIN_MASK)  |  ( ( DEFAULT_STATE << 7 ) & _DEFAULT_MASK ) | ( FUNCx & _FUNCTION_MASK ) )
 
 
 typedef volatile uint8_t* pRegister_t;

@@ -1,21 +1,44 @@
-/*
-	Routine for read Mechanical Encoder
-*/
+/*************************************************************
+*|
+*|	\@file  	encoder.h
+*|	\@brief 	-
+*|	\@author 	J.H - Elec(C)
+*|
+*|	\@project	Routinen zum auslesen eines Mechanischen Encoders
+*|
+*|	\@date		23/11/2019 - first implementation
+*|
+*|	\@todo
+*|
+*|
+*|	\@test
+*|
+*|
+*|	\@bug		no bug known
+*|
+*|
+*|	\@version	1.0.231119
+*|
+*|**************************************************************/
 
-/* define CPU frequency in Mhz here if not defined in Makefile */
-#ifndef F_CPU
-	#define F_CPU 16000000UL
-#endif
 
-#define PHASE_A     (PINB & 1<<PB2)     // an Pinbelegung anpassen
-#define PHASE_B     (PINB & 1<<PB1)     // an Pinbelegung anpassen
-
+#include <string.h>
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
-#include "encoder.h"
+#include "../Includes/encoder.h"
 
 
-volatile int8_t enc_delta;              // Drehgeberbewegung zwischen
+
+
+typedef struct
+{
+	pPort_t pPin;
+	uint8_t uiPhase[__PHASE_MAX_ENTRYS__];
+	int8_t uiDeltaCnt;
+	uint8_t uiRotation;
+}sEnc_t;
+
+volatile sEnc_t sEnc;
 
 // zwei Auslesungen im Hauptprogramm
 
@@ -29,38 +52,64 @@ volatile int8_t enc_delta;              // Drehgeberbewegung zwischen
 
 // Dekodertabelle für wackeligen Rastpunkt ( es wird nur +1 gezählt )
 // volle Auflösung
-  const int8_t table[16] PROGMEM = {0,0,-1,0,0,0,0,1,0,0,0,0,0,0,0,0};
+ const int8_t table[16] PROGMEM = {0,0,-1,0,0,0,0,1,0,0,0,0,0,0,0,0};
 
 
-int8_t encode_read( void )         // Encoder auslesen
+
+void EncoderInit( pPort_t  pPort , uint8_t uiPhaseABp , uint8_t uiPhaseBBp , uint8_t uiPullUpMask )
+{
+	if ( pPort == NULL )
+	{
+		return;
+	}
+	
+	sEnc.pPin = ( pPort - 2 );
+	sEnc.uiPhase[PHASE_B] = 1 << uiPhaseABp;
+	sEnc.uiPhase[PHASE_A] = 1 << uiPhaseBBp;
+	sEnc.uiDeltaCnt = 0;
+	
+	PORT_GET_DDR( pPort ) &= ~( sEnc.uiPhase[PHASE_A] | sEnc.uiPhase[PHASE_B] ); // Eingänge konfigurieren
+	*pPort |= ( uiPullUpMask ); // ggf. PullUps setzen
+
+}
+
+int8_t EncoderGet( void )        
 {
 	int8_t val;
 	// atomarer Variablenzugriff
 	cli();
-	val = enc_delta;
-	enc_delta = 0;
+	val = sEnc.uiDeltaCnt;
+	sEnc.uiDeltaCnt = 0;
 	sei();
 	return val;
 }
 
-ISR(TIMER0_COMPA_vect)             // 1ms fuer manuelle Eingabe
+eEncRotation_t EncoderGetRotation( void )
 {
-	static int8_t last=0;           // alten Wert speichern
+	eEncRotation_t eEnc;
+	eEnc = sEnc.uiRotation;
+	sEnc.uiRotation = 0;
 	
-	last = (last << 2)  & 0x0F;
-	if (PHASE_A) last |=2;
-	if (PHASE_B) last |=1;
-	enc_delta += pgm_read_byte(&table[last]);
+	return eEnc;
 }
 
-#if defined(__AVR_AT328P__)
-	void encode_init( void )            // nur Timer 0 initialisieren
+void EncoderRead( void )
+{
+	static int8_t Last = 0;           // alten Wert speichern
+	
+	Last = (Last << 2)  & 0x0F;
+	if (*(sEnc.pPin) & sEnc.uiPhase[PHASE_A]) Last |=2;
+	if (*(sEnc.pPin) & sEnc.uiPhase[PHASE_B]) Last |=1;
+	
+	int8_t iTableRead = pgm_read_byte( &table[Last] );
+	sEnc.uiDeltaCnt += iTableRead;
+	
+	switch ( iTableRead )
 	{
-		TCCR0A = (1<<WGM01);// CTC
-		TCCR0B = ((1<<CS01) | (1<<CS00));// F_CPU/64
-		OCR0A = (uint8_t)(F_CPU / 64.0 * 1e-3 - 0.5);       // 1ms
-		TIMSK0 |= 1<<OCIE1A;
+		case 1	:{ sEnc.uiRotation = ENC_ROTATION_LEFT;  }break;
+		case -1 :{ sEnc.uiRotation = ENC_ROTATION_RIGHT; }break;
 	}
-#endif
+}
+
 
 
