@@ -239,7 +239,6 @@
 		__CALLBACK_TIMER_MEMBERS__
 	};		
 	
-	// pv = PointerVector
 	void (*pvTimerCallback[__CALLBACK_TIMER_MEMBERS__])(void) =
 	{
 		// Callback Adressen! Werden in den entsprechenden Initalisierungen zugewiesen.
@@ -269,7 +268,6 @@
 		__CALLBACK_TIMER_MEMBERS__
 	};
 		
-	// pv = PointerVector
 	void (*pvTimerCallback[__CALLBACK_TIMER_MEMBERS__])(void) =
 	{
 		// Callback Adressen! Werden in den entsprechenden Initalisierungen zugewiesen.
@@ -322,158 +320,161 @@ sTimerReload_t volatile sReload[__MAX_TIMER_ENTRYS__];
 
 #if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny13A__ )
 
-/*!<-- Timer 0 Konfiguration <--*/
-const sTimer8Config_t  sTimer0OcieSettings[]	=
-{
-		/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-		+ Compare Match		 |	Divisor der F_CPU        | Waveform	Generating    +
-		+ Vergleichswert     |  (Prescaler)              | Modus ( CTC! )		  +
-		++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-	#if (F_CPU == 1000000)
-		{ .uiCnt = 9		 , .uiCSxx = _TMR0_PRE_1    , .uiWGMxx = _TMR0_MODE2 }, // 10µS  @1MHz
-		{ .uiCnt = 99		 , .uiCSxx = _TMR0_PRE_1    , .uiWGMxx = _TMR0_MODE2 }, // 100µS @1MHz
-		{ .uiCnt = 124		 , .uiCSxx = _TMR0_PRE_8    , .uiWGMxx = _TMR0_MODE2 }, // 1ms   @1MHz
+	/*!<-- Timer 0 Konfiguration <--*/
+	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	const sTimer8Config_t  sTimer0OcieSettings[]	=
+	{
+			/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+			+ Compare Match		 |	Divisor der F_CPU        | Waveform	Generating    +
+			+ Vergleichswert     |  (Prescaler)              | Modus ( CTC! )		  +
+			++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+		#if (F_CPU == 1000000)
+			{ .uiCnt = 9		 , .uiCSxx = _TMR0_PRE_1    , .uiWGMxx = _TMR0_MODE2 }, // 10µS  @1MHz
+			{ .uiCnt = 99		 , .uiCSxx = _TMR0_PRE_1    , .uiWGMxx = _TMR0_MODE2 }, // 100µS @1MHz
+			{ .uiCnt = 124		 , .uiCSxx = _TMR0_PRE_8    , .uiWGMxx = _TMR0_MODE2 }, // 1ms   @1MHz
 	
-	#elif (F_CPU == 8000000)
-		{ .uiCnt = 79		 , .uiCSxx = _TMR0_PRE_1    , .uiWGMxx = _TMR0_MODE2 }, // 10µS  @8MHz
-		{ .uiCnt = 99		 , .uiCSxx = _TMR0_PRE_8    , .uiWGMxx = _TMR0_MODE2 }, // 100µS @8MHz
-		{ .uiCnt = 124		 , .uiCSxx = _TMR0_PRE_64   , .uiWGMxx = _TMR0_MODE2 }, // 1ms   @8MHz
+		#elif (F_CPU == 8000000)
+			{ .uiCnt = 79		 , .uiCSxx = _TMR0_PRE_1    , .uiWGMxx = _TMR0_MODE2 }, // 10µS  @8MHz
+			{ .uiCnt = 99		 , .uiCSxx = _TMR0_PRE_8    , .uiWGMxx = _TMR0_MODE2 }, // 100µS @8MHz
+			{ .uiCnt = 124		 , .uiCSxx = _TMR0_PRE_64   , .uiWGMxx = _TMR0_MODE2 }, // 1ms   @8MHz
 
-	#elif (F_CPU == 16000000)
-		{ .uiCnt = 159		 , .uiCSxx = _TMR0_PRE_1    , .uiWGMxx = _TMR0_MODE2 }, // 10µS  @16MHz
-		{ .uiCnt = 199		 , .uiCSxx = _TMR0_PRE_8    , .uiWGMxx = _TMR0_MODE2 }, // 100µS @16MHz
-		{ .uiCnt = 249		 , .uiCSxx = _TMR0_PRE_64   , .uiWGMxx = _TMR0_MODE2 }, // 1ms   @16MHz
-	#else
-		#warning F_CPU not declared!
-	#endif
-};
+		#elif (F_CPU == 16000000)
+			{ .uiCnt = 159		 , .uiCSxx = _TMR0_PRE_1    , .uiWGMxx = _TMR0_MODE2 }, // 10µS  @16MHz
+			{ .uiCnt = 199		 , .uiCSxx = _TMR0_PRE_8    , .uiWGMxx = _TMR0_MODE2 }, // 100µS @16MHz
+			{ .uiCnt = 249		 , .uiCSxx = _TMR0_PRE_64   , .uiWGMxx = _TMR0_MODE2 }, // 1ms   @16MHz
+		#else
+			#warning F_CPU not declared!
+		#endif
+	};
 
 #endif 
 
 #if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
 
-const sTimer8Config_t  sTimer0OvfSettings[]		=
-{
-	#if (F_CPU == 1000000)
-		{ .uiCnt = 246     , .uiCSxx = _TMR0_PRE_1    , .uiWGMxx = _TMR0_MODE0 }, // 10µS  @1MHz
-		{ .uiCnt = 156     , .uiCSxx = _TMR0_PRE_1    , .uiWGMxx = _TMR0_MODE0 }, // 100µS @1MHz
-		{ .uiCnt = 131     , .uiCSxx = _TMR0_PRE_8    , .uiWGMxx = _TMR0_MODE0 }, // 1ms   @1MHz
-	#endif
+	const sTimer8Config_t  sTimer0OvfSettings[]		=
+	{
+		#if (F_CPU == 1000000)
+			{ .uiCnt = 246     , .uiCSxx = _TMR0_PRE_1    , .uiWGMxx = _TMR0_MODE0 }, // 10µS  @1MHz
+			{ .uiCnt = 156     , .uiCSxx = _TMR0_PRE_1    , .uiWGMxx = _TMR0_MODE0 }, // 100µS @1MHz
+			{ .uiCnt = 131     , .uiCSxx = _TMR0_PRE_8    , .uiWGMxx = _TMR0_MODE0 }, // 1ms   @1MHz
+		#endif
 
-	#if (F_CPU == 8000000)
-		{ .uiCnt = 176     , .uiCSxx = _TMR0_PRE_1    , .uiWGMxx = _TMR0_MODE0 }, // 10µS  @8MHz
-		{ .uiCnt = 156     , .uiCSxx = _TMR0_PRE_8    , .uiWGMxx = _TMR0_MODE0 }, // 100µS @8MHz
-		{ .uiCnt = 131     , .uiCSxx = _TMR0_PRE_64   , .uiWGMxx = _TMR0_MODE0 }, // 1ms   @8MHz
-	#endif
+		#if (F_CPU == 8000000)
+			{ .uiCnt = 176     , .uiCSxx = _TMR0_PRE_1    , .uiWGMxx = _TMR0_MODE0 }, // 10µS  @8MHz
+			{ .uiCnt = 156     , .uiCSxx = _TMR0_PRE_8    , .uiWGMxx = _TMR0_MODE0 }, // 100µS @8MHz
+			{ .uiCnt = 131     , .uiCSxx = _TMR0_PRE_64   , .uiWGMxx = _TMR0_MODE0 }, // 1ms   @8MHz
+		#endif
 
-	#if (F_CPU == 16000000)
-		{ .uiCnt = 96      , .uiCSxx = _TMR0_PRE_1    , .uiWGMxx = _TMR0_MODE0 }, // 10µS  @16MHz
-		{ .uiCnt = 56      , .uiCSxx = _TMR0_PRE_8    , .uiWGMxx = _TMR0_MODE0 }, // 100µS @16MHz
-		{ .uiCnt = 6       , .uiCSxx = _TMR0_PRE_64   , .uiWGMxx = _TMR0_MODE0 }, // 1ms   @16MHz
-	#endif
-};
-/*!<-- Timer 0 Konfiguration // Ende <--*/
+		#if (F_CPU == 16000000)
+			{ .uiCnt = 96      , .uiCSxx = _TMR0_PRE_1    , .uiWGMxx = _TMR0_MODE0 }, // 10µS  @16MHz
+			{ .uiCnt = 56      , .uiCSxx = _TMR0_PRE_8    , .uiWGMxx = _TMR0_MODE0 }, // 100µS @16MHz
+			{ .uiCnt = 6       , .uiCSxx = _TMR0_PRE_64   , .uiWGMxx = _TMR0_MODE0 }, // 1ms   @16MHz
+		#endif
+	};
+	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	/*!<-- Timer 0 Konfiguration // Ende <--*/
 
+	/*!<-- Timer 1 Konfiguration <--*/
+	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	const sTimer16Config_t sTimer1OcieSettings[]	=
+	{
+		#if (F_CPU == 1000000)
+			{ .uiCnt = 9       , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE4 }, // 10µS  @1MHz
+			{ .uiCnt = 99      , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE4 }, // 100µS @1MHz
+			{ .uiCnt = 124     , .uiCSxx = _TMR1_PRE_8    , .uiWGMxx = _TMR1_MODE4 }, // 1ms   @1MHz
+		#endif
 
-/*!<-- Timer 1 Konfiguration <--*/
-const sTimer16Config_t sTimer1OcieSettings[]	=
-{
-	#if (F_CPU == 1000000)
-		{ .uiCnt = 9       , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE4 }, // 10µS  @1MHz
-		{ .uiCnt = 99      , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE4 }, // 100µS @1MHz
-		{ .uiCnt = 124     , .uiCSxx = _TMR1_PRE_8    , .uiWGMxx = _TMR1_MODE4 }, // 1ms   @1MHz
-	#endif
+		#if (F_CPU == 8000000)
+			{ .uiCnt = 7	   , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE4 }, // 1µS   @8MHz
+			{ .uiCnt = 79	   , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE4 }, // 10µS  @8MHz
+			{ .uiCnt = 99	   , .uiCSxx = _TMR1_PRE_8    , .uiWGMxx = _TMR1_MODE4 }, // 100µS @8MHz
+			{ .uiCnt = 124     , .uiCSxx = _TMR1_PRE_64   , .uiWGMxx = _TMR1_MODE4 }, // 1ms   @8MHz
+		#endif
 
-	#if (F_CPU == 8000000)
-		{ .uiCnt = 7	   , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE4 }, // 1µS   @8MHz
-		{ .uiCnt = 79	   , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE4 }, // 10µS  @8MHz
-		{ .uiCnt = 99	   , .uiCSxx = _TMR1_PRE_8    , .uiWGMxx = _TMR1_MODE4 }, // 100µS @8MHz
-		{ .uiCnt = 124     , .uiCSxx = _TMR1_PRE_64   , .uiWGMxx = _TMR1_MODE4 }, // 1ms   @8MHz
-	#endif
+		#if (F_CPU == 16000000)
+			{ .uiCnt = 15       , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE4 }, // 1µS   @16MHz	
+			{ .uiCnt = 159      , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE4 }, // 10µS  @16MHz
+			{ .uiCnt = 199      , .uiCSxx = _TMR1_PRE_8    , .uiWGMxx = _TMR1_MODE4 }, // 100µS @16MHz
+			{ .uiCnt = 249      , .uiCSxx = _TMR1_PRE_64   , .uiWGMxx = _TMR1_MODE4 }, // 1ms   @16MHz
+		#endif	
+	};
 
-	#if (F_CPU == 16000000)
-		{ .uiCnt = 15       , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE4 }, // 1µS   @16MHz	
-		{ .uiCnt = 159      , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE4 }, // 10µS  @16MHz
-		{ .uiCnt = 199      , .uiCSxx = _TMR1_PRE_8    , .uiWGMxx = _TMR1_MODE4 }, // 100µS @16MHz
-		{ .uiCnt = 249      , .uiCSxx = _TMR1_PRE_64   , .uiWGMxx = _TMR1_MODE4 }, // 1ms   @16MHz
-	#endif	
-};
+	const sTimer16Config_t sTimer1OvfSettings[]		=
+	{
+		#if (F_CPU == 1000000)
+			{ .uiCnt = 65535   , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE0 }, // 1µS   @1MHz	
+			{ .uiCnt = 65526   , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE0 }, // 10µS  @1MHz
+			{ .uiCnt = 65436   , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE0 }, // 100µS @1MHz
+			{ .uiCnt = 65411   , .uiCSxx = _TMR1_PRE_8    , .uiWGMxx = _TMR1_MODE0 }, // 1ms   @1MHz
+		#endif
 
-const sTimer16Config_t sTimer1OvfSettings[]		=
-{
-	#if (F_CPU == 1000000)
-		{ .uiCnt = 65535   , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE0 }, // 1µS   @1MHz	
-		{ .uiCnt = 65526   , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE0 }, // 10µS  @1MHz
-		{ .uiCnt = 65436   , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE0 }, // 100µS @1MHz
-		{ .uiCnt = 65411   , .uiCSxx = _TMR1_PRE_8    , .uiWGMxx = _TMR1_MODE0 }, // 1ms   @1MHz
-	#endif
+		#if (F_CPU == 8000000)
+			{ .uiCnt = 65528   , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE0 }, // 1µS   @8MHz
+			{ .uiCnt = 65456   , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE0 }, // 10µS  @8MHz
+			{ .uiCnt = 65436   , .uiCSxx = _TMR1_PRE_8    , .uiWGMxx = _TMR1_MODE0 }, // 100µS @8MHz
+			{ .uiCnt = 65411   , .uiCSxx = _TMR1_PRE_64   , .uiWGMxx = _TMR1_MODE0 }, // 1ms   @8MHz
+		#endif
 
-	#if (F_CPU == 8000000)
-		{ .uiCnt = 65528   , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE0 }, // 1µS   @8MHz
-		{ .uiCnt = 65456   , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE0 }, // 10µS  @8MHz
-		{ .uiCnt = 65436   , .uiCSxx = _TMR1_PRE_8    , .uiWGMxx = _TMR1_MODE0 }, // 100µS @8MHz
-		{ .uiCnt = 65411   , .uiCSxx = _TMR1_PRE_64   , .uiWGMxx = _TMR1_MODE0 }, // 1ms   @8MHz
-	#endif
+		#if (F_CPU == 16000000)
+			{ .uiCnt = 65520  , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE0 }, // 1µS   @16MHz
+			{ .uiCnt = 65376  , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE0 }, // 10µS  @16MHz
+			{ .uiCnt = 65336  , .uiCSxx = _TMR1_PRE_8    , .uiWGMxx = _TMR1_MODE0 }, // 100µS @16MHz
+			{ .uiCnt = 65286  , .uiCSxx = _TMR1_PRE_64   , .uiWGMxx = _TMR1_MODE0 }, // 1ms   @16MHz
+		#endif	
+	};
+	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	/*!<-- Timer 1 Konfiguration // Ende <--*/
 
-	#if (F_CPU == 16000000)
-		{ .uiCnt = 65520  , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE0 }, // 1µS   @16MHz
-		{ .uiCnt = 65376  , .uiCSxx = _TMR1_PRE_1    , .uiWGMxx = _TMR1_MODE0 }, // 10µS  @16MHz
-		{ .uiCnt = 65336  , .uiCSxx = _TMR1_PRE_8    , .uiWGMxx = _TMR1_MODE0 }, // 100µS @16MHz
-		{ .uiCnt = 65286  , .uiCSxx = _TMR1_PRE_64   , .uiWGMxx = _TMR1_MODE0 }, // 1ms   @16MHz
-	#endif	
-};
-/*!<-- Timer 1 Konfiguration // Ende <--*/
+	/*!<-- Timer 2 Konfiguration <--*/
+	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	const sTimer8Config_t sTimer2OcieSettings[]		=
+	{
+		#if (F_CPU == 1000000)
+		{ .uiCnt = 9       , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE2 }, // 10µS  @1MHz
+		{ .uiCnt = 99      , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE2 }, // 100µS @1MHz
+		{ .uiCnt = 124     , .uiCSxx = _TMR2_PRE_8    , .uiWGMxx = _TMR2_MODE2 }, // 1ms   @1MHz
+		#endif
 
+		#if (F_CPU == 8000000)
+		{ .uiCnt = 7	   , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE2 }, // 1µS   @8MHz
+		{ .uiCnt = 79	   , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE2 }, // 10µS  @8MHz
+		{ .uiCnt = 99	   , .uiCSxx = _TMR2_PRE_8    , .uiWGMxx = _TMR2_MODE2 }, // 100µS @8MHz
+		{ .uiCnt = 124     , .uiCSxx = _TMR2_PRE_64   , .uiWGMxx = _TMR2_MODE2 }, // 1ms   @8MHz
+		#endif
 
+		#if (F_CPU == 16000000)
+		{ .uiCnt = 15       , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE2 }, // 1µS   @16MHz
+		{ .uiCnt = 159      , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE2 }, // 10µS  @16MHz
+		{ .uiCnt = 199      , .uiCSxx = _TMR2_PRE_8    , .uiWGMxx = _TMR2_MODE2 }, // 100µS @16MHz
+		{ .uiCnt = 249      , .uiCSxx = _TMR2_PRE_64   , .uiWGMxx = _TMR2_MODE2 }, // 1ms   @16MHz
+		#endif
+	};
 
-/*!<-- Timer 2 Konfiguration <--*/
-const sTimer8Config_t sTimer2OcieSettings[]		=
-{
-	#if (F_CPU == 1000000)
-	{ .uiCnt = 9       , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE2 }, // 10µS  @1MHz
-	{ .uiCnt = 99      , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE2 }, // 100µS @1MHz
-	{ .uiCnt = 124     , .uiCSxx = _TMR2_PRE_8    , .uiWGMxx = _TMR2_MODE2 }, // 1ms   @1MHz
-	#endif
+	const sTimer8Config_t sTimer2OvfSettings[]		=
+	{
+		#if (F_CPU == 1000000)
+		{ .uiCnt = 246     , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE0 }, // 10µS  @1MHz
+		{ .uiCnt = 156     , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE0 }, // 100µS @1MHz
+		{ .uiCnt = 131     , .uiCSxx = _TMR2_PRE_8    , .uiWGMxx = _TMR2_MODE0 }, // 1ms   @1MHz
+		#endif
 
-	#if (F_CPU == 8000000)
-	{ .uiCnt = 7	   , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE2 }, // 1µS   @8MHz
-	{ .uiCnt = 79	   , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE2 }, // 10µS  @8MHz
-	{ .uiCnt = 99	   , .uiCSxx = _TMR2_PRE_8    , .uiWGMxx = _TMR2_MODE2 }, // 100µS @8MHz
-	{ .uiCnt = 124     , .uiCSxx = _TMR2_PRE_64   , .uiWGMxx = _TMR2_MODE2 }, // 1ms   @8MHz
-	#endif
+		#if (F_CPU == 8000000)
+		{ .uiCnt = 176     , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE0 }, // 10µS  @8MHz
+		{ .uiCnt = 156     , .uiCSxx = _TMR2_PRE_8    , .uiWGMxx = _TMR2_MODE0 }, // 100µS @8MHz
+		{ .uiCnt = 131     , .uiCSxx = _TMR2_PRE_64   , .uiWGMxx = _TMR2_MODE0 }, // 1ms   @8MHz
+		#endif
 
-	#if (F_CPU == 16000000)
-	{ .uiCnt = 15       , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE2 }, // 1µS   @16MHz
-	{ .uiCnt = 159      , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE2 }, // 10µS  @16MHz
-	{ .uiCnt = 199      , .uiCSxx = _TMR2_PRE_8    , .uiWGMxx = _TMR2_MODE2 }, // 100µS @16MHz
-	{ .uiCnt = 249      , .uiCSxx = _TMR2_PRE_64   , .uiWGMxx = _TMR2_MODE2 }, // 1ms   @16MHz
-	#endif
-};
-
-const sTimer8Config_t sTimer2OvfSettings[]		=
-{
-	#if (F_CPU == 1000000)
-	{ .uiCnt = 246     , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE0 }, // 10µS  @1MHz
-	{ .uiCnt = 156     , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE0 }, // 100µS @1MHz
-	{ .uiCnt = 131     , .uiCSxx = _TMR2_PRE_8    , .uiWGMxx = _TMR2_MODE0 }, // 1ms   @1MHz
-	#endif
-
-	#if (F_CPU == 8000000)
-	{ .uiCnt = 176     , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE0 }, // 10µS  @8MHz
-	{ .uiCnt = 156     , .uiCSxx = _TMR2_PRE_8    , .uiWGMxx = _TMR2_MODE0 }, // 100µS @8MHz
-	{ .uiCnt = 131     , .uiCSxx = _TMR2_PRE_64   , .uiWGMxx = _TMR2_MODE0 }, // 1ms   @8MHz
-	#endif
-
-	#if (F_CPU == 16000000)
-	{ .uiCnt = 96      , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE0 }, // 10µS  @16MHz
-	{ .uiCnt = 56      , .uiCSxx = _TMR2_PRE_8    , .uiWGMxx = _TMR2_MODE0 }, // 100µS @16MHz
-	{ .uiCnt = 6       , .uiCSxx = _TMR2_PRE_64   , .uiWGMxx = _TMR2_MODE0 }, // 1ms   @16MHz
-	#endif
-};
-
+		#if (F_CPU == 16000000)
+		{ .uiCnt = 96      , .uiCSxx = _TMR2_PRE_1    , .uiWGMxx = _TMR2_MODE0 }, // 10µS  @16MHz
+		{ .uiCnt = 56      , .uiCSxx = _TMR2_PRE_8    , .uiWGMxx = _TMR2_MODE0 }, // 100µS @16MHz
+		{ .uiCnt = 6       , .uiCSxx = _TMR2_PRE_64   , .uiWGMxx = _TMR2_MODE0 }, // 1ms   @16MHz
+		#endif
+	};
+	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	/*!<-- Timer 2 Konfiguration // Ende <--*/
 #endif
 
-/*!<-- Timer 2 Konfiguration // Ende <--*/
+
 
 /*****************************************************************/
 
@@ -483,44 +484,9 @@ const sTimer8Config_t sTimer2OvfSettings[]		=
 
 /*!<-- TIMER0 <--*/
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
+	#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
 
-	extern inline enum eTimerError Timer0CompInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
-{
-	cli(); /**< Vorsichtshalber Interrupts global sperren */
-	
-	if ( pFncCallback == NULL )
-	{
-		sei();
-		return ERROR_TIMER_NO_ADDRESS;
-	}else
-	{
-		pvTimerCallback[CALLBACK_TIMER0_COMP] = pFncCallback;
-	}
-	
-	#if defined  ( __AVR_ATmega32__ )	
-		TCCR0_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-		OCR0 = psTab->uiCnt;
-		TIMSK_OCIE0_EN;	
-	#endif
-	
-	sei();
-	
-	return ERROR_TIMER_OK;
-}
-
-	#ifdef TIMER0_COMP_vect
-	ISR ( TIMER0_COMP_vect )
-	{
-		pvTimerCallback[CALLBACK_TIMER0_COMP]();
-	}
-	#endif
-
-#endif 
-
-#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny13A__ )
-
-	extern inline enum eTimerError Timer0CompAInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
+		extern inline enum eTimerError Timer0CompInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
 	{
 		cli(); /**< Vorsichtshalber Interrupts global sperren */
 	
@@ -530,14 +496,85 @@ const sTimer8Config_t sTimer2OvfSettings[]		=
 			return ERROR_TIMER_NO_ADDRESS;
 		}else
 		{
-			pvTimerCallback[CALLBACK_TIMER0_COMPA] = pFncCallback;
+			pvTimerCallback[CALLBACK_TIMER0_COMP] = pFncCallback;
+		}
+	
+		#if defined  ( __AVR_ATmega32__ )	
+			TCCR0_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+			OCR0 = psTab->uiCnt;
+			TIMSK_OCIE0_EN;	
+		#endif
+	
+		sei();
+	
+		return ERROR_TIMER_OK;
+	}
+
+		#ifdef TIMER0_COMP_vect
+		ISR ( TIMER0_COMP_vect )
+		{
+			pvTimerCallback[CALLBACK_TIMER0_COMP]();
+		}
+		#endif
+
+	#endif 
+
+	#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny13A__ )
+
+		extern inline enum eTimerError Timer0CompAInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
+		{
+			cli(); /**< Vorsichtshalber Interrupts global sperren */
+	
+			if ( pFncCallback == NULL )
+			{
+				sei();
+				return ERROR_TIMER_NO_ADDRESS;
+			}else
+			{
+				pvTimerCallback[CALLBACK_TIMER0_COMPA] = pFncCallback;
+			}
+	
+			#if defined  ( __AVR_ATmega328P__ )
+				TCCR1A_WGM( psTab->uiWGMxx );
+				TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+				OCR0A = psTab->uiCnt;
+				TIMSK0_OCIE0A_EN;
+			#endif
+	
+			sei();
+	
+			return ERROR_TIMER_OK;
+		}
+
+		#ifdef TIMER0_COMPA_vect	
+		ISR ( TIMER0_COMPA_vect )
+		{
+			pvTimerCallback[CALLBACK_TIMER0_COMPA]();
+		}
+		#endif
+	
+	#endif
+
+	#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny13A__ )
+
+	extern inline enum eTimerError Timer0CompBInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
+	{
+		cli(); /**< Vorsichtshalber Interrupts global sperren */
+	
+		if ( pFncCallback == NULL )
+		{
+			sei();
+			return ERROR_TIMER_NO_ADDRESS;
+		}else
+		{
+			pvTimerCallback[CALLBACK_TIMER0_COMPB] = pFncCallback;
 		}
 	
 		#if defined  ( __AVR_ATmega328P__ )
 			TCCR1A_WGM( psTab->uiWGMxx );
 			TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-			OCR0A = psTab->uiCnt;
-			TIMSK0_OCIE0A_EN;
+			OCR0B = psTab->uiCnt;
+			TIMSK0_OCIE0B_EN;
 		#endif
 	
 		sei();
@@ -545,377 +582,343 @@ const sTimer8Config_t sTimer2OvfSettings[]		=
 		return ERROR_TIMER_OK;
 	}
 
-	#ifdef TIMER0_COMPA_vect	
-	ISR ( TIMER0_COMPA_vect )
-	{
-		pvTimerCallback[CALLBACK_TIMER0_COMPA]();
-	}
-	#endif
-	
-#endif
-
-#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny13A__ )
-
-extern inline enum eTimerError Timer0CompBInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
-{
-	cli(); /**< Vorsichtshalber Interrupts global sperren */
-	
-	if ( pFncCallback == NULL )
-	{
-		sei();
-		return ERROR_TIMER_NO_ADDRESS;
-	}else
-	{
-		pvTimerCallback[CALLBACK_TIMER0_COMPB] = pFncCallback;
-	}
-	
-	#if defined  ( __AVR_ATmega328P__ )
-		TCCR1A_WGM( psTab->uiWGMxx );
-		TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-		OCR0B = psTab->uiCnt;
-		TIMSK0_OCIE0B_EN;
-	#endif
-	
-	sei();
-	
-	return ERROR_TIMER_OK;
-}
-
-	#ifdef TIMER0_COMPB_vect
-	ISR ( TIMER0_COMPB_vect )
-	{
-		pvTimerCallback[CALLBACK_TIMER0_COMPB]();
-	}
-	#endif
-	
-#endif
-
-#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny13A__ )
-
-	extern inline enum eTimerError Timer0OvfInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
-	{
-		cli(); /**< Vorsichtshalber Interrupts global sperren */
-	
-		if ( pFncCallback == NULL )
+		#ifdef TIMER0_COMPB_vect
+		ISR ( TIMER0_COMPB_vect )
 		{
-			sei();
-			return ERROR_TIMER_NO_ADDRESS;
-		}else
-		{
-			pvTimerCallback[CALLBACK_TIMER0_OVF] = pFncCallback;
+			pvTimerCallback[CALLBACK_TIMER0_COMPB]();
 		}
-		
-		#if defined  ( __AVR_ATmega32__ )
-			TCCR0_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-			TIMSK_TOIE0_EN;
-		#elif defined ( __AVR_ATmega328P__ )
-			TCCR0B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-			TCCR0A_WGM( psTab->uiWGMxx );
-			TIMSK0_TOIE0_EN;
 		#endif
 	
-		TCNT0 = psTab->uiCnt;
-		sReload[TIMER0].uiLoad8 = TCNT0;
-	
-		sei();
-	
-		return ERROR_TIMER_OK;
-	}
-
-	#ifdef TIMER0_OVF_vect		
-	ISR ( TIMER0_OVF_vect )
-	{
-		pvTimerCallback[CALLBACK_TIMER0_OVF]();
-		TCNT0 = sReload[TIMER0].uiLoad8;
-	}
 	#endif
 
-#endif 
+	#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny13A__ )
+
+		extern inline enum eTimerError Timer0OvfInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
+		{
+			cli(); /**< Vorsichtshalber Interrupts global sperren */
+	
+			if ( pFncCallback == NULL )
+			{
+				sei();
+				return ERROR_TIMER_NO_ADDRESS;
+			}else
+			{
+				pvTimerCallback[CALLBACK_TIMER0_OVF] = pFncCallback;
+			}
+		
+			#if defined  ( __AVR_ATmega32__ )
+				TCCR0_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+				TIMSK_TOIE0_EN;
+			#elif defined ( __AVR_ATmega328P__ )
+				TCCR0B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+				TCCR0A_WGM( psTab->uiWGMxx );
+				TIMSK0_TOIE0_EN;
+			#endif
+	
+			TCNT0 = psTab->uiCnt;
+			sReload[TIMER0].uiLoad8 = TCNT0;
+	
+			sei();
+	
+			return ERROR_TIMER_OK;
+		}
+
+		#ifdef TIMER0_OVF_vect		
+		ISR ( TIMER0_OVF_vect )
+		{
+			pvTimerCallback[CALLBACK_TIMER0_OVF]();
+			TCNT0 = sReload[TIMER0].uiLoad8;
+		}
+		#endif
+
+	#endif 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /*!<-- TIMER0 // Ende <--*/
 
 
 /*!<-- TIMER1 <--*/
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
 
-	extern inline enum eTimerError Timer1CompAInit	( const sTimer16Config_t *psTab , void (*pFncCallback)(void) )	
+		extern inline enum eTimerError Timer1CompAInit	( const sTimer16Config_t *psTab , void (*pFncCallback)(void) )	
+		{
+			cli(); /**< Vorsichtshalber Interrupts global sperren */
+	
+			if ( pFncCallback == NULL )
+			{
+				sei();
+				return ERROR_TIMER_NO_ADDRESS;
+			}else
+			{
+				pvTimerCallback[CALLBACK_TIMER1_COMPA] = pFncCallback;
+			}
+	
+			#if defined  ( __AVR_ATmega32__ )
+				TCCR1A_WGM( psTab->uiWGMxx );
+				TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+				OCR1A = psTab->uiCnt;
+				TIMSK_OCIE1A_EN;
+			#elif defined ( __AVR_ATmega328P__ )
+				TCCR1A_WGM( psTab->uiWGMxx );
+				TCCR1B_WGM_CS( psTab->uiWGMxx  , psTab->uiCSxx );
+				OCR1A = psTab->uiCnt;
+				TIMSK1_OCIE1A_EN;
+			#endif
+
+			sei();
+	
+			return ERROR_TIMER_OK;
+		}
+
+		#ifdef TIMER1_COMPA_vect
+		ISR ( TIMER1_COMPA_vect )
+		{
+			pvTimerCallback[CALLBACK_TIMER1_COMPA]();
+		}
+		#endif
+
+	#endif
+
+	#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
+
+		extern inline enum eTimerError Timer1CompBInit	( const sTimer16Config_t *psTab , void (*pFncCallback)(void) )	
+		{
+			cli(); /**< Vorsichtshalber Interrupts global sperren */
+	
+			if ( pFncCallback == NULL )
+			{
+				sei();
+				return ERROR_TIMER_NO_ADDRESS;
+			}else
+			{
+				pvTimerCallback[CALLBACK_TIMER1_COMPB] = pFncCallback;
+			}
+	
+			#if defined  ( __AVR_ATmega32__ )
+				TCCR1A_WGM( psTab->uiWGMxx );
+				TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+				OCR1B = psTab->uiCnt;
+				TIMSK_OCIE1B_EN;
+			#elif defined ( __AVR_ATmega328P__ )
+				TCCR1A_WGM( psTab->uiWGMxx );
+				TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+				OCR1B = psTab->uiCnt;
+				TIMSK1_OCIE1B_EN;
+			#endif
+
+			sei();
+	
+			return ERROR_TIMER_OK;
+		}
+
+		#ifdef TIMER1_COMPB_vect
+		ISR ( TIMER1_COMPB_vect )
+		{
+			pvTimerCallback[CALLBACK_TIMER1_COMPB]();
+		}
+		#endif
+	
+	#endif
+
+	#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
+
+	extern inline enum eTimerError Timer1OvfInit	( const sTimer16Config_t *psTab , void (*pFncCallback)(void) )	
 	{
 		cli(); /**< Vorsichtshalber Interrupts global sperren */
-	
+
 		if ( pFncCallback == NULL )
 		{
 			sei();
 			return ERROR_TIMER_NO_ADDRESS;
 		}else
 		{
-			pvTimerCallback[CALLBACK_TIMER1_COMPA] = pFncCallback;
+			pvTimerCallback[CALLBACK_TIMER1_OVF] = pFncCallback;
 		}
-	
+		
+		
 		#if defined  ( __AVR_ATmega32__ )
 			TCCR1A_WGM( psTab->uiWGMxx );
 			TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-			OCR1A = psTab->uiCnt;
-			TIMSK_OCIE1A_EN;
-		#elif defined ( __AVR_ATmega328P__ )
-			TCCR1A_WGM( psTab->uiWGMxx );
-			TCCR1B_WGM_CS( psTab->uiWGMxx  , psTab->uiCSxx );
-			OCR1A = psTab->uiCnt;
-			TIMSK1_OCIE1A_EN;
-		#endif
-
-		sei();
-	
-		return ERROR_TIMER_OK;
-	}
-
-	#ifdef TIMER1_COMPA_vect
-	ISR ( TIMER1_COMPA_vect )
-	{
-		pvTimerCallback[CALLBACK_TIMER1_COMPA]();
-	}
-	#endif
-
-#endif
-
-#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
-
-	extern inline enum eTimerError Timer1CompBInit	( const sTimer16Config_t *psTab , void (*pFncCallback)(void) )	
-	{
-		cli(); /**< Vorsichtshalber Interrupts global sperren */
-	
-		if ( pFncCallback == NULL )
-		{
-			sei();
-			return ERROR_TIMER_NO_ADDRESS;
-		}else
-		{
-			pvTimerCallback[CALLBACK_TIMER1_COMPB] = pFncCallback;
-		}
-	
-		#if defined  ( __AVR_ATmega32__ )
-			TCCR1A_WGM( psTab->uiWGMxx );
-			TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-			OCR1B = psTab->uiCnt;
-			TIMSK_OCIE1B_EN;
+			TIMSK_TOIE1_EN;
 		#elif defined ( __AVR_ATmega328P__ )
 			TCCR1A_WGM( psTab->uiWGMxx );
 			TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-			OCR1B = psTab->uiCnt;
-			TIMSK1_OCIE1B_EN;
+			TIMSK1_TOIE1_EN;
 		#endif
 
+		TCNT1 = psTab->uiCnt;
+		sReload[TIMER1].uiLoad16 = TCNT1;
+
 		sei();
 	
-		return ERROR_TIMER_OK;
+		return ERROR_TIMER_OK;	
 	}
 
-	#ifdef TIMER1_COMPB_vect
-	ISR ( TIMER1_COMPB_vect )
-	{
-		pvTimerCallback[CALLBACK_TIMER1_COMPB]();
-	}
+		#ifdef TIMER1_OVF_vect
+		ISR ( TIMER1_OVF_vect )
+		{
+			pvTimerCallback[CALLBACK_TIMER1_OVF]();
+			TCNT1 = sReload[TIMER1].uiLoad16;
+		};
+		#endif
+
 	#endif
-	
-#endif
-
-#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
-
-extern inline enum eTimerError Timer1OvfInit	( const sTimer16Config_t *psTab , void (*pFncCallback)(void) )	
-{
-	cli(); /**< Vorsichtshalber Interrupts global sperren */
-
-	if ( pFncCallback == NULL )
-	{
-		sei();
-		return ERROR_TIMER_NO_ADDRESS;
-	}else
-	{
-		pvTimerCallback[CALLBACK_TIMER1_OVF] = pFncCallback;
-	}
-		
-		
-	#if defined  ( __AVR_ATmega32__ )
-		TCCR1A_WGM( psTab->uiWGMxx );
-		TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-		TIMSK_TOIE1_EN;
-	#elif defined ( __AVR_ATmega328P__ )
-		TCCR1A_WGM( psTab->uiWGMxx );
-		TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-		TIMSK1_TOIE1_EN;
-	#endif
-
-	TCNT1 = psTab->uiCnt;
-	sReload[TIMER1].uiLoad16 = TCNT1;
-
-	sei();
-	
-	return ERROR_TIMER_OK;	
-}
-
-	#ifdef TIMER1_OVF_vect
-	ISR ( TIMER1_OVF_vect )
-	{
-		pvTimerCallback[CALLBACK_TIMER1_OVF]();
-		TCNT1 = sReload[TIMER1].uiLoad16;
-	};
-	#endif
-
-#endif
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /*!<-- TIMER1 // ENDE <--*/
 
 
-#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
+/*!<-- TIMER2 <--*/
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
 
-	extern inline enum eTimerError Timer2CompInit	( const sTimer8Config_t *psTab  , void (*pFncCallback)(void) )	
-	{
-		cli(); /**< Vorsichtshalber Interrupts global sperren */
+		extern inline enum eTimerError Timer2CompInit	( const sTimer8Config_t *psTab  , void (*pFncCallback)(void) )	
+		{
+			cli(); /**< Vorsichtshalber Interrupts global sperren */
 
-		if ( pFncCallback == NULL )
-		{
-			sei();
-			return ERROR_TIMER_NO_ADDRESS;
-		}else
-		{
-			pvTimerCallback[CALLBACK_TIMER2_COMP] = pFncCallback;
-		}
+			if ( pFncCallback == NULL )
+			{
+				sei();
+				return ERROR_TIMER_NO_ADDRESS;
+			}else
+			{
+				pvTimerCallback[CALLBACK_TIMER2_COMP] = pFncCallback;
+			}
 	
-		#if defined  ( __AVR_ATmega32__ )
-			TCCR2_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-			OCR2 = psTab->uiCnt;
-			TIMSK_OCIE2_EN;
+			#if defined  ( __AVR_ATmega32__ )
+				TCCR2_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+				OCR2 = psTab->uiCnt;
+				TIMSK_OCIE2_EN;
+			#endif
+
+			sei();
+	
+			return ERROR_TIMER_OK;	
+		};
+
+		#ifdef TIMER2_COMP_vect
+		ISR ( TIMER2_COMP_vect )
+		{
+			pvTimerCallback[CALLBACK_TIMER2_COMP]();
+		}
 		#endif
 
-		sei();
-	
-		return ERROR_TIMER_OK;	
-	};
+	#endif 
 
-	#ifdef TIMER2_COMP_vect
-	ISR ( TIMER2_COMP_vect )
-	{
-		pvTimerCallback[CALLBACK_TIMER2_COMP]();
-	}
+	#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
+
+		extern inline enum eTimerError Timer2CompAInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
+		{
+			cli(); /**< Vorsichtshalber Interrupts global sperren */
+
+			if ( pFncCallback == NULL )
+			{
+				sei();
+				return ERROR_TIMER_NO_ADDRESS;
+			}else
+			{
+				pvTimerCallback[CALLBACK_TIMER2_COMPA] = pFncCallback;
+			}
+	
+			#if defined  ( __AVR_ATmega328P__ )
+				TCCR2A_WGM( psTab->uiWGMxx );
+				TCCR2B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+				TCCR2A = psTab->uiCnt;
+				TIMSK2_OCIE2A_EN;
+			#endif
+
+			sei();
+	
+			return ERROR_TIMER_OK;	
+		}
+
+		#ifdef TIMER2_COMPA_vect	
+		ISR ( TIMER2_COMPA_vect )
+		{
+			pvTimerCallback[CALLBACK_TIMER2_COMPA]();
+		}
+		#endif
+	
 	#endif
 
-#endif 
+	#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
 
-#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
-
-	extern inline enum eTimerError Timer2CompAInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
-	{
-		cli(); /**< Vorsichtshalber Interrupts global sperren */
-
-		if ( pFncCallback == NULL )
+		extern inline enum eTimerError Timer2CompBInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
 		{
-			sei();
-			return ERROR_TIMER_NO_ADDRESS;
-		}else
-		{
-			pvTimerCallback[CALLBACK_TIMER2_COMPA] = pFncCallback;
-		}
+			cli(); /**< Vorsichtshalber Interrupts global sperren */
+
+			if ( pFncCallback == NULL )
+			{
+				sei();
+				return ERROR_TIMER_NO_ADDRESS;
+			}else
+			{
+				pvTimerCallback[CALLBACK_TIMER2_COMPB] = pFncCallback;
+			}
 	
-		#if defined  ( __AVR_ATmega328P__ )
-			TCCR2A_WGM( psTab->uiWGMxx );
-			TCCR2B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-			TCCR2A = psTab->uiCnt;
-			TIMSK2_OCIE2A_EN;
+			#if defined  ( __AVR_ATmega328P__ )
+				TCCR2A_WGM( psTab->uiWGMxx );
+				TCCR2B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+				OCR2B = psTab->uiCnt;
+				TIMSK2_OCIE2B_EN;
+			#endif
+
+			sei();
+	
+			return ERROR_TIMER_OK;
+		}
+
+		#ifdef TIMER2_COMPB_vect
+		ISR ( TIMER2_COMPB_vect )
+		{
+			pvTimerCallback[CALLBACK_TIMER2_COMPB]();
+		}
 		#endif
 
-		sei();
-	
-		return ERROR_TIMER_OK;	
-	}
+	#endif 
 
-	#ifdef TIMER2_COMPA_vect	
-	ISR ( TIMER2_COMPA_vect )
-	{
-		pvTimerCallback[CALLBACK_TIMER2_COMPA]();
-	}
-	#endif
-	
-#endif
+	#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
 
-#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
-
-	extern inline enum eTimerError Timer2CompBInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
-	{
-		cli(); /**< Vorsichtshalber Interrupts global sperren */
-
-		if ( pFncCallback == NULL )
+		extern inline enum eTimerError Timer2OvfInit	( const sTimer8Config_t *psTab  , void (*pFncCallback)(void) )	
 		{
-			sei();
-			return ERROR_TIMER_NO_ADDRESS;
-		}else
-		{
-			pvTimerCallback[CALLBACK_TIMER2_COMPB] = pFncCallback;
-		}
-	
-		#if defined  ( __AVR_ATmega328P__ )
-			TCCR2A_WGM( psTab->uiWGMxx );
-			TCCR2B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-			OCR2B = psTab->uiCnt;
-			TIMSK2_OCIE2B_EN;
-		#endif
+			cli(); /**< Vorsichtshalber Interrupts global sperren */
 
-		sei();
-	
-		return ERROR_TIMER_OK;
-	}
-
-	#ifdef TIMER2_COMPB_vect
-	ISR ( TIMER2_COMPB_vect )
-	{
-		pvTimerCallback[CALLBACK_TIMER2_COMPB]();
-	}
-	#endif
-
-#endif 
-
-#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
-
-	extern inline enum eTimerError Timer2OvfInit	( const sTimer8Config_t *psTab  , void (*pFncCallback)(void) )	
-	{
-		cli(); /**< Vorsichtshalber Interrupts global sperren */
-
-		if ( pFncCallback == NULL )
-		{
-			sei();
-			return ERROR_TIMER_NO_ADDRESS;
-		}else
-		{
-			pvTimerCallback[CALLBACK_TIMER2_OVF] = pFncCallback;
-		}
+			if ( pFncCallback == NULL )
+			{
+				sei();
+				return ERROR_TIMER_NO_ADDRESS;
+			}else
+			{
+				pvTimerCallback[CALLBACK_TIMER2_OVF] = pFncCallback;
+			}
 	
 	
-		#if defined  ( __AVR_ATmega32__ )
-			TCCR2_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-			TIMSK_TOIE2_EN;
-		#elif defined ( __AVR_ATmega328P__ )
-			TCCR2A_WGM( psTab->uiWGMxx );
-			TCCR2B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-			TIMSK2_TOIE2_EN;
-		#endif
+			#if defined  ( __AVR_ATmega32__ )
+				TCCR2_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+				TIMSK_TOIE2_EN;
+			#elif defined ( __AVR_ATmega328P__ )
+				TCCR2A_WGM( psTab->uiWGMxx );
+				TCCR2B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+				TIMSK2_TOIE2_EN;
+			#endif
 	
-		TCNT2 = psTab->uiCnt;
-		sReload[TIMER2].uiLoad8 = TCNT2;	
+			TCNT2 = psTab->uiCnt;
+			sReload[TIMER2].uiLoad8 = TCNT2;	
  
-		sei();
+			sei();
 	
-		return ERROR_TIMER_OK;
-	};
+			return ERROR_TIMER_OK;
+		};
 
-	#ifdef TIMER2_OVF_vect		
-	ISR ( TIMER2_OVF_vect )		
-	{
-		pvTimerCallback[CALLBACK_TIMER2_OVF]();
-		TCNT2 = sReload[TIMER2].uiLoad16;
-	}
-	#endif
+		#ifdef TIMER2_OVF_vect		
+		ISR ( TIMER2_OVF_vect )		
+		{
+			pvTimerCallback[CALLBACK_TIMER2_OVF]();
+			TCNT2 = sReload[TIMER2].uiLoad16;
+		}
+		#endif
 
-#endif 
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	#endif 
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 /*!<-- TIMER2 // ENDE <--*/
 
 
