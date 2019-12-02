@@ -35,38 +35,42 @@
 /*****************************************************************/
 
 /*!<-- Waveform Generation Mode Bits <--*/
+#if defined ( __AVR_ATmega328P__ ) || defined ( __AVR_ATmega32__ ) || defined ( __AVR_ATtiny13A__ )
 #define _TMR0_MODE0					( ! ( 1 << WGM00 | 1 << WGM01 ) ) // Normal
 #define _TMR0_MODE2					( 1 << WGM01 ) // CTC
+#endif 
 
+#if defined ( __AVR_ATmega328P__ ) || defined ( __AVR_ATmega32__ )
 #define _TMR1_MODE0					( ! ( 1 << WGM13 | 1 << WGM12 | 1 << WGM11 | 1 << WGM10 ) ) // Normal
 #define _TMR1_MODE4					( 1 << WGM12 ) // CTC
+#endif
 
+#if defined ( __AVR_ATmega328P__ ) || defined (__AVR_ATmega32__ )
 #define _TMR2_MODE0					( ! ( 1 << WGM21 | 1 << WGM20 ) ) // Normal
 #define _TMR2_MODE2					( 1 << WGM21 ) // CTC
+#endif 
 /*!<-- Waveform Generation Mode Bits // Ende <--*/
 
 /*!<-- Prescaler Mode Group Position <--*/
-#define _TMR_PRE_OFFSET				( << 0 )
+#define _TMR0_PRE_1					( 0b001 << 0 )
+#define _TMR0_PRE_8					( 0b010 << 0 )
+#define _TMR0_PRE_64				( 0b011 << 0 )
+#define _TMR0_PRE_256				( 0b100 << 0 )
+#define _TMR0_PRE_1024				( 0b101 << 0 )
 
-#define _TMR0_PRE_1					( 0b001 << _TMR_PRE_OFFSET )
-#define _TMR0_PRE_8					( 0b010 << _TMR_PRE_OFFSET )
-#define _TMR0_PRE_64				( 0b011 << _TMR_PRE_OFFSET )
-#define _TMR0_PRE_256				( 0b100 << _TMR_PRE_OFFSET )
-#define _TMR0_PRE_1024				( 0b101 << _TMR_PRE_OFFSET )
+#define _TMR1_PRE_1					( 0b001 << 0 )
+#define _TMR1_PRE_8					( 0b010 << 0 )
+#define _TMR1_PRE_64				( 0b011 << 0 )
+#define _TMR1_PRE_256				( 0b100 << 0 )
+#define _TMR1_PRE_1024				( 0b101 << 0 )
 
-#define _TMR1_PRE_1					( 0b001 << _TMR_PRE_OFFSET )
-#define _TMR1_PRE_8					( 0b010 << _TMR_PRE_OFFSET )
-#define _TMR1_PRE_64				( 0b011 << _TMR_PRE_OFFSET )
-#define _TMR1_PRE_256				( 0b100 << _TMR_PRE_OFFSET )
-#define _TMR1_PRE_1024				( 0b101 << _TMR_PRE_OFFSET )
-
-#define _TMR2_PRE_1					( 0b001 << _TMR_PRE_OFFSET )
-#define _TMR2_PRE_8					( 0b010 << _TMR_PRE_OFFSET )
-#define _TMR2_PRE_32				( 0b011 << _TMR_PRE_OFFSET )
-#define _TMR2_PRE_64				( 0b100 << _TMR_PRE_OFFSET )
-#define _TMR2_PRE_128				( 0b101 << _TMR_PRE_OFFSET )
-#define _TMR2_PRE_256				( 0b110 << _TMR_PRE_OFFSET )
-#define _TMR2_PRE_1024				( 0b111 << _TMR_PRE_OFFSET )
+#define _TMR2_PRE_1					( 0b001 << 0 )
+#define _TMR2_PRE_8					( 0b010 << 0 )
+#define _TMR2_PRE_32				( 0b011 << 0 )
+#define _TMR2_PRE_64				( 0b100 << 0 )
+#define _TMR2_PRE_128				( 0b101 << 0 )
+#define _TMR2_PRE_256				( 0b110 << 0 )
+#define _TMR2_PRE_1024				( 0b111 << 0 )
 	
 
 /*!<-- TIMSK Interrupt Configuration <--*/
@@ -183,29 +187,100 @@
 													
 	 /*!<-- ATmega32 // End <--*/
 
+#elif defined ( __AVR_ATtiny13A__ )
+
+	/*!<-- ATtiny13A <--*/
+
+	  /*!<-- TCCR0A – Timer/Counter Control Register [7..0] <--*/
+	/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	  + COM0A1 | COM0A0 | COM0B1 | COM0B0 | - | - | WGM01 |  WGM00				 +
+	  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+		#define TCCR0A_WGM_CS( _WGMxx )					TCCR0A |= ( (_WGMxx  & ( ( 1 << WGM02 ) ) ) )
+
+	  /*!<-- TCCR0B – Timer/Counter Control Register [7..0] <--*/
+	/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	  + FOC0A | FOC0B | - | - | WGM02 | CS02 | CS01 |  CS00				 +
+	  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+		#define TCCR0B_WGM_CS( _WGMxx , _CSxx )			TCCR0B |= ( (_WGMxx  & ( ( 1 << WGM02 ) ) )| ( _CSxx & ( ( 1 << CS02 ) | ( 1 << CS01 ) | ( 1 << CS00 ) ) ) )
+	
+	  /*!<-- TIMSK0 – Timer/Counter Interrupt Mask Register [7..0] <--*/
+	/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	  + - | - | - | - | OCIE0B | OCIE0A | TOIE0 | - +
+	  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/   
+		#define TIMSK0_OCIE0B_EN						TIMSK0 |= ( 1 << OCIE0B  )
+		#define TIMSK0_OCIE0A_EN						TIMSK0 |= ( 1 << OCIE0A  )
+		#define TIMSK0_TOIE0_EN							TIMSK0 |= ( 1 << TOIE0  )
+								
+	 /*!<-- ATtiny13A // End <--*/
+
 #else
 	#error Konfiguration nicht vorhanden!
 #endif
 
 
-enum __attribute__( ( packed ) ) eTimer { TIMER0 , TIMER1 , TIMER2 , __MAX_TIMER_ENTRYS__ };
-
-enum __attribute__( ( packed ) ) eTimerCallback
-{
-	CALLBACK_TIMER0_OVF,
-	CALLBACK_TIMER0_COMP,
-	CALLBACK_TIMER0_COMPA,
-	CALLBACK_TIMER0_COMPB,
-	CALLBACK_TIMER1_OVF,
-	CALLBACK_TIMER1_COMPB,
-	CALLBACK_TIMER1_COMPA,
-	CALLBACK_TIMER2_OVF,
-	CALLBACK_TIMER2_COMP,
-	CALLBACK_TIMER2_COMPA,
-	CALLBACK_TIMER2_COMPB,
+#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
 	
-	__CALLBACK_TIMER_MEMBERS__
-};
+	enum __attribute__( ( packed ) ) eTimer { TIMER0 , TIMER1 , TIMER2 , __MAX_TIMER_ENTRYS__ };
+		
+	enum __attribute__( ( packed ) ) eTimerCallback
+	{
+		CALLBACK_TIMER0_OVF,
+		CALLBACK_TIMER0_COMP,
+		CALLBACK_TIMER0_COMPA,
+		CALLBACK_TIMER0_COMPB,
+		CALLBACK_TIMER1_OVF,
+		CALLBACK_TIMER1_COMPB,
+		CALLBACK_TIMER1_COMPA,
+		CALLBACK_TIMER2_OVF,
+		CALLBACK_TIMER2_COMP,
+		CALLBACK_TIMER2_COMPA,
+		CALLBACK_TIMER2_COMPB,
+		
+		__CALLBACK_TIMER_MEMBERS__
+	};		
+	
+	// pv = PointerVector
+	void (*pvTimerCallback[__CALLBACK_TIMER_MEMBERS__])(void) =
+	{
+		// Callback Adressen! Werden in den entsprechenden Initalisierungen zugewiesen.
+		[CALLBACK_TIMER0_OVF   ] = NULL,
+		[CALLBACK_TIMER0_COMP  ] = NULL,
+		[CALLBACK_TIMER0_COMPA ] = NULL,
+		[CALLBACK_TIMER0_COMPB ] = NULL,
+		[CALLBACK_TIMER1_OVF   ] = NULL,
+		[CALLBACK_TIMER1_COMPB ] = NULL,
+		[CALLBACK_TIMER1_COMPA ] = NULL,
+		[CALLBACK_TIMER2_OVF   ] = NULL,
+		[CALLBACK_TIMER2_COMP  ] = NULL,
+		[CALLBACK_TIMER2_COMPA ] = NULL,
+		[CALLBACK_TIMER2_COMPB ] = NULL,
+	};
+		
+	
+#elif defined( __AVR_ATtiny13A__ )
+
+	enum __attribute__( ( packed ) ) eTimer { TIMER0 , __MAX_TIMER_ENTRYS__ };
+	
+	enum __attribute__( ( packed ) ) eTimerCallback
+	{
+		CALLBACK_TIMER0_OVF,
+		CALLBACK_TIMER0_COMPA,
+		CALLBACK_TIMER0_COMPB,		
+		__CALLBACK_TIMER_MEMBERS__
+	};
+		
+	// pv = PointerVector
+	void (*pvTimerCallback[__CALLBACK_TIMER_MEMBERS__])(void) =
+	{
+		// Callback Adressen! Werden in den entsprechenden Initalisierungen zugewiesen.
+		[CALLBACK_TIMER0_OVF   ] = NULL,
+		[CALLBACK_TIMER0_COMPA ] = NULL,
+		[CALLBACK_TIMER0_COMPB ] = NULL,
+	};
+		
+#endif
+
+
 
 enum __attribute__( ( packed ) ) eTimerError
 {
@@ -239,28 +314,13 @@ typedef struct
 sTimerReload_t volatile sReload[__MAX_TIMER_ENTRYS__];
 
 
-// pv = PointerVector
-void (*pvTimerCallback[__CALLBACK_TIMER_MEMBERS__])(void) =
-{
-		// Callback Adressen! Werden in den entsprechenden Initalisierungen zugewiesen.
-	[CALLBACK_TIMER0_OVF   ] = NULL,
-	[CALLBACK_TIMER0_COMP  ] = NULL,
-	[CALLBACK_TIMER0_COMPA ] = NULL,
-	[CALLBACK_TIMER0_COMPB ] = NULL,
-	[CALLBACK_TIMER1_OVF   ] = NULL,
-	[CALLBACK_TIMER1_COMPB ] = NULL,
-	[CALLBACK_TIMER1_COMPA ] = NULL,
-	[CALLBACK_TIMER2_OVF   ] = NULL,
-	[CALLBACK_TIMER2_COMP  ] = NULL,
-    [CALLBACK_TIMER2_COMPA ] = NULL,
-	[CALLBACK_TIMER2_COMPB ] = NULL,
-};
-
 /*****************************************************************/
 
 
 /*!<-- Globale Variablen <--*/
 /*****************************************************************/
+
+#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny13A__ )
 
 /*!<-- Timer 0 Konfiguration <--*/
 const sTimer8Config_t  sTimer0OcieSettings[]	=
@@ -287,6 +347,10 @@ const sTimer8Config_t  sTimer0OcieSettings[]	=
 		#warning F_CPU not declared!
 	#endif
 };
+
+#endif 
+
+#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
 
 const sTimer8Config_t  sTimer0OvfSettings[]		=
 {
@@ -406,6 +470,9 @@ const sTimer8Config_t sTimer2OvfSettings[]		=
 	{ .uiCnt = 6       , .uiCSxx = _TMR2_PRE_64   , .uiWGMxx = _TMR2_MODE0 }, // 1ms   @16MHz
 	#endif
 };
+
+#endif
+
 /*!<-- Timer 2 Konfiguration // Ende <--*/
 
 /*****************************************************************/
@@ -414,7 +481,11 @@ const sTimer8Config_t sTimer2OvfSettings[]		=
 /*!<-- Funktionen <--*/
 /*****************************************************************/
 
-extern inline enum eTimerError Timer0CompInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
+/*!<-- TIMER0 <--*/
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
+
+	extern inline enum eTimerError Timer0CompInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
 {
 	cli(); /**< Vorsichtshalber Interrupts global sperren */
 	
@@ -438,30 +509,52 @@ extern inline enum eTimerError Timer0CompInit	( const sTimer8Config_t *psTab , v
 	return ERROR_TIMER_OK;
 }
 
-extern inline enum eTimerError Timer0CompAInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
-{
-	cli(); /**< Vorsichtshalber Interrupts global sperren */
-	
-	if ( pFncCallback == NULL )
+	#ifdef TIMER0_COMP_vect
+	ISR ( TIMER0_COMP_vect )
 	{
-		sei();
-		return ERROR_TIMER_NO_ADDRESS;
-	}else
-	{
-		pvTimerCallback[CALLBACK_TIMER0_COMPA] = pFncCallback;
+		pvTimerCallback[CALLBACK_TIMER0_COMP]();
 	}
+	#endif
+
+#endif 
+
+#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny13A__ )
+
+	extern inline enum eTimerError Timer0CompAInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
+	{
+		cli(); /**< Vorsichtshalber Interrupts global sperren */
 	
-	#if defined  ( __AVR_ATmega328P__ )
-		TCCR1A_WGM( psTab->uiWGMxx );
-		TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-		OCR0A = psTab->uiCnt;
-		TIMSK0_OCIE0A_EN;
+		if ( pFncCallback == NULL )
+		{
+			sei();
+			return ERROR_TIMER_NO_ADDRESS;
+		}else
+		{
+			pvTimerCallback[CALLBACK_TIMER0_COMPA] = pFncCallback;
+		}
+	
+		#if defined  ( __AVR_ATmega328P__ )
+			TCCR1A_WGM( psTab->uiWGMxx );
+			TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+			OCR0A = psTab->uiCnt;
+			TIMSK0_OCIE0A_EN;
+		#endif
+	
+		sei();
+	
+		return ERROR_TIMER_OK;
+	}
+
+	#ifdef TIMER0_COMPA_vect	
+	ISR ( TIMER0_COMPA_vect )
+	{
+		pvTimerCallback[CALLBACK_TIMER0_COMPA]();
+	}
 	#endif
 	
-	sei();
-	
-	return ERROR_TIMER_OK;
-}
+#endif
+
+#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny13A__ )
 
 extern inline enum eTimerError Timer0CompBInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
 {
@@ -488,127 +581,145 @@ extern inline enum eTimerError Timer0CompBInit	( const sTimer8Config_t *psTab , 
 	return ERROR_TIMER_OK;
 }
 
-extern inline enum eTimerError Timer0OvfInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
-{
-	cli(); /**< Vorsichtshalber Interrupts global sperren */
-	
-	if ( pFncCallback == NULL )
+	#ifdef TIMER0_COMPB_vect
+	ISR ( TIMER0_COMPB_vect )
 	{
-		sei();
-		return ERROR_TIMER_NO_ADDRESS;
-	}else
-	{
-		pvTimerCallback[CALLBACK_TIMER0_OVF] = pFncCallback;
+		pvTimerCallback[CALLBACK_TIMER0_COMPB]();
 	}
+	#endif
+	
+#endif
+
+#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny13A__ )
+
+	extern inline enum eTimerError Timer0OvfInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
+	{
+		cli(); /**< Vorsichtshalber Interrupts global sperren */
+	
+		if ( pFncCallback == NULL )
+		{
+			sei();
+			return ERROR_TIMER_NO_ADDRESS;
+		}else
+		{
+			pvTimerCallback[CALLBACK_TIMER0_OVF] = pFncCallback;
+		}
 		
-	#if defined  ( __AVR_ATmega32__ )
-		TCCR0_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-		TIMSK_TOIE0_EN;
-	#elif defined ( __AVR_ATmega328P__ )
-		TCCR0B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-		TCCR0A_WGM( psTab->uiWGMxx );
-		TIMSK0_TOIE0_EN;
-	#endif
+		#if defined  ( __AVR_ATmega32__ )
+			TCCR0_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+			TIMSK_TOIE0_EN;
+		#elif defined ( __AVR_ATmega328P__ )
+			TCCR0B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+			TCCR0A_WGM( psTab->uiWGMxx );
+			TIMSK0_TOIE0_EN;
+		#endif
 	
-	TCNT0 = psTab->uiCnt;
-	sReload[TIMER0].uiLoad8 = TCNT0;
+		TCNT0 = psTab->uiCnt;
+		sReload[TIMER0].uiLoad8 = TCNT0;
 	
-	sei();
-	
-	return ERROR_TIMER_OK;
-}
-
-
-#ifdef TIMER0_COMP_vect
-ISR ( TIMER0_COMP_vect )
-{
-	pvTimerCallback[CALLBACK_TIMER0_COMP]();
-}
-#endif
-
-#ifdef TIMER0_COMPA_vect
-ISR ( TIMER0_COMPA_vect )
-{
-	pvTimerCallback[CALLBACK_TIMER0_COMPA]();
-}
-#endif
-
-#ifdef TIMER0_COMPB_vect
-ISR ( TIMER0_COMPB_vect )
-{
-	pvTimerCallback[CALLBACK_TIMER0_COMPB]();
-}
-#endif
-
-#ifdef TIMER0_OVF_vect
-ISR ( TIMER0_OVF_vect )
-{
-	pvTimerCallback[CALLBACK_TIMER0_OVF]();
-	TCNT0 = sReload[TIMER0].uiLoad8;
-}
-#endif
-
-
-
-extern inline enum eTimerError Timer1CompAInit	( const sTimer16Config_t *psTab , void (*pFncCallback)(void) )	
-{
-	cli(); /**< Vorsichtshalber Interrupts global sperren */
-	
-	if ( pFncCallback == NULL )
-	{
 		sei();
-		return ERROR_TIMER_NO_ADDRESS;
-	}else
-	{
-		pvTimerCallback[CALLBACK_TIMER1_COMPA] = pFncCallback;
-	}
 	
-	#if defined  ( __AVR_ATmega32__ )
-		TCCR1A_WGM( psTab->uiWGMxx );
-		TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-		OCR1A = psTab->uiCnt;
-		TIMSK_OCIE1A_EN;
-	#elif defined ( __AVR_ATmega328P__ )
-		TCCR1A_WGM( psTab->uiWGMxx );
-		TCCR1B_WGM_CS( psTab->uiWGMxx  , psTab->uiCSxx );
-		OCR1A = psTab->uiCnt;
-		TIMSK1_OCIE1A_EN;
+		return ERROR_TIMER_OK;
+	}
+
+	#ifdef TIMER0_OVF_vect		
+	ISR ( TIMER0_OVF_vect )
+	{
+		pvTimerCallback[CALLBACK_TIMER0_OVF]();
+		TCNT0 = sReload[TIMER0].uiLoad8;
+	}
 	#endif
 
-	sei();
-	
-	return ERROR_TIMER_OK;
-}
+#endif 
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+/*!<-- TIMER0 // Ende <--*/
 
-extern inline enum eTimerError Timer1CompBInit	( const sTimer16Config_t *psTab , void (*pFncCallback)(void) )	
-{
-	cli(); /**< Vorsichtshalber Interrupts global sperren */
-	
-	if ( pFncCallback == NULL )
+
+/*!<-- TIMER1 <--*/
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
+
+	extern inline enum eTimerError Timer1CompAInit	( const sTimer16Config_t *psTab , void (*pFncCallback)(void) )	
 	{
+		cli(); /**< Vorsichtshalber Interrupts global sperren */
+	
+		if ( pFncCallback == NULL )
+		{
+			sei();
+			return ERROR_TIMER_NO_ADDRESS;
+		}else
+		{
+			pvTimerCallback[CALLBACK_TIMER1_COMPA] = pFncCallback;
+		}
+	
+		#if defined  ( __AVR_ATmega32__ )
+			TCCR1A_WGM( psTab->uiWGMxx );
+			TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+			OCR1A = psTab->uiCnt;
+			TIMSK_OCIE1A_EN;
+		#elif defined ( __AVR_ATmega328P__ )
+			TCCR1A_WGM( psTab->uiWGMxx );
+			TCCR1B_WGM_CS( psTab->uiWGMxx  , psTab->uiCSxx );
+			OCR1A = psTab->uiCnt;
+			TIMSK1_OCIE1A_EN;
+		#endif
+
 		sei();
-		return ERROR_TIMER_NO_ADDRESS;
-	}else
-	{
-		pvTimerCallback[CALLBACK_TIMER1_COMPB] = pFncCallback;
-	}
 	
-	#if defined  ( __AVR_ATmega32__ )
-		TCCR1A_WGM( psTab->uiWGMxx );
-		TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-		OCR1B = psTab->uiCnt;
-		TIMSK_OCIE1B_EN;
-	#elif defined ( __AVR_ATmega328P__ )
-		TCCR1A_WGM( psTab->uiWGMxx );
-		TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-		OCR1B = psTab->uiCnt;
-		TIMSK1_OCIE1B_EN;
+		return ERROR_TIMER_OK;
+	}
+
+	#ifdef TIMER1_COMPA_vect
+	ISR ( TIMER1_COMPA_vect )
+	{
+		pvTimerCallback[CALLBACK_TIMER1_COMPA]();
+	}
 	#endif
 
-	sei();
+#endif
+
+#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
+
+	extern inline enum eTimerError Timer1CompBInit	( const sTimer16Config_t *psTab , void (*pFncCallback)(void) )	
+	{
+		cli(); /**< Vorsichtshalber Interrupts global sperren */
 	
-	return ERROR_TIMER_OK;
-}
+		if ( pFncCallback == NULL )
+		{
+			sei();
+			return ERROR_TIMER_NO_ADDRESS;
+		}else
+		{
+			pvTimerCallback[CALLBACK_TIMER1_COMPB] = pFncCallback;
+		}
+	
+		#if defined  ( __AVR_ATmega32__ )
+			TCCR1A_WGM( psTab->uiWGMxx );
+			TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+			OCR1B = psTab->uiCnt;
+			TIMSK_OCIE1B_EN;
+		#elif defined ( __AVR_ATmega328P__ )
+			TCCR1A_WGM( psTab->uiWGMxx );
+			TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+			OCR1B = psTab->uiCnt;
+			TIMSK1_OCIE1B_EN;
+		#endif
+
+		sei();
+	
+		return ERROR_TIMER_OK;
+	}
+
+	#ifdef TIMER1_COMPB_vect
+	ISR ( TIMER1_COMPB_vect )
+	{
+		pvTimerCallback[CALLBACK_TIMER1_COMPB]();
+	}
+	#endif
+	
+#endif
+
+#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
 
 extern inline enum eTimerError Timer1OvfInit	( const sTimer16Config_t *psTab , void (*pFncCallback)(void) )	
 {
@@ -642,165 +753,171 @@ extern inline enum eTimerError Timer1OvfInit	( const sTimer16Config_t *psTab , v
 	return ERROR_TIMER_OK;	
 }
 
+	#ifdef TIMER1_OVF_vect
+	ISR ( TIMER1_OVF_vect )
+	{
+		pvTimerCallback[CALLBACK_TIMER1_OVF]();
+		TCNT1 = sReload[TIMER1].uiLoad16;
+	};
+	#endif
 
-#ifdef TIMER1_COMPA_vect
-ISR ( TIMER1_COMPA_vect )
-{
-	pvTimerCallback[CALLBACK_TIMER1_COMPA]();
-}
+#endif
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+/*!<-- TIMER1 // ENDE <--*/
+
+
+#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
+
+	extern inline enum eTimerError Timer2CompInit	( const sTimer8Config_t *psTab  , void (*pFncCallback)(void) )	
+	{
+		cli(); /**< Vorsichtshalber Interrupts global sperren */
+
+		if ( pFncCallback == NULL )
+		{
+			sei();
+			return ERROR_TIMER_NO_ADDRESS;
+		}else
+		{
+			pvTimerCallback[CALLBACK_TIMER2_COMP] = pFncCallback;
+		}
+	
+		#if defined  ( __AVR_ATmega32__ )
+			TCCR2_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+			OCR2 = psTab->uiCnt;
+			TIMSK_OCIE2_EN;
+		#endif
+
+		sei();
+	
+		return ERROR_TIMER_OK;	
+	};
+
+	#ifdef TIMER2_COMP_vect
+	ISR ( TIMER2_COMP_vect )
+	{
+		pvTimerCallback[CALLBACK_TIMER2_COMP]();
+	}
+	#endif
+
+#endif 
+
+#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
+
+	extern inline enum eTimerError Timer2CompAInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
+	{
+		cli(); /**< Vorsichtshalber Interrupts global sperren */
+
+		if ( pFncCallback == NULL )
+		{
+			sei();
+			return ERROR_TIMER_NO_ADDRESS;
+		}else
+		{
+			pvTimerCallback[CALLBACK_TIMER2_COMPA] = pFncCallback;
+		}
+	
+		#if defined  ( __AVR_ATmega328P__ )
+			TCCR2A_WGM( psTab->uiWGMxx );
+			TCCR2B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+			TCCR2A = psTab->uiCnt;
+			TIMSK2_OCIE2A_EN;
+		#endif
+
+		sei();
+	
+		return ERROR_TIMER_OK;	
+	}
+
+	#ifdef TIMER2_COMPA_vect	
+	ISR ( TIMER2_COMPA_vect )
+	{
+		pvTimerCallback[CALLBACK_TIMER2_COMPA]();
+	}
+	#endif
+	
 #endif
 
-#ifdef TIMER1_COMPB_vect
-ISR ( TIMER1_COMPB_vect )
-{
-	pvTimerCallback[CALLBACK_TIMER1_COMPB]();
-}
-#endif
+#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
 
-#ifdef TIMER1_OVF_vect
-ISR ( TIMER1_OVF_vect )
-{
-	pvTimerCallback[CALLBACK_TIMER1_OVF]();
-	TCNT1 = sReload[TIMER1].uiLoad16;
-};
-#endif
-
-
-
-extern inline enum eTimerError Timer2CompInit	( const sTimer8Config_t *psTab  , void (*pFncCallback)(void) )	
-{
-	cli(); /**< Vorsichtshalber Interrupts global sperren */
-
-	if ( pFncCallback == NULL )
+	extern inline enum eTimerError Timer2CompBInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
 	{
-		sei();
-		return ERROR_TIMER_NO_ADDRESS;
-	}else
-	{
-		pvTimerCallback[CALLBACK_TIMER2_COMP] = pFncCallback;
-	}
+		cli(); /**< Vorsichtshalber Interrupts global sperren */
+
+		if ( pFncCallback == NULL )
+		{
+			sei();
+			return ERROR_TIMER_NO_ADDRESS;
+		}else
+		{
+			pvTimerCallback[CALLBACK_TIMER2_COMPB] = pFncCallback;
+		}
 	
-	#if defined  ( __AVR_ATmega32__ )
-		TCCR2_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-		OCR2 = psTab->uiCnt;
-		TIMSK_OCIE2_EN;
+		#if defined  ( __AVR_ATmega328P__ )
+			TCCR2A_WGM( psTab->uiWGMxx );
+			TCCR2B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+			OCR2B = psTab->uiCnt;
+			TIMSK2_OCIE2B_EN;
+		#endif
+
+		sei();
+	
+		return ERROR_TIMER_OK;
+	}
+
+	#ifdef TIMER2_COMPB_vect
+	ISR ( TIMER2_COMPB_vect )
+	{
+		pvTimerCallback[CALLBACK_TIMER2_COMPB]();
+	}
 	#endif
 
-	sei();
-	
-	return ERROR_TIMER_OK;	
-};
+#endif 
 
-extern inline enum eTimerError Timer2CompAInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
-{
-	cli(); /**< Vorsichtshalber Interrupts global sperren */
+#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ )
 
-	if ( pFncCallback == NULL )
+	extern inline enum eTimerError Timer2OvfInit	( const sTimer8Config_t *psTab  , void (*pFncCallback)(void) )	
 	{
-		sei();
-		return ERROR_TIMER_NO_ADDRESS;
-	}else
-	{
-		pvTimerCallback[CALLBACK_TIMER2_COMPA] = pFncCallback;
-	}
-	
-	#if defined  ( __AVR_ATmega328P__ )
-		TCCR2A_WGM( psTab->uiWGMxx );
-		TCCR2B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-		TCCR2A = psTab->uiCnt;
-		TIMSK2_OCIE2A_EN;
-	#endif
+		cli(); /**< Vorsichtshalber Interrupts global sperren */
 
-	sei();
-	
-	return ERROR_TIMER_OK;	
-}
-
-extern inline enum eTimerError Timer2CompBInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
-{
-	cli(); /**< Vorsichtshalber Interrupts global sperren */
-
-	if ( pFncCallback == NULL )
-	{
-		sei();
-		return ERROR_TIMER_NO_ADDRESS;
-	}else
-	{
-		pvTimerCallback[CALLBACK_TIMER2_COMPB] = pFncCallback;
-	}
-	
-	#if defined  ( __AVR_ATmega328P__ )
-		TCCR2A_WGM( psTab->uiWGMxx );
-		TCCR2B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-		OCR2B = psTab->uiCnt;
-		TIMSK2_OCIE2B_EN;
-	#endif
-
-	sei();
-	
-	return ERROR_TIMER_OK;
-}
-
-extern inline enum eTimerError Timer2OvfInit	( const sTimer8Config_t *psTab  , void (*pFncCallback)(void) )	
-{
-	cli(); /**< Vorsichtshalber Interrupts global sperren */
-
-	if ( pFncCallback == NULL )
-	{
-		sei();
-		return ERROR_TIMER_NO_ADDRESS;
-	}else
-	{
-		pvTimerCallback[CALLBACK_TIMER2_OVF] = pFncCallback;
-	}
+		if ( pFncCallback == NULL )
+		{
+			sei();
+			return ERROR_TIMER_NO_ADDRESS;
+		}else
+		{
+			pvTimerCallback[CALLBACK_TIMER2_OVF] = pFncCallback;
+		}
 	
 	
-	#if defined  ( __AVR_ATmega32__ )
-		TCCR2_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-		TIMSK_TOIE2_EN;
-	#elif defined ( __AVR_ATmega328P__ )
-		TCCR2A_WGM( psTab->uiWGMxx );
-		TCCR2B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
-		TIMSK2_TOIE2_EN;
-	#endif
+		#if defined  ( __AVR_ATmega32__ )
+			TCCR2_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+			TIMSK_TOIE2_EN;
+		#elif defined ( __AVR_ATmega328P__ )
+			TCCR2A_WGM( psTab->uiWGMxx );
+			TCCR2B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+			TIMSK2_TOIE2_EN;
+		#endif
 	
-	TCNT2 = psTab->uiCnt;
-	sReload[TIMER2].uiLoad8 = TCNT2;	
+		TCNT2 = psTab->uiCnt;
+		sReload[TIMER2].uiLoad8 = TCNT2;	
  
-	sei();
+		sei();
 	
-	return ERROR_TIMER_OK;
-};
+		return ERROR_TIMER_OK;
+	};
 
+	#ifdef TIMER2_OVF_vect		
+	ISR ( TIMER2_OVF_vect )		
+	{
+		pvTimerCallback[CALLBACK_TIMER2_OVF]();
+		TCNT2 = sReload[TIMER2].uiLoad16;
+	}
+	#endif
 
-#ifdef TIMER2_COMP_vect		
-ISR ( TIMER2_COMP_vect )	
-{
-	pvTimerCallback[CALLBACK_TIMER2_COMP]();
-}
-#endif
+#endif 
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+/*!<-- TIMER2 // ENDE <--*/
 
-#ifdef TIMER2_COMPA_vect
-ISR ( TIMER2_COMPA_vect )
-{
-	pvTimerCallback[CALLBACK_TIMER2_COMPA]();
-}
-#endif
-
-#ifdef TIMER2_COMPB_vect
-ISR ( TIMER2_COMPB_vect )
-{
-	pvTimerCallback[CALLBACK_TIMER2_COMPB]();
-}
-#endif
-
-#ifdef TIMER2_OVF_vect		
-ISR ( TIMER2_OVF_vect )		
-{
-	pvTimerCallback[CALLBACK_TIMER2_OVF]();
-	TCNT2 = sReload[TIMER2].uiLoad16;
-}
-#endif
 
 
 /*****************************************************************/
