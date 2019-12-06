@@ -4,7 +4,7 @@
 *|	\@brief 	-
 *|	\@author 	J.H - Elec(C)
 *|
-*|	\@project	Erstellen eines "virtuellen" Schieberegisters ( 8-Bit Breite! )
+*|	\@project	Puffer fuer ein "virtuelles" Schieberegisters ( 8-Bit Breite! )
 *|
 *|	\@date		06/12/2019 - first implementation
 *|
