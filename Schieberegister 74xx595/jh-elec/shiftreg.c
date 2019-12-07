@@ -17,7 +17,7 @@
 *|
 *|**************************************************************/
 
-#include "shiftreg.h"
+#include "../Headers/shiftreg.h"
 
 /*!<-- Defines <--*/
 /*****************************************************************/
@@ -30,6 +30,9 @@
 /*!<-- Interne Variablen <--*/
 /*****************************************************************/
 static uint8_t pShiftReg[__MAX_eSHIFT_ENTRYS__] = "";
+
+volatile sShiftRegPort_t* sShiftPort = (sShiftRegPort_t*)&_SHIFT_REG_PORT;
+
 /*****************************************************************/
 /*!<-- Interne Variablen // Ende <--*/
 
@@ -38,6 +41,38 @@ static uint8_t pShiftReg[__MAX_eSHIFT_ENTRYS__] = "";
 
 /*!<-- Funktions Prototypen <--*/
 /*****************************************************************/
+eShiftRegError_t ShiftRegSend( uint8_t *pData , uint8_t uiLength )
+{
+	eShiftRegError_t sError = eSHIFT_REG_OK;
+	
+	uint8_t* _pData = pData + __MAX_eSHIFT_ENTRYS__;
+
+	for ( uint8_t y = 0 ; y < uiLength ; y++ )
+	{
+		for ( uint8_t x = 0 ; x < 8 ; x++ )
+		{
+			sShiftPort->bShiftClock = 0;
+			if ( *_pData )
+			{
+				sShiftPort->bData = 1;
+			}
+			else
+			{
+				sShiftPort->bData = 0;
+			}
+			sShiftPort->bShiftClock = 0;	
+		}
+		
+		/*!<-- Daten übernehmen <--*/
+		sShiftPort->bStoreClock = 1;
+		sShiftPort->bStoreClock = 0;
+		
+		pData--;
+	}
+	
+	return sError;
+}
+
 eShiftRegError_t ShiftRegToggleBit( uint8_t uiBitPos )
 {
     eShiftRegError_t eState = eSHIFT_REG_OK;

@@ -23,6 +23,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <avr/io.h>
 
 /*!<-- Defines <--*/
 /*****************************************************************/
@@ -46,6 +47,25 @@ typedef struct
   uint8_t* pRegStart; /*!<-- Erstes virtuelles Schieberegister <--*/
   uint8_t uiLeftRegs; /*!<-- Anzahl der verbleibenden Register <--*/
 }sShiftRegInfo_t;
+
+/*!<-- Hier die Belegung des Schieberegisters Hinterlegen <--*/
+/*!<-- ACHTUNG! Das ganze ist Compiler abhängig. Sollte jedoch beim AVR klappen <--*/
+
+#define _SHIFT_REG_PORT		PORTB
+
+// [0][1][2][3][4][5][6][7] <- Port Bits
+typedef struct  
+{
+	uint8_t b0				:1;
+	uint8_t	b1				:1;
+	uint8_t b2				:1; 
+	uint8_t bOutputEnable	:1; 
+	uint8_t bStoreClock		:1;
+	uint8_t bData			:1; 
+	uint8_t bShiftClock		:1;
+	uint8_t bMasterReset	:1; 
+}sShiftRegPort_t;
+
 /*****************************************************************/
 /*!<-- Defines // Ende <--*/
 
@@ -62,6 +82,8 @@ typedef struct
 
 /*!<-- Funktions Prototypen <--*/
 /*****************************************************************/
+eShiftRegError_t ShiftRegSend( uint8_t *pData , uint8_t uiLength );
+
 eShiftRegError_t ShiftRegToggleBit( uint8_t uiBitPos );
 
 eShiftRegError_t ShiftRegSetBit( uint8_t uiBitPos );
