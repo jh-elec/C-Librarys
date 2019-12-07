@@ -36,8 +36,6 @@ typedef enum
 enum eShiftRegs
 {
     eSHIFT_REG_1,
-    eSHIFT_REG_2,
-    eSHIFT_REG_3,
 
     __MAX_eSHIFT_ENTRYS__
 };
@@ -56,14 +54,14 @@ typedef struct
 // [0][1][2][3][4][5][6][7] <- Port Bits
 typedef struct  
 {
-	uint8_t b0				:1;
-	uint8_t	b1				:1;
-	uint8_t b2				:1; 
-	uint8_t bOutputEnable	:1; 
-	uint8_t bStoreClock		:1;
-	uint8_t bData			:1; 
-	uint8_t bShiftClock		:1;
-	uint8_t bMasterReset	:1; 
+	uint8_t bOutputEnable	:1; 	
+	uint8_t bStoreClock		:1;	
+	uint8_t bShiftClock		:1;	
+	uint8_t bData			:1; 	
+	uint8_t b4				:1;
+	uint8_t	b5				:1;
+	uint8_t b6				:1; 
+	uint8_t b7				:1; 
 }sShiftRegPort_t;
 
 /*****************************************************************/
@@ -73,7 +71,7 @@ typedef struct
 
 /*!<-- Globale Variablen <--*/
 /*****************************************************************/
-
+volatile sShiftRegPort_t* sShiftPort;
 /*****************************************************************/
 /*!<-- Globale Variablen // Ende <--*/
 

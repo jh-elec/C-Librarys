@@ -17,7 +17,7 @@
 *|
 *|**************************************************************/
 
-#include "../Headers/shiftreg.h"
+#include "../Includes//shiftreg.h"
 
 /*!<-- Defines <--*/
 /*****************************************************************/
@@ -46,6 +46,8 @@ eShiftRegError_t ShiftRegSend( uint8_t *pData , uint8_t uiLength )
 	eShiftRegError_t sError = eSHIFT_REG_OK;
 	
 	uint8_t* _pData = pData + __MAX_eSHIFT_ENTRYS__;
+
+	sShiftPort->bOutputEnable = 0;
 
 	for ( uint8_t y = 0 ; y < uiLength ; y++ )
 	{
