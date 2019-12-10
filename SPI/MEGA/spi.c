@@ -10,18 +10,19 @@
 *
 */
 #include <avr/io.h>
-#include "spi.h"
+#include "../Headers/spi.h"
 
 
-uint8_t spiInit( enum spiPrescaler divisor , enum spiClockOptions clock_option , enum spiDoubleSpeed doubleSpeed)
+
+uint8_t SpiMasterInit( enum eSpiPrescaler eSpiPrescaler , enum eClockCnfg eClockCnfg , enum eSpiDoubleSpeedState eSpiDoubleSpeedState )
 {		
 	/*
 	*	Datenleitungen ( MISO , MOSI , SCK , SS ) konfigurieren
 	*/	
-	SPI_DDR		|=  ( 1 << SPI_MOSI_bp);
-	SPI_DDR		&= ~( 1 << SPI_MISO_bp);
-	SPI_DDR		|=  ( 1 << SPI_SCK_bp );
-	SPI_SS_DDR	|=  ( 1 << SPI_SS_bp  );
+	_SPI_GET_DDR(SPI_PORT)		|=  ( 1 << SPI_MOSI_bp);
+	_SPI_GET_DDR(SPI_PORT)		&= ~( 1 << SPI_MISO_bp);
+	_SPI_GET_DDR(SPI_PORT)		|=  ( 1 << SPI_SCK_bp );
+	_SPI_GET_DDR(SPI_SS_PORT)	|=  ( 1 << SPI_SS_bp  );
 		
 	/*
 	*	SPI aktivieren und in den "Master Mode" setzen
@@ -31,103 +32,25 @@ uint8_t spiInit( enum spiPrescaler divisor , enum spiClockOptions clock_option ,
 	/*
 	*	Takt konfigurieren und die Polarität des Taktes einstellen
 	*/
-	switch( clock_option )
-	{
-		case MODE1: 
-		{
-			SPCR &= ~( ( 1<<CPOL ) | ( 1<<CPHA ) );	
-		}break;
+	SPCR |= pClockCnfg[eClockCnfg] | pSpiPrescaler[eSpiPrescaler];
 		
-		case MODE2: 
-		{
-			SPCR |=  ( 1<<CPHA );				
-		}break;
-		
-		case MODE3: 
-		{
-			SPCR |=  ( 1<<CPOL );				
-		}break;
-		
-		case MODE4: 
-		{
-			SPCR |=  ( ( 1<<CPOL ) | ( 1<<CPHA ) );	
-		}break;
-	}
-		
-	/*
-	*	Bus Frequenz einstellen
-	*/
-	switch ( divisor )
-	{
-		/*
-		*	Vorteiler ohne "DoubleSpeed"
-		*/
-		case PRESCALER_4:
-		{
-			SPCR &= ~( ( 1<<SPR1 ) | ( 1<<SPR0 ) );
-		}break;
-		
-		case PRESCALER_16:	
-		{
-			SPCR |=  ( 1<<SPR0 ); 	
-		}break;
-		
-		case PRESCALER_64:	
-		{
-			SPCR |=  ( 1<<SPR1 ); 
-		}break;
-		
-		case PRESCALER_128:	
-		{
-			SPCR |=  ( ( 1<<SPR1 ) | ( 1<<SPR0 ) );				
-		}break;
-		
-		/*
-		*	Vorteiler mit "DoubleSpeed"
-		*/		
-		case SPI2X_PRESCALER_2:
-		{
-			SPCR &= ~( ( 1<<SPR1 ) | ( 1<<SPR0 ) );
-		}break;
-		
-		case SPI2X_PRESCALER_8:
-		{
-			SPCR |= ( 1<<SPR0 );	
-		}break;
-
-		case SPI2X_PRESCALER_32:
-		{
-			SPCR |= ( 1<<SPR1 );
-		}break;
-
-		case SPI2X_PRESCALER_64:
-		{
-			SPCR |= ( ( 1<<SPR1 ) | ( 1<<SPR0 ) );
-		}break;
-	}
 	
-	switch( doubleSpeed )
+	switch( eSpiDoubleSpeedState )
 	{
-		case DOUBLE_SPEED_OFF:
-		{
-			SPSR &= ~( 1<<SPI2X );
-		}break;
+		case eSPI_DOUBLE_SPEED_OFF: { SPSR &= ~( 1<<SPI2X ); }break;
 		
-		case DOUBLE_SPEED_ON:
-		{
-			SPSR |= ( 1<<SPI2X );
-		}break;
+		case eSPI_DOUBLE_SPEED_ON: { SPSR |= ( 1<<SPI2X ); }break;
 	}
 	
 	return 0;	
 }
 
-void spiWrite( uint8_t data )		
+void SpiMasterWrite( uint8_t uiData )		
 {
 	/*
 	*	Byte in das Senderegister vom SPI schreiben
 	*/
-	SPDR = data;
+	SPDR = uiData;
 	
 	/*
 	*	Warten bis alle Bits raus geschoben wurden sind..
@@ -135,12 +58,12 @@ void spiWrite( uint8_t data )
 	while( ! ( SPSR & ( 1 << SPIF ) ) );	
 }
 
-uint8_t spiRead( uint8_t data )				
+uint8_t SpiMasterRead( uint8_t uiData )				
 {	
 	/*
 	*	Dummy Byte senden
 	*/
-	SPDR = data;
+	SPDR = uiData;
 	
 	/*
 	*	Warten bis alle Bits raus geschoben wurden sind..
@@ -153,12 +76,12 @@ uint8_t spiRead( uint8_t data )
 	return SPDR;	
 }
 
-uint8_t spiWriteRead( uint8_t data )
+uint8_t SpiMasterWriteRead( uint8_t uiData )
 {
 	/*
 	*	Byte in das Senderegister vom SPI schreiben
 	*/
-	SPDR = data;
+	SPDR = uiData;
 	
 	/*
 	*	Warten bis alle Bits raus geschoben wurden sind..
@@ -171,12 +94,12 @@ uint8_t spiWriteRead( uint8_t data )
 	return SPDR;
 }
 
-void spiSlaveSelect( void )			
+void SpiMasterSlaveSelect( void )			
 {
 	SPI_SS_PORT &= ~ ( 1 << SPI_SS_bp );
 }
 
-void spiSlaveDeSelect( void )		
+void SpiMasterSlaveDeselect( void )		
 {
 	SPI_SS_PORT |= ( 1 << SPI_SS_bp );
 }
