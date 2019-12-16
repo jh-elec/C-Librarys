@@ -4,7 +4,7 @@
 *|	\@brief 	-
 *|	\@author 	J.H - Elec(C)
 *|
-*|	\@project	API für das "1-Draht Bus System"
+*|	\@project	API für das "1-Draht BUS System"
 *|
 *|	\@date		16/12/2019 - first implementation
 *|
@@ -22,6 +22,7 @@
 
 
 #include <stdio.h>
+#include <string.h>
 #include <avr/io.h>
 
 
@@ -31,18 +32,24 @@
 #define F_CPU  16e6       
 #endif
 
+#include <util/delay.h>
+
+#define _ONEWIRE_GET_DDR( PORTx )			( * ( &PORTx - 1 ) )
+#define _ONEWIRE_GET_PIN( PORTx )			( * ( &PORTx - 2 ) )
+
 #define _ONEWIRE_PORT						PORTB
 #define _ONEWIRE_DATA_BP					PB1
 
-#define _ONEWIRE_DELAY_US_( USx )          ( unsigned int )( F_CPU / 12.0 / 1e6 / 2 * USx )
-
 enum eStatuscode
 {
-	eSTATUS_OK			= 1,
-	eSTATUS_ERROR		= 2,
-	eSTATUS_NO_PORT		= 3,	
-	eSTATUS_ACK			= 4,
-	eSTATUS_NO_ACK		= 5,
+	eSTATUS_OK					= 1,
+	eSTATUS_ERROR				= 2,
+	eSTATUS_INVALID_CONFIG		= 3,	
+	eSTATUS_ACK					= 4,
+	eSTATUS_NO_ACK				= 5,
+	eSTATUS_BUS_SHORT_TO_GND	= 6,
+	eSTATUS_NEW_ROM_CODE_FOUND	= 7,
+	eSTATUS_CRC_ERROR			= 8,
 };
 
 enum eCommands
@@ -57,10 +64,6 @@ enum eCommands
 	eCOMMAND_ALARM_SEARCH		= 0xEC,
 };
 
-enum eSlaveAddr
-{
-	eSLAVE_ADDR_ONLY_ONE_SLAVE = 255	
-};
 
 /*****************************************************************/
 /*!<-- Defines // Ende <--*/
@@ -70,10 +73,7 @@ enum eSlaveAddr
 /*!<-- Globale Variablen <--*/
 /*****************************************************************/
 
-typedef uint8_t bool;
 typedef enum eStatuscode eStatuscode_t;
-typedef enum eSlaveAddr	 eSlaveAddr_t;
-typedef uint8_t OneWireRomTab_t;
 
 typedef struct
 {
@@ -90,17 +90,10 @@ typedef struct
 
 typedef struct  
 {
-	sOneWireMapping_t	*sMapping;
-	OneWireRomTab_t		pRomCode[8];
+	sOneWireMapping_t	*psDDR;
+	sOneWireMapping_t	*psPORT;
+	sOneWireMapping_t	*psPIN;
 }sOneWire_t;
-
-
-/*!<-- Hier werden die ROM Identifizierer des jeweiligen Slaves eingetragen,
-		sollten mehrere an einem BUS angeschlossen sein <--*/
-static const OneWireRomTab_t OneWireRomTab[][8] =
-{
-	{ 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 }, // Slave 1
-};
 
 /*****************************************************************/
 /*!<-- Globale Variablen // Ende <--*/
@@ -110,25 +103,33 @@ static const OneWireRomTab_t OneWireRomTab[][8] =
 
 /*!<-- Funktions Prototypen <--*/
 /*****************************************************************/
-void OneWireDelay( uint16_t uiDelay );
-
 eStatuscode_t OneWireInit( void );
 
 eStatuscode_t OneWireReset( void );
 
-void OneWireWriteBit( bool bValue );
+void OneWireWriteBit( uint8_t bBit );
 
 uint8_t OneWireReadBit( void );
 
-void OneWireWrite( uint8_t uiData );
+uint8_t OneWireReadByte( void );
 
-uint8_t OneWireRead( void );
+void OneWireWriteByte( uint8_t uiData );
 
-eStatuscode_t OneWireReadROM( void );
+void OneWireSearchInit( uint8_t uiBuffer[8] );
 
-void OneWireSelectSlave( eSlaveAddr_t eSlaveAddr );
+uint8_t OneWireSearchROM( uint8_t uiBuffer[8] );
 
-void OneWireGetROM( uint8_t *pDataOut );
+uint8_t OneWireSearchAlarm( uint8_t uiBuffer[8] );
+
+uint8_t OneWireSearch( uint8_t uiBuffer[8] , enum eCommands eCommand );
+
+eStatuscode_t OneWireMatchROM( const uint8_t uiBufferROM[8] );
+
+eStatuscode_t OneWireSkipROM( void );
+
+eStatuscode_t OneWireReadROM( uint8_t uiBufferROM[8] );
+
+uint8_t OneWireCRC( const uint8_t *pDataIn , uint8_t uiCnt );
 /*****************************************************************/
 /*!<-- Funktions Prototypen // Ende <--*/
 
