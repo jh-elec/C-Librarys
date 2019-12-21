@@ -40,15 +40,25 @@
 #define _ONEWIRE_PORT						PORTB
 #define _ONEWIRE_DATA_BP					PB1
 
+/*!<-- Wie viele Slaves sind am "1-Wire" Bus angeschlossen? <--*/
+enum eSlavesOnBus
+{
+	eSLAVE_1,
+	eSLAVE_2,
+	
+	__MAX_eSLAVE_ENTRYS__	
+};
+
 enum eStatuscode
 {
-	eSTATUS_OK					= 0,
-	eSTATUS_ACK					= 1,
-	eSTATUS_NO_ACK				= 2,	
-	eSTATUS_INVALID_CONFIG		= 3,	
-	eSTATUS_BUS_SHORT_TO_GND	= 4,
-	eSTATUS_NEW_ROM_CODE_FOUND	= 5,
-	eSTATUS_CRC_ERROR			= 6,
+	eSTATUS_OK						= 0x01,
+	eSTATUS_ACK						= 0x02,
+	eSTATUS_NO_ACK					= 0x04,	
+	eSTATUS_INVALID_CONFIG			= 0x08,	
+	eSTATUS_BUS_SHORT_TO_GND		= 0x10,
+	eSTATUS_NEW_ROM_CODE_FOUND		= 0x20,
+	eSTATUS_NO_NEW_ROM_CODE_FOUND	= 0x40,
+	eSTATUS_CRC_ERROR				= 0x80,
 };
 
 enum eCommands
@@ -98,7 +108,13 @@ sOneWire_t sOneWire;
 
 typedef uint8_t OneWireROM[8];
 
+/*!<-- ROM Speicher für einen Slave am "1-Wire" Bus <--*/
 OneWireROM OneWireRom;
+
+/*!<-- ROM Speicher für mehrere Slaves am "1-Wire" Bus <--*/
+OneWireROM OneWireMultiRom[__MAX_eSLAVE_ENTRYS__];
+
+uint8_t test[2][8];
 
 /*****************************************************************/
 /*!<-- Globale Variablen // Ende <--*/
@@ -120,21 +136,23 @@ uint8_t OneWireReadByte( void );
 
 void OneWireWriteByte( uint8_t uiData );
 
-void OneWireSearchInit( uint8_t uiBuffer[8] );
+void OneWireSearchInit( OneWireROM pROM );
 
-uint8_t OneWireSearchROM( uint8_t uiBuffer[8] );
+uint8_t OneWireSearchROM( OneWireROM pROM );
 
-uint8_t OneWireSearchAlarm( uint8_t uiBuffer[8] );
+uint8_t OneWireSearchAlarm( OneWireROM pROM );
 
-uint8_t OneWireSearch( uint8_t uiBuffer[8] , enum eCommands eCommand );
+uint8_t OneWireSearch( OneWireROM pROM , enum eCommands eCommand );
 
-eStatuscode_t OneWireMatchROM( const uint8_t uiBufferROM[8] );
+eStatuscode_t OneWireMatchROM( const OneWireROM pROM );
 
 eStatuscode_t OneWireSkipROM( void );
 
-eStatuscode_t OneWireReadROM( uint8_t uiBufferROM[8] );
+eStatuscode_t OneWireReadROM( OneWireROM pROM );
 
 uint8_t OneWireCRC( const uint8_t *pDataIn , uint8_t uiCnt );
+
+uint8_t OneWireSaveROM( OneWireROM ROM , enum eSlavesOnBus eSlave );
 /*****************************************************************/
 /*!<-- Funktions Prototypen // Ende <--*/
 

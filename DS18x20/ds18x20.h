@@ -44,7 +44,9 @@
 
 /*!<-- Funktions Prototypen <--*/
 /*****************************************************************/
-int16_t Ds18B20ReadTemp( eStatuscode_t *peStatus );
+int16_t Ds18B20GetTemp( eStatuscode_t *peStatus );
+
+int16_t Ds18B20ReadSlaveTemp( eStatuscode_t *peStatus , enum eSlavesOnBus eSlave );
 /*****************************************************************/
 /*!<-- Funktions Prototypen // Ende <--*/
 

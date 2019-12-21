@@ -143,35 +143,35 @@ void OneWireWriteByte( uint8_t uiData )
 	}
 }
 
-void OneWireSearchInit( uint8_t uiBuffer[8] ) 
+void OneWireSearchInit( OneWireROM pROM ) 
 {
-	memset( uiBuffer , 0 , 8 );
+	memset( pROM , 0 , 8 );
 	OneWireSearch( NULL , 0 );
 }
 
-uint8_t OneWireSearchROM( uint8_t uiBuffer[8] )
+uint8_t OneWireSearchROM( OneWireROM pROM )
 {
-	return OneWireSearch( uiBuffer , eCOMMAND_SEARCH_ROM );
+	return OneWireSearch( pROM , eCOMMAND_SEARCH_ROM );
 }
 
-uint8_t OneWireSearchAlarm( uint8_t uiBuffer[8] )
+uint8_t OneWireSearchAlarm( OneWireROM pROM )
 {
-	return OneWireSearch( uiBuffer , eCOMMAND_ALARM_SEARCH );
+	return OneWireSearch( pROM , eCOMMAND_ALARM_SEARCH );
 }
 
-uint8_t OneWireSearch( uint8_t uiBuffer[8] , enum eCommands eCommand ) 
+uint8_t OneWireSearch( OneWireROM pROM , enum eCommands eCommand ) 
 {
-	eStatuscode_t eStatus = eSTATUS_OK;
+	eStatuscode_t eStatus = eSTATUS_ACK;
 	
 	uint8_t mask, i, j, bit, rom_tmp;
 	uint8_t max_conf_zero=0;        // last bit conflict that was resolved to zero
 	static uint8_t max_conf_old;    // last bit conflict that was resolved to zero in last scan
 	uint8_t branch_flag=0;          // indicate new scan branch, new ROM code found
 
-	if ( uiBuffer == NULL ) 
+	if ( pROM == NULL ) 
 	{ 
 		max_conf_old=64;
-		return 0;
+		return eSTATUS_OK;
 	}
 	
 	
@@ -189,7 +189,7 @@ uint8_t OneWireSearch( uint8_t uiBuffer[8] , enum eCommands eCommand )
 	
 
 	OneWireWriteByte( eCommand );
-	rom_tmp  = uiBuffer[0];
+	rom_tmp  = pROM[0];
 	i = 0;
 	mask = 1;
 		
@@ -227,12 +227,13 @@ uint8_t OneWireSearch( uint8_t uiBuffer[8] , enum eCommands eCommand )
 			}
 			break;
 
+
 			case 3:
 			eStatus = eSTATUS_NO_ACK;
 			break;
 		}// end switch
 
-		if ( bit )
+		if ( bit & 1 )
 		{
 			OneWireWriteBit( 1 );
 			rom_tmp |= mask;
@@ -247,26 +248,28 @@ uint8_t OneWireSearch( uint8_t uiBuffer[8] , enum eCommands eCommand )
 		if ( mask == 0 ) 
 		{
 			mask = 1;
-			uiBuffer[i] = rom_tmp;            // update tmp data
+			pROM[i] = rom_tmp;            // update tmp data
 			i++;
 			if ( i < 8 ) 
 			{
-				rom_tmp  = uiBuffer[i];       // read new data
+				rom_tmp  = pROM[i];       // read new data
 			}
 		}
 	}// end for
 
 	max_conf_old = max_conf_zero;
 	
-	if ( branch_flag ) 
+	if ( branch_flag )
 	{
-		eStatus = eSTATUS_NEW_ROM_CODE_FOUND;           // new code found
+		return eSTATUS_NEW_ROM_CODE_FOUND;
+	}
+	else
+	{
+		return eSTATUS_NO_NEW_ROM_CODE_FOUND;           // new code found
 	} 
-
-	return eStatus;
 }
 
-eStatuscode_t OneWireMatchROM( const uint8_t uiBufferROM[8] ) 
+eStatuscode_t OneWireMatchROM( const OneWireROM pROM ) 
 {
 	uint8_t mask, tmp=0, i, j;
 
@@ -291,7 +294,7 @@ eStatuscode_t OneWireMatchROM( const uint8_t uiBufferROM[8] )
 		if (mask == 0) 
 		{
 			mask = 1;
-			tmp = uiBufferROM[i];
+			tmp = pROM[i];
 			i++;
 		}
 
@@ -320,7 +323,7 @@ eStatuscode_t OneWireSkipROM( void )
 	return eSTATUS_ACK;
 }
 
-eStatuscode_t OneWireReadROM( uint8_t uiBufferROM[8] ) 
+eStatuscode_t OneWireReadROM( OneWireROM pROM ) 
 {
 	uint8_t mask=1, tmp=0, i=0, j;
 
@@ -342,13 +345,13 @@ eStatuscode_t OneWireReadROM( uint8_t uiBufferROM[8] )
 			if ( mask == 0 ) 
 			{
 				mask = 1;
-				uiBufferROM[i]=tmp;
+				pROM[i]=tmp;
 				tmp=0;
 				i++;
 			}
 		}
 
-		if( OneWireCRC( uiBufferROM , 8 ) ) 
+		if( OneWireCRC( pROM , 8 ) ) 
 		{
 			return eSTATUS_CRC_ERROR; 
 		}
@@ -389,6 +392,22 @@ uint8_t OneWireCRC( const uint8_t *pDataIn , uint8_t uiCnt )
 
 	return crc;
 }
+
+uint8_t OneWireSaveROM( OneWireROM ROM , enum eSlavesOnBus eSlave )
+{
+	if ( eSlave > __MAX_eSLAVE_ENTRYS__ )
+	{
+		return 1; /*!<-- Kein Speicherplatz <--*/
+	}
+	
+	for ( uint8_t x = 0 ; x < 8 ; x++ )
+	{
+		OneWireMultiRom[ eSlave ][x] = ROM[x];
+	}
+	
+	return 0;
+}
+
 /*****************************************************************/
 /*!<-- Funktionen // Ende <--*/
 
