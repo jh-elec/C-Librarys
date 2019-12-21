@@ -42,14 +42,13 @@
 
 enum eStatuscode
 {
-	eSTATUS_OK					= 1,
-	eSTATUS_ERROR				= 2,
+	eSTATUS_OK					= 0,
+	eSTATUS_ACK					= 1,
+	eSTATUS_NO_ACK				= 2,	
 	eSTATUS_INVALID_CONFIG		= 3,	
-	eSTATUS_ACK					= 4,
-	eSTATUS_NO_ACK				= 5,
-	eSTATUS_BUS_SHORT_TO_GND	= 6,
-	eSTATUS_NEW_ROM_CODE_FOUND	= 7,
-	eSTATUS_CRC_ERROR			= 8,
+	eSTATUS_BUS_SHORT_TO_GND	= 4,
+	eSTATUS_NEW_ROM_CODE_FOUND	= 5,
+	eSTATUS_CRC_ERROR			= 6,
 };
 
 enum eCommands
@@ -77,23 +76,29 @@ typedef enum eStatuscode eStatuscode_t;
 
 typedef struct
 {
-	uint8_t		bData;
-	uint8_t		b1;
-	uint8_t		b2;
-	uint8_t		b3;
-	uint8_t		b4;
-	uint8_t		b5;
-	uint8_t		b6;
-	uint8_t		b7;	
+	uint8_t		b0			:1;
+	uint8_t		b1			:1;
+	uint8_t		b2			:1;
+	uint8_t		b3			:1;
+	uint8_t		bDQ			:1;
+	uint8_t		b5			:1;
+	uint8_t		b6			:1;
+	uint8_t		bStateLED	:1;	
 }sOneWireMapping_t;
 
 
 typedef struct  
 {
-	sOneWireMapping_t	*psDDR;
-	sOneWireMapping_t	*psPORT;
-	sOneWireMapping_t	*psPIN;
+	volatile sOneWireMapping_t	*psDDR;
+	volatile sOneWireMapping_t	*psPORT;
+	volatile sOneWireMapping_t	*psPIN;
 }sOneWire_t;
+
+sOneWire_t sOneWire;
+
+typedef uint8_t OneWireROM[8];
+
+OneWireROM OneWireRom;
 
 /*****************************************************************/
 /*!<-- Globale Variablen // Ende <--*/

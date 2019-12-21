@@ -30,7 +30,7 @@
 
 /*!<-- Interne Variablen <--*/
 /*****************************************************************/
-static sOneWire_t sOneWire;
+sOneWire_t sOneWire;
 /*****************************************************************/
 /*!<-- Interne Variablen // Ende <--*/
 
@@ -42,14 +42,9 @@ static sOneWire_t sOneWire;
 eStatuscode_t OneWireInit( void )
 {		
 	/*!<-- Port mappen <--*/
-	sOneWire.psDDR	= (sOneWireMapping_t *)&_ONEWIRE_GET_DDR(_ONEWIRE_PORT);
-	sOneWire.psPORT	= (sOneWireMapping_t *)&_ONEWIRE_PORT;
-	sOneWire.psPIN	= (sOneWireMapping_t *)&_ONEWIRE_GET_PIN(_ONEWIRE_PORT);
-	
-	if ( &sOneWire.psDDR == NULL || &sOneWire.psPIN == NULL || &sOneWire.psPORT == NULL )
-	{
-		return eSTATUS_INVALID_CONFIG;
-	}
+	sOneWire.psDDR	= (sOneWireMapping_t*)&DDRD;
+	sOneWire.psPORT	= (sOneWireMapping_t*)&PORTD;
+	sOneWire.psPIN	= (sOneWireMapping_t*)&PIND;
 	
 	return eSTATUS_OK;
 }
@@ -58,19 +53,20 @@ eStatuscode_t OneWireReset( void )
 {
 	eStatuscode_t eStatus = eSTATUS_ACK;
 	
-	sOneWire.psPORT->bData	= 0;
-	sOneWire.psDDR->bData		= 1;
+	sOneWire.psPORT->bDQ	= 0;
+	sOneWire.psDDR->bDQ		= 1;
 	_delay_us(480);
-	sOneWire.psDDR->bData		= 0;
+	sOneWire.psDDR->bDQ		= 0;
 	_delay_us(66);
 	
-	if ( sOneWire.psPIN->bData )
+	if ( sOneWire.psPIN->bDQ )
 	{
 		eStatus = eSTATUS_NO_ACK;
 	}
 	
 	_delay_us(480);
-	if ( ! ( sOneWire.psPIN->bData ) )
+	
+	if ( ! ( sOneWire.psPIN->bDQ ) )
 	{
 		eStatus = eSTATUS_BUS_SHORT_TO_GND;
 	}
@@ -80,20 +76,20 @@ eStatuscode_t OneWireReset( void )
 
 void OneWireWriteBit( uint8_t uiBit )
 {
-	if ( uiBit )
+	if ( ! ( uiBit & 0x01 ) )
 	{
-		sOneWire.psPORT->bData = 0;
-		sOneWire.psDDR->bData = 1;
+		sOneWire.psPORT->bDQ = 0;
+		sOneWire.psDDR->bDQ = 1;
 		_delay_us(95);
-		sOneWire.psDDR->bData = 0;
+		sOneWire.psDDR->bDQ = 0;
 		_delay_us(5);
 	}
 	else
 	{
-		sOneWire.psPORT->bData = 0;
-		sOneWire.psDDR->bData = 1;
+		sOneWire.psPORT->bDQ = 0;
+		sOneWire.psDDR->bDQ = 1;
 		_delay_us(10);
-		sOneWire.psDDR->bData = 0;
+		sOneWire.psDDR->bDQ = 0;
 		_delay_us(90);
 	}
 }
@@ -102,13 +98,22 @@ uint8_t OneWireReadBit( void )
 {
 	uint8_t uiBit = 0;
 	
-	sOneWire.psPORT->bData = 0;
-	sOneWire.psDDR->bData = 1;
+	sOneWire.psPORT->bDQ = 0;
+	sOneWire.psDDR->bDQ = 1;
 	_delay_us(3);
-	sOneWire.psDDR->bData = 0;
+	sOneWire.psDDR->bDQ = 0;
 	_delay_us(10);
-	uiBit = sOneWire.psPIN->bData;
+	uiBit = sOneWire.psPIN->bDQ;
 	_delay_us(87);
+	
+	if ( uiBit )
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
 	
 	return uiBit;
 }
@@ -164,15 +169,24 @@ uint8_t OneWireSearch( uint8_t uiBuffer[8] , enum eCommands eCommand )
 	uint8_t branch_flag=0;          // indicate new scan branch, new ROM code found
 
 	if ( uiBuffer == NULL ) 
-	{    // init search
+	{ 
 		max_conf_old=64;
 		return 0;
 	}
-
-	if ( OneWireReset() ) 
+	
+	
+	uint8_t uiResetState = OneWireReset();
+	switch ( uiResetState )
 	{
-		return eSTATUS_NO_ACK;               // no response
-	} 
+		case eSTATUS_BUS_SHORT_TO_GND:
+		 return eSTATUS_BUS_SHORT_TO_GND;
+		break;
+		
+		case eSTATUS_NO_ACK:
+			return eSTATUS_NO_ACK;
+		break;
+	}
+	
 
 	OneWireWriteByte( eCommand );
 	rom_tmp  = uiBuffer[0];
@@ -256,58 +270,61 @@ eStatuscode_t OneWireMatchROM( const uint8_t uiBufferROM[8] )
 {
 	uint8_t mask, tmp=0, i, j;
 
-	if ( OneWireReset() )
+	uint8_t uiResetState = OneWireReset();
+	switch ( uiResetState )
 	{
-		return eSTATUS_NO_ACK;               // no response
-	} 
-	else 
-	{
-		OneWireWriteByte( eCOMMAND_MATCH_ROM );
-		mask = 0;
-		i = 0;
-		for ( j = 0 ; j < 64 ; j++ ) 
-		{
-			mask <<= 1;
-			if (mask == 0) 
-			{
-				mask = 1;
-				tmp = uiBufferROM[i];
-				i++;
-			}
+		case eSTATUS_BUS_SHORT_TO_GND:
+		return eSTATUS_BUS_SHORT_TO_GND;
+		break;
+		
+		case eSTATUS_NO_ACK:
+		return eSTATUS_NO_ACK;
+		break;
+	}
 
-			if ( tmp & mask ) 
-			{
-				OneWireWriteBit( 1 );   // branch 1
-			} 
-			else 
-			{
-				OneWireWriteBit( 0 );   // branch 0
-			}
+	OneWireWriteByte( eCOMMAND_MATCH_ROM );
+	mask = 0;
+	i = 0;
+	for ( j = 0 ; j < 64 ; j++ ) 
+	{
+		mask <<= 1;
+		if (mask == 0) 
+		{
+			mask = 1;
+			tmp = uiBufferROM[i];
+			i++;
+		}
+
+		if ( tmp & mask ) 
+		{
+			OneWireWriteBit( 1 );   // branch 1
+		} 
+		else 
+		{
+			OneWireWriteBit( 0 );   // branch 0
 		}
 	}
-	
+		
 	return eSTATUS_OK;
 }
 
 eStatuscode_t OneWireSkipROM( void ) 
 {
-	if ( OneWireReset() ) 
+	if ( OneWireReset() != eSTATUS_ACK ) 
 	{
 		return eSTATUS_NO_ACK;
 	} 
-	else 
-	{
-		OneWireWriteByte( eCOMMAND_SKIP_ROM );
-	}
-	
-	return eSTATUS_OK;
+
+	OneWireWriteByte( eCOMMAND_SKIP_ROM );
+
+	return eSTATUS_ACK;
 }
 
 eStatuscode_t OneWireReadROM( uint8_t uiBufferROM[8] ) 
 {
 	uint8_t mask=1, tmp=0, i=0, j;
 
-	if ( OneWireReset() ) 
+	if ( OneWireReset() != eSTATUS_ACK ) 
 	{
 		return eSTATUS_NO_ACK;                           
 	} 
