@@ -39,19 +39,17 @@ sOneWire_t sOneWire;
 
 /*!<-- Funktionen <--*/
 /*****************************************************************/
-eStatuscode_t OneWireInit( void )
+void OneWireInit( void )
 {		
 	/*!<-- Port mappen <--*/
 	sOneWire.psDDR	= (sOneWireMapping_t*)&DDRD;
 	sOneWire.psPORT	= (sOneWireMapping_t*)&PORTD;
 	sOneWire.psPIN	= (sOneWireMapping_t*)&PIND;
-	
-	return eSTATUS_OK;
 }
 
 eStatuscode_t OneWireReset( void )
 {
-	eStatuscode_t eStatus = eSTATUS_ACK;
+	eStatuscode_t eStatus = eSTATUS_ONEWIRE_OK;
 	
 	sOneWire.psPORT->bDQ	= 0;
 	sOneWire.psDDR->bDQ		= 1;
@@ -61,14 +59,14 @@ eStatuscode_t OneWireReset( void )
 	
 	if ( sOneWire.psPIN->bDQ )
 	{
-		eStatus = eSTATUS_NO_ACK;
+		eStatus = eSTATUS_ONEWIRE_NO_PRESENCE;
 	}
 	
 	_delay_us(480);
 	
 	if ( ! ( sOneWire.psPIN->bDQ ) )
 	{
-		eStatus = eSTATUS_BUS_SHORT_TO_GND;
+		eStatus = eSTATUS_ONEWIRE_GND_SHORT;
 	}
 	
 	return eStatus;             
@@ -151,17 +149,17 @@ void OneWireSearchInit( OneWireROM pROM )
 
 uint8_t OneWireSearchROM( OneWireROM pROM )
 {
-	return OneWireSearch( pROM , eCOMMAND_SEARCH_ROM );
+	return OneWireSearch( pROM , eCOMMAND_ONEWIRE_SEARCH_ROM );
 }
 
 uint8_t OneWireSearchAlarm( OneWireROM pROM )
 {
-	return OneWireSearch( pROM , eCOMMAND_ALARM_SEARCH );
+	return OneWireSearch( pROM , eCOMMAND_ONEWIRE_ALARM_SEARCH );
 }
 
 uint8_t OneWireSearch( OneWireROM pROM , enum eCommands eCommand ) 
 {
-	eStatuscode_t eStatus = eSTATUS_ACK;
+	eStatuscode_t eStatus;
 	
 	uint8_t mask, i, j, bit, rom_tmp;
 	uint8_t max_conf_zero=0;        // last bit conflict that was resolved to zero
@@ -171,22 +169,15 @@ uint8_t OneWireSearch( OneWireROM pROM , enum eCommands eCommand )
 	if ( pROM == NULL ) 
 	{ 
 		max_conf_old=64;
-		return eSTATUS_OK;
+		return eSTATUS_ONEWIRE_OK;
 	}
 	
-	
-	uint8_t uiResetState = OneWireReset();
-	switch ( uiResetState )
+	eStatus = OneWireReset();
+	if ( eStatus )
 	{
-		case eSTATUS_BUS_SHORT_TO_GND:
-		 return eSTATUS_BUS_SHORT_TO_GND;
-		break;
-		
-		case eSTATUS_NO_ACK:
-			return eSTATUS_NO_ACK;
-		break;
+		return eStatus;
 	}
-	
+
 
 	OneWireWriteByte( eCommand );
 	rom_tmp  = pROM[0];
@@ -227,9 +218,12 @@ uint8_t OneWireSearch( OneWireROM pROM , enum eCommands eCommand )
 			}
 			break;
 
+            case 2: // no bit conflict
+            // do nothing, just go on with current bit
+            break;
 
 			case 3:
-			eStatus = eSTATUS_NO_ACK;
+			eStatus = eSTATUS_ONEWIRE_SCAN_ERROR;
 			break;
 		}// end switch
 
@@ -259,138 +253,118 @@ uint8_t OneWireSearch( OneWireROM pROM , enum eCommands eCommand )
 
 	max_conf_old = max_conf_zero;
 	
-	if ( branch_flag )
+	if ( OneWireCRC( pROM , 8 ) )
 	{
-		return eSTATUS_NEW_ROM_CODE_FOUND;
+		return eSTATUS_ONEWIRE_CRC_ERROR;
+	}
+	else if ( branch_flag )
+	{
+		return eSTATUS_ONEWIRE_OK;
 	}
 	else
 	{
-		return eSTATUS_NO_NEW_ROM_CODE_FOUND;           // new code found
-	} 
+		return eSTATUS_ONEWIRE_LAST_CODE;
+	}
 }
 
 eStatuscode_t OneWireMatchROM( const OneWireROM pROM ) 
 {
-	uint8_t mask, tmp=0, i, j;
-
-	uint8_t uiResetState = OneWireReset();
-	switch ( uiResetState )
+	eStatuscode_t eStatus = OneWireReset();
+	
+	if ( eStatus )
 	{
-		case eSTATUS_BUS_SHORT_TO_GND:
-		return eSTATUS_BUS_SHORT_TO_GND;
-		break;
-		
-		case eSTATUS_NO_ACK:
-		return eSTATUS_NO_ACK;
-		break;
+		return eStatus;
 	}
 
-	OneWireWriteByte( eCOMMAND_MATCH_ROM );
-	mask = 0;
-	i = 0;
-	for ( j = 0 ; j < 64 ; j++ ) 
+	OneWireWriteByte( eCOMMAND_ONEWIRE_MATCH_ROM );
+	for ( uint8_t x = 0 ; x < 8 ; x++ )
 	{
-		mask <<= 1;
-		if (mask == 0) 
-		{
-			mask = 1;
-			tmp = pROM[i];
-			i++;
-		}
-
-		if ( tmp & mask ) 
-		{
-			OneWireWriteBit( 1 );   // branch 1
-		} 
-		else 
-		{
-			OneWireWriteBit( 0 );   // branch 0
-		}
+		OneWireWriteByte( pROM[x] );
 	}
 		
-	return eSTATUS_OK;
+	return eSTATUS_ONEWIRE_OK;
 }
 
 eStatuscode_t OneWireSkipROM( void ) 
 {
-	if ( OneWireReset() != eSTATUS_ACK ) 
+	eStatuscode_t eStatus;
+	
+	eStatus = OneWireReset();
+	if ( eStatus )
 	{
-		return eSTATUS_NO_ACK;
-	} 
+		return eStatus;
+	}
 
-	OneWireWriteByte( eCOMMAND_SKIP_ROM );
+	OneWireWriteByte( eCOMMAND_ONEWIRE_SKIP_ROM );
 
-	return eSTATUS_ACK;
+	return eSTATUS_ONEWIRE_OK;
 }
 
 eStatuscode_t OneWireReadROM( OneWireROM pROM ) 
 {
-	uint8_t mask=1, tmp=0, i=0, j;
-
-	if ( OneWireReset() != eSTATUS_ACK ) 
-	{
-		return eSTATUS_NO_ACK;                           
-	} 
-	else 
-	{
-		OneWireWriteByte( eCOMMAND_READ_ROM );
-		for ( j = 0 ; j < 64 ; j++ ) 
-		{
-			if ( OneWireReadBit() )  
-			{
-				tmp |= mask;
-			}
-
-			mask <<= 1;
-			if ( mask == 0 ) 
-			{
-				mask = 1;
-				pROM[i]=tmp;
-				tmp=0;
-				i++;
-			}
-		}
-
-		if( OneWireCRC( pROM , 8 ) ) 
-		{
-			return eSTATUS_CRC_ERROR; 
-		}
-	}
+	eStatuscode_t eStatus;
 	
-	return eSTATUS_OK;
+	eStatus = OneWireReset();
+	if ( eStatus )
+	{
+		return eStatus;
+	}
+
+	OneWireWriteByte( eCOMMAND_ONEWIRE_READ_ROM );
+	
+	for ( uint8_t x = 0 ; x < 8 ; x++ )
+	{
+		pROM[x] = OneWireReadByte();
+	}
+
+	if ( OneWireCRC( pROM , 8 ) )
+	{
+		return eSTATUS_ONEWIRE_CRC_ERROR;
+	}
+
+	return eSTATUS_ONEWIRE_OK;
 }
 
 uint8_t OneWireCRC( const uint8_t *pDataIn , uint8_t uiCnt ) 
 {
-	static const uint8_t uiCrcTab[] =
-	{
+    static const uint8_t uiCrcTab[]  =
+    {
 		0x00, 0x9D, 0x23, 0xBE, 0x46, 0xDB, 0x65, 0xF8,
 		0x8C, 0x11, 0xAF, 0x32, 0xCA, 0x57, 0xE9, 0x74
 	};
-	
-	uint8_t crc, i, tmp;
+    
+    uint8_t crc, i, tmp, zerocheck;
 
-	// nibble based CRC calculation,
-	// good trade off between speed and memory usage
+    // nibble based CRC calculation,
+    // good trade off between speed and memory usage
 
-	// first byte is not changed, since CRC is initialized with 0
-	crc = *pDataIn++;
-	uiCnt--;
+    // first byte is not changed, since CRC is initialized with 0
+    crc = *pDataIn++;
+    zerocheck = crc;
+    uiCnt--;
 
-	for( ; uiCnt > 0 ; uiCnt-- ) 
+    for(; uiCnt>0; uiCnt--) 
 	{
-		tmp = *pDataIn++;                        // next byte
+	    tmp = *pDataIn++;                        // next byte
+	    zerocheck |= tmp;
 
-		i = crc & 0x0F;
-		crc = (crc >> 4) | (tmp << 4);        // shift in next nibble
-		crc ^= uiCrcTab[i];  // apply polynom
+	    i = crc & 0x0F;
+	    crc = (crc >> 4) | (tmp << 4);        // shift in next nibble
+	    crc ^= uiCrcTab[i];  // apply polynom
 
-		i = crc & 0x0F;
-		crc = (crc >> 4) | (tmp & 0xF0);      // shift in next nibble
-		crc ^= uiCrcTab[i];  // apply polynom
-	}
+	    i = crc & 0x0F;
+	    crc = (crc >> 4) | (tmp & 0xF0);      // shift in next nibble
+	    crc ^= uiCrcTab[i];  // apply polynom
+    }
 
-	return crc;
+    if ( !zerocheck ) 
+	{        // all data was zero, this is an error!
+	   return 0xFF;
+	} 
+	else 
+	{
+	    return crc;
+    }
 }
 
 uint8_t OneWireSaveROM( OneWireROM ROM , enum eSlavesOnBus eSlave )
@@ -406,6 +380,29 @@ uint8_t OneWireSaveROM( OneWireROM ROM , enum eSlavesOnBus eSlave )
 	}
 	
 	return 0;
+}
+
+eStatuscode_t OneWireScanBus( OneWireROM pROM ) 
+{
+	eStatuscode_t eStatus;
+	
+	OneWireSearchInit( pROM );
+
+	eStatus = eSTATUS_ONEWIRE_OK;
+	uint8_t i;
+	for ( i = 0 ; ( i < __MAX_eSLAVE_ENTRYS__ ) && ( eStatus == eSTATUS_ONEWIRE_OK ) ; i++ ) 
+	{
+		eStatus = OneWireSearch( OneWireRom , eCOMMAND_ONEWIRE_SEARCH_ROM );
+		
+		if ( eStatus == eSTATUS_ONEWIRE_OK || eStatus == eSTATUS_ONEWIRE_LAST_CODE ) 
+		{
+			OneWireSaveROM( pROM , i );
+		} 
+	}
+	
+	sOneWire.uiBusMembers = i; 
+	
+	return eStatus;
 }
 
 /*****************************************************************/

@@ -39,84 +39,77 @@
 /*!<-- Funktionen <--*/
 /*****************************************************************/
 
-static eStatuscode_t Ds18B20StartTemp( void )
+static void Ds18B20StartConvert( void )
 {	
-	eStatuscode_t eStatus = eSTATUS_OK;
-	
-	if ( OneWireReset() != eSTATUS_ACK )
-	{
-		return eSTATUS_NO_ACK;
-	}
-	
-	/*!<-- Temperatur Messung starten <--*/
-	if ( OneWireSkipROM() != eSTATUS_ACK )
-	{
-		eStatus = eSTATUS_NO_ACK;
-	}
-	OneWireWriteByte( eCOMMAND_CONVERT );
-	
-	_delay_ms(750);
-	
-	return eStatus;
+	OneWireWriteByte( eCOMMAND_ONEWIRE_CONVERT );
 }
 
-static int16_t Ds18B20ReadTemp( eStatuscode_t *peStatus ) 
-{	
-	enum eOrder{ eORDER_LSB , eORDER_MSB , __MAX_eORDER_ENTRYS__ };
 
-	int16_t siTemp;
-	uint8_t uiBuffer[__MAX_eORDER_ENTRYS__];
 
-	*peStatus |= eSTATUS_OK;
-	
-	OneWireWriteByte( eCOMMAND_READ_SCRATCHPAD );
-	
-	uiBuffer[eORDER_LSB] = OneWireReadByte();
-	uiBuffer[eORDER_MSB] = OneWireReadByte();
-	
-	/*!<-- lesen beenden <--*/
-	if ( OneWireReset() != eSTATUS_ACK )
+void Ds18B20ReadScratchpad( uint8_t *pBuffer ) 
+{
+	OneWireWriteByte( eCOMMAND_ONEWIRE_READ_SCRATCHPAD );
+	for ( uint8_t x = 0 ; x < 9 ; x++ ) 
 	{
-		*peStatus |= eSTATUS_NO_ACK;
+		pBuffer[x] = OneWireReadByte();
 	}
-
-	siTemp = ((int16_t)uiBuffer[eORDER_MSB] << 8) | uiBuffer[eORDER_LSB];
-	siTemp = ( siTemp * 640L ) >> 10;
-	
-	return siTemp;
 }
 
+void Ds18B20WriteScratchpad( uint8_t uiTh , uint8_t uiTl )
+{
+	OneWireWriteByte( eCOMMAND_ONEWIRE_WRITE_SCRATCHPAD );
+	OneWireWriteByte( uiTh );
+	OneWireWriteByte( uiTl );
+}
+
+eStatuscode_t Ds18B20ReadTemp( int16_t *pTemp ) 
+{	
+    int16_t temp;
+    uint8_t uiScratchpad[9] = "";
+    
+    Ds18B20ReadScratchpad( uiScratchpad );
+	
+    if ( OneWireCRC( uiScratchpad , 9 ) ) 
+	{
+	    return eSTATUS_ONEWIRE_CRC_ERROR;
+    }
+
+    temp = ((int16_t)uiScratchpad[1] << 8) | uiScratchpad[0];
+    
+    switch( ( uiScratchpad[4] >> 5 ) & 3 ) 
+	{
+	    case 0: temp &= ~7; break;    // 9 Bit
+	    case 1: temp &= ~3; break;    // 10 Bit
+	    case 2: temp &= ~1; break;    // 11 Bit
+    }
+    // calculate temperature with 0.1 C resolution using fixed point arithmetic
+    // t(0.1C)  = t(1/16C) * 10/16
+    *pTemp = (temp * 10) >> 4;
+	
+    return eSTATUS_ONEWIRE_OK;
+}
 
 int16_t Ds18B20GetTemp( eStatuscode_t *peStatus )
 {
-	*peStatus |= Ds18B20StartTemp();
+	int16_t siTemp;
+	
+	Ds18B20StartConvert();
 	_delay_ms(750); /*!<-- Zeit geben zum ermitteln der Temperatur <--*/
 	
-	return Ds18B20ReadTemp( peStatus );	
+	return Ds18B20ReadTemp( &siTemp );	
 }
 
-int16_t Ds18B20ReadSlaveTemp( eStatuscode_t *peStatus , enum eSlavesOnBus eSlave )
+eStatuscode_t Ds18B20ReadSlaveTemp( enum eSlavesOnBus eSlave , int16_t *pTemp )
 {
-	int16_t siTemp;
+	eStatuscode_t eStatus = eSTATUS_ONEWIRE_OK;
 
-	OneWireSearchInit( OneWireRom );
-
-	for ( uint8_t x = 0 ; x < __MAX_eSLAVE_ENTRYS__ ; x++ )
-	{
-		uint8_t uiStatus = OneWireSearchROM( OneWireRom );
-		
-		if (  uiStatus == eSTATUS_NEW_ROM_CODE_FOUND || uiStatus == eSTATUS_NO_NEW_ROM_CODE_FOUND )
-		{
-			OneWireSaveROM( OneWireRom , x );
-		}	
-	}
+	eStatus = OneWireMatchROM( OneWireMultiRom[ eSlave ] );
+	Ds18B20StartConvert();
+	_delay_ms( 750 );
+	eStatus = OneWireMatchROM( OneWireMultiRom[ eSlave ] );
+	eStatus = Ds18B20ReadTemp( pTemp );
 	
-	OneWireMatchROM( OneWireMultiRom[ eSlave ] );
-	*peStatus |= Ds18B20StartTemp();
-	OneWireMatchROM( OneWireMultiRom[ eSlave ] );
-	siTemp = Ds18B20ReadTemp( peStatus );
-	
-	return siTemp;
+	return eStatus;
 }
 
 /*****************************************************************/

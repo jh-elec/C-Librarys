@@ -51,26 +51,26 @@ enum eSlavesOnBus
 
 enum eStatuscode
 {
-	eSTATUS_OK						= 0x01,
-	eSTATUS_ACK						= 0x02,
-	eSTATUS_NO_ACK					= 0x04,	
-	eSTATUS_INVALID_CONFIG			= 0x08,	
-	eSTATUS_BUS_SHORT_TO_GND		= 0x10,
-	eSTATUS_NEW_ROM_CODE_FOUND		= 0x20,
-	eSTATUS_NO_NEW_ROM_CODE_FOUND	= 0x40,
-	eSTATUS_CRC_ERROR				= 0x80,
+	 eSTATUS_ONEWIRE_OK					= 0,        /*!<-- Kein Fehler aufgetreten (: <--*/
+	 eSTATUS_ONEWIRE_NO_PRESENCE		= 1,        /*!<-- Slave antwortet nicht :'( <--*/
+	 eSTATUS_ONEWIRE_CRC_ERROR			= 2,        /*!<-- Es ist ein CRC Fehler aufgetreten <--*/
+	 eSTATUS_ONEWIRE_SCAN_ERROR			= 3,        /*!<-- Fehler während der ROM suche aufgetreten <--*/
+	 eSTATUS_ONEWIRE_LAST_CODE			= 4,        /*!<-- Der letzte ROM Kode wurde wieder gescannt, nur eine Info ( kein Fehler ) <--*/
+	 eSTATUS_ONEWIRE_GND_SHORT			= 5,        /*!<-- Der Bus ist wahrscheinlich gegen Masse kurzgeschlossen! <--*/
 };
 
 enum eCommands
 {
-	eCOMMAND_SEARCH_ROM			= 0xF0,
-	eCOMMAND_READ_ROM			= 0x33,
-	eCOMMAND_SKIP_ROM			= 0xCC,	
-	eCOMMAND_MATCH_ROM			= 0x55,
-	eCOMMAND_CONVERT			= 0x44,
-	eCOMMAND_WRITE_SCRATCHPAD	= 0x4E,
-	eCOMMAND_READ_SCRATCHPAD	= 0xBE,
-	eCOMMAND_ALARM_SEARCH		= 0xEC,
+	eCOMMAND_ONEWIRE_SEARCH_ROM			= 0xF0,
+	eCOMMAND_ONEWIRE_READ_ROM			= 0x33,
+	eCOMMAND_ONEWIRE_SKIP_ROM			= 0xCC,	
+	eCOMMAND_ONEWIRE_MATCH_ROM			= 0x55,
+	eCOMMAND_ONEWIRE_CONVERT			= 0x44,
+	eCOMMAND_ONEWIRE_WRITE_SCRATCHPAD	= 0x4E,
+	eCOMMAND_ONEWIRE_READ_SCRATCHPAD	= 0xBE,
+	eCOMMAND_ONEWIRE_ALARM_SEARCH		= 0xEC,
+	
+	eCOMMAND_ONEWIRE_UNKNOWN			= 0xFF,
 };
 
 
@@ -102,6 +102,8 @@ typedef struct
 	volatile sOneWireMapping_t	*psDDR;
 	volatile sOneWireMapping_t	*psPORT;
 	volatile sOneWireMapping_t	*psPIN;
+	
+	uint8_t uiBusMembers; /*!<-- Am Bus angeschlossene Geräte <--*/
 }sOneWire_t;
 
 sOneWire_t sOneWire;
@@ -114,8 +116,6 @@ OneWireROM OneWireRom;
 /*!<-- ROM Speicher für mehrere Slaves am "1-Wire" Bus <--*/
 OneWireROM OneWireMultiRom[__MAX_eSLAVE_ENTRYS__];
 
-uint8_t test[2][8];
-
 /*****************************************************************/
 /*!<-- Globale Variablen // Ende <--*/
 
@@ -124,7 +124,7 @@ uint8_t test[2][8];
 
 /*!<-- Funktions Prototypen <--*/
 /*****************************************************************/
-eStatuscode_t OneWireInit( void );
+void OneWireInit( void );
 
 eStatuscode_t OneWireReset( void );
 
@@ -153,6 +153,8 @@ eStatuscode_t OneWireReadROM( OneWireROM pROM );
 uint8_t OneWireCRC( const uint8_t *pDataIn , uint8_t uiCnt );
 
 uint8_t OneWireSaveROM( OneWireROM ROM , enum eSlavesOnBus eSlave );
+
+eStatuscode_t OneWireScanBus( OneWireROM pROM );
 /*****************************************************************/
 /*!<-- Funktions Prototypen // Ende <--*/
 

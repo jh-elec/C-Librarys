@@ -35,6 +35,12 @@
 
 /*!<-- Globale Variablen <--*/
 /*****************************************************************/
+typedef struct  
+{
+	uint8_t uiSlaves; /*!<-- Wie viele Slaves wurden nach "Ds18B20Init" gefunden! <--*/
+}sDs18B20_t;
+
+sDs18B20_t sDs18B20;
 
 /*****************************************************************/
 /*!<-- Globale Variablen // Ende <--*/
@@ -44,9 +50,11 @@
 
 /*!<-- Funktions Prototypen <--*/
 /*****************************************************************/
+eStatuscode_t Ds18B20Init( void );
+
 int16_t Ds18B20GetTemp( eStatuscode_t *peStatus );
 
-int16_t Ds18B20ReadSlaveTemp( eStatuscode_t *peStatus , enum eSlavesOnBus eSlave );
+eStatuscode_t Ds18B20ReadSlaveTemp( enum eSlavesOnBus eSlave , int16_t *pTemp );
 /*****************************************************************/
 /*!<-- Funktions Prototypen // Ende <--*/
 
