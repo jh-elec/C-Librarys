@@ -31,7 +31,7 @@
 /*****************************************************************/
 static uint8_t pShiftReg[__MAX_eSHIFT_ENTRYS__] = "";
 
-volatile sShiftRegPort_t* sShiftPort = (sShiftRegPort_t*)&_SHIFT_REG_PORT;
+volatile sShiftRegPort_t* sShiftRegPORT = (sShiftRegPort_t*)&_SHIFT_REG_PORT;
 
 /*****************************************************************/
 /*!<-- Interne Variablen // Ende <--*/
@@ -41,45 +41,54 @@ volatile sShiftRegPort_t* sShiftPort = (sShiftRegPort_t*)&_SHIFT_REG_PORT;
 
 /*!<-- Funktions Prototypen <--*/
 /*****************************************************************/
-eShiftRegError_t ShiftRegSend( uint8_t *pData , uint8_t uiLength )
+void ShiftRegInit( void )
 {
-	eShiftRegError_t sError = eSHIFT_REG_OK;
+	/*!<-- Daten Richtungs Register Adresse <--*/
+	volatile sShiftRegPort_t* sShiftRegDDR = ( sShiftRegPORT - 1 );
 	
-	uint8_t* _pData = pData + __MAX_eSHIFT_ENTRYS__;
+	/*!<-- Pins als Ausgänge konfigurieren <--*/
+	sShiftRegDDR->bData = 1;
+	sShiftRegDDR->bOutputEnable = 1;
+	sShiftRegDDR->bShiftClock = 1;
+	sShiftRegDDR->bStoreClock = 1;
+}
 
-	sShiftPort->bOutputEnable = 0;
 
-	for ( uint8_t y = 0 ; y < uiLength ; y++ )
+void ShiftRegUpdate( void )
+{
+	uint8_t* _pData = pShiftReg + __MAX_eSHIFT_ENTRYS__;
+
+	sShiftRegPORT->bOutputEnable = 0;
+
+	for ( uint8_t y = 0 ; y < __MAX_eSHIFT_ENTRYS__ ; y++ )
 	{
 		for ( uint8_t x = 0 ; x < 8 ; x++ )
 		{
-			sShiftPort->bShiftClock = 0;
+			sShiftRegPORT->bShiftClock = 0;
 			if ( *_pData )
 			{
-				sShiftPort->bData = 1;
+				sShiftRegPORT->bData = 1;
 			}
 			else
 			{
-				sShiftPort->bData = 0;
+				sShiftRegPORT->bData = 0;
 			}
-			sShiftPort->bShiftClock = 0;	
+			sShiftRegPORT->bShiftClock = 0;	
 		}
 		
 		/*!<-- Daten übernehmen <--*/
-		sShiftPort->bStoreClock = 1;
-		sShiftPort->bStoreClock = 0;
+		sShiftRegPORT->bStoreClock = 1;
+		sShiftRegPORT->bStoreClock = 0;
 		
-		pData--;
+		_pData--;
 	}
-	
-	return sError;
 }
 
 eShiftRegError_t ShiftRegToggleBit( uint8_t uiBitPos )
 {
     eShiftRegError_t eState = eSHIFT_REG_OK;
 
-    uint8_t uiNumOfReg = uiBitPos >> 3;
+    uint8_t uiNumOfReg = uiBitPos >> 3;	/*!<-- >> 3 entspricht x/8 <--*/
     uint8_t uiBitOfReg = uiBitPos & 0x07;
 
     if ( uiNumOfReg > __MAX_eSHIFT_ENTRYS__ )
@@ -96,7 +105,7 @@ eShiftRegError_t ShiftRegSetBit( uint8_t uiBitPos )
 {
     eShiftRegError_t eState = eSHIFT_REG_OK;
 
-    uint8_t uiNumOfReg = uiBitPos >> 3;
+    uint8_t uiNumOfReg = uiBitPos >> 3; /*!<-- >> 3 entspricht x/8 <--*/
     uint8_t uiBitOfReg = uiBitPos & 0x07;
 
     if ( uiNumOfReg > __MAX_eSHIFT_ENTRYS__ )
@@ -111,33 +120,29 @@ eShiftRegError_t ShiftRegSetBit( uint8_t uiBitPos )
 
 eShiftRegError_t ShiftRegClearBit( uint8_t uiBitPos )
 {
-    eShiftRegError_t eState = eSHIFT_REG_OK;
-
-    uint8_t uiNumOfReg = uiBitPos >> 3;
+    uint8_t uiNumOfReg = uiBitPos >> 3; /*!<-- >> 3 entspricht x/8 <--*/
     uint8_t uiBitOfReg = uiBitPos & 0x07;
 
     if ( uiNumOfReg > __MAX_eSHIFT_ENTRYS__ )
     {
-        eState = eSHIFT_REG_OUT_OF_RANGE;
+        return eSHIFT_REG_OUT_OF_RANGE;
     }
 
     pShiftReg[uiNumOfReg] &= ~( 1 << uiBitOfReg );
 
-    return eState;
+    return eSHIFT_REG_OK;
 }
 
-eShiftRegError_t ShiftRegSet( enum eShiftRegs eMember , uint8_t uiValue )
+eShiftRegError_t ShiftRegSetByte( enum eShiftRegs eMember , uint8_t uiValue )
 {
-    eShiftRegError_t eState = eSHIFT_REG_OK;
-
     if ( eMember > __MAX_eSHIFT_ENTRYS__ )
     {
-        eState = eSHIFT_REG_OUT_OF_RANGE;
+        return eSHIFT_REG_OUT_OF_RANGE;
     }
 
     pShiftReg[eMember] = uiValue;
 
-    return eState;
+    return eSHIFT_REG_OK;
 }
 
 sShiftRegInfo_t ShiftRegGet( enum eShiftRegs eMember )

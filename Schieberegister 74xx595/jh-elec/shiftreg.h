@@ -47,7 +47,7 @@ typedef struct
 }sShiftRegInfo_t;
 
 /*!<-- Hier die Belegung des Schieberegisters Hinterlegen <--*/
-/*!<-- ACHTUNG! Das ganze ist Compiler abhängig. Sollte jedoch beim AVR klappen <--*/
+/*!<-- ACHTUNG! Das ganze ist Compiler abhängig! <--*/
 
 #define _SHIFT_REG_PORT		PORTB
 
@@ -55,8 +55,8 @@ typedef struct
 typedef struct  
 {
 	uint8_t bOutputEnable	:1; 	
-	uint8_t bStoreClock		:1;	
 	uint8_t bShiftClock		:1;	
+	uint8_t bStoreClock		:1;	
 	uint8_t bData			:1; 	
 	uint8_t b4				:1;
 	uint8_t	b5				:1;
@@ -71,7 +71,7 @@ typedef struct
 
 /*!<-- Globale Variablen <--*/
 /*****************************************************************/
-volatile sShiftRegPort_t* sShiftPort;
+
 /*****************************************************************/
 /*!<-- Globale Variablen // Ende <--*/
 
@@ -80,7 +80,9 @@ volatile sShiftRegPort_t* sShiftPort;
 
 /*!<-- Funktions Prototypen <--*/
 /*****************************************************************/
-eShiftRegError_t ShiftRegSend( uint8_t *pData , uint8_t uiLength );
+void ShiftRegInit( void );
+
+void ShiftRegUpdate( void );
 
 eShiftRegError_t ShiftRegToggleBit( uint8_t uiBitPos );
 
@@ -88,7 +90,7 @@ eShiftRegError_t ShiftRegSetBit( uint8_t uiBitPos );
 
 eShiftRegError_t ShiftRegClearBit( uint8_t uiBitPos );
 
-eShiftRegError_t ShiftRegSet( enum eShiftRegs eMember , uint8_t uiValue );
+eShiftRegError_t ShiftRegSetByte( enum eShiftRegs eMember , uint8_t uiValue );
 
 sShiftRegInfo_t ShiftRegGet( enum eShiftRegs eMember );
 /*****************************************************************/
