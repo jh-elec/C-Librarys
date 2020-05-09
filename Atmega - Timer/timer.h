@@ -35,7 +35,7 @@
 /*****************************************************************/
 
 /*!<-- Waveform Generation Mode Bits <--*/
-#if defined ( __AVR_ATmega328P__ ) || defined ( __AVR_ATmega32__ ) || defined ( __AVR_ATtiny13A__ ) || defined ( __AVR_ATtiny85__ )
+#if defined ( __AVR_ATmega328P__ ) || defined ( __AVR_ATmega32__ ) || defined ( __AVR_ATtiny13A__ ) || defined ( __AVR_ATtiny85__ ) || defined ( __AVR_ATtiny45__ )
 #define _TMR0_MODE0					( ! ( 1 << WGM00 | 1 << WGM01 ) ) // Normal
 #define _TMR0_MODE2					( 1 << WGM01 ) // CTC
 #endif 
@@ -213,7 +213,7 @@
 								
 	 /*!<-- ATtiny13A // End <--*/
 
-#elif defined ( __AVR_ATtiny85__ )
+#elif defined ( __AVR_ATtiny85__ ) || defined( __AVR_ATtiny45__ )
 
 	/*!<-- ATtiny85 <--*/
 
@@ -229,9 +229,9 @@
 	  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 		#define TCCR0B_WGM_CS( _WGMxx , _CSxx )			TCCR0B |= ( (_WGMxx  & ( ( 1 << WGM02 ) ) )| ( _CSxx & ( ( 1 << CS02 ) | ( 1 << CS01 ) | ( 1 << CS00 ) ) ) )
 	
-	  /*!<-- TIMSK0 – Timer/Counter Interrupt Mask Register [7..0] <--*/
+	  /*!<-- TIMSK – Timer/Counter Interrupt Mask Register [7..0] <--*/
 	/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	  + - | - | - | - | OCIE0B | OCIE0A | TOIE0 | - +
+	  + - | OCIE1A | OCIE1B | OCIE0A | OCIE0B | TOIE1 | TOIE0 | - +
 	  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/   
 		#define TIMSK0_OCIE0B_EN						TIMSK |= ( 1 << OCIE0B  )
 		#define TIMSK0_OCIE0A_EN						TIMSK |= ( 1 << OCIE0A  )
@@ -304,7 +304,7 @@
 		[CALLBACK_TIMER0_COMPB ] = NULL,
 	};
 		
-#elif defined ( __AVR_ATtiny85__ )
+#elif defined ( __AVR_ATtiny85__ ) || defined ( __AVR_ATtiny45__ )
 
 	enum __attribute__( ( packed ) ) eTimer { TIMER0 , TIMER1 , __MAX_TIMER_ENTRYS__ };
 	
@@ -372,7 +372,7 @@ sTimerReload_t volatile sReload[__MAX_TIMER_ENTRYS__];
 /*!<-- Globale Variablen <--*/
 /*****************************************************************/
 
-#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny13A__ ) || defined ( __AVR_ATtiny85__ )
+#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny13A__ ) || defined ( __AVR_ATtiny85__ ) || defined( __AVR_ATtiny45__ )
 
 	/*!<-- Timer 0 Konfiguration <--*/
 	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -403,7 +403,7 @@ sTimerReload_t volatile sReload[__MAX_TIMER_ENTRYS__];
 
 #endif 
 
-#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny85__ )
+#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny85__ ) || defined( __AVR_ATtiny45__ )
 
 	const sTimer8Config_t  sTimer0OvfSettings[]		=
 	{
@@ -576,7 +576,7 @@ sTimerReload_t volatile sReload[__MAX_TIMER_ENTRYS__];
 
 	#endif 
 
-	#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny13A__ ) || defined( __AVR_ATtiny85__ )
+	#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny13A__ ) || defined( __AVR_ATtiny85__ ) || defined( __AVR_ATtiny45__ )
 
 		extern inline enum eTimerError Timer0CompAInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
 		{
@@ -596,8 +596,13 @@ sTimerReload_t volatile sReload[__MAX_TIMER_ENTRYS__];
 				TCCR1B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
 				OCR0A = psTab->uiCnt;
 				TIMSK0_OCIE0A_EN;
+			#elif defined ( __AVR_ATtiny85__ ) || defined( __AVR_ATtiny45__ )
+				TCCR0B_WGM_CS( psTab->uiWGMxx , psTab->uiCSxx );
+				TCCR0A_WGM( psTab->uiWGMxx );
+				OCR0A = psTab->uiCnt;
+				TIMSK0_OCIE0A_EN;
 			#endif
-	
+			
 			sei();
 	
 			return ERROR_TIMER_OK;
@@ -612,7 +617,7 @@ sTimerReload_t volatile sReload[__MAX_TIMER_ENTRYS__];
 	
 	#endif
 
-	#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny13A__ ) || defined( __AVR_ATtiny85__ )
+	#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny13A__ ) || defined( __AVR_ATtiny85__ ) || defined( __AVR_ATtiny45__ )
 
 	extern inline enum eTimerError Timer0CompBInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
 	{
@@ -648,7 +653,7 @@ sTimerReload_t volatile sReload[__MAX_TIMER_ENTRYS__];
 	
 	#endif
 
-	#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny13A__ ) || defined( __AVR_ATtiny85__ )
+	#if defined( __AVR_ATmega328P__ ) || defined( __AVR_ATmega32__ ) || defined( __AVR_ATtiny13A__ ) || defined( __AVR_ATtiny85__ ) || defined( __AVR_ATtiny45__ )
 
 		extern inline enum eTimerError Timer0OvfInit	( const sTimer8Config_t *psTab , void (*pFncCallback)(void) )	
 		{
